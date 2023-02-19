@@ -2,6 +2,8 @@
 
 A method for drawing ancestral recombination graphs from tskit tree sequences using D3.js.
 
+![ARG Visualizer Example](./README_pics/arg_visualizer.png)
+
 ## Files
 
 - **arg_visualizer.ipynb**: Jupyter Notebook with Python code for creating data.js and viewing the plot
