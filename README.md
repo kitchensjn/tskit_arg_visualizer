@@ -2,7 +2,7 @@
 
 A method for drawing ancestral recombination graphs from tskit tree sequences using D3.js.
 
-<img alt="ARG Visualizer Example" src="./README_pics/arg_visualizer.png" width="200">
+<img alt="ARG Visualizer Example" src="./README_pics/arg_visualizer.png" width="500">
 
 ## Files
 
