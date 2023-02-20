@@ -4,7 +4,7 @@
   <img alt="ARG Visualizer Example" src="./README_pics/arg_visualizer.png" width="500">
 </p>
 
-A method for drawing ancestral recombination graphs from tskit tree sequences in Python using D3.js. Download the repository and open arg_visualizer.ipynb to test it for yourself.
+A method for drawing ancestral recombination graphs from tskit tree sequences in Python using D3.js.
 
 **Python Dependencies**: jupyter, msprime, numpy
 
