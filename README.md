@@ -15,7 +15,7 @@ A method for drawing ancestral recombination graphs from tskit tree sequences in
 - **data.js**: JavaScript file with all of the ARG data for plotting (ugly, but simple method to pass data from Python into JavaScript)
 - **visualizer.html**: HTML file for plotting using JavaScript alongside CSS styles
 
-The arg_visualizer.ipynb writes to data.js which is called by visualizer.html. An IFrame of visualizer.html is displayed in arg_visualizer.ipynb. Users only need to open the Jupyter Notebook to run the code for themselves.
+The arg_visualizer.ipynb writes to data.js which is called by visualizer.html. An IFrame of visualizer.html is displayed in arg_visualizer.ipynb. Users only need to open the Jupyter Notebook to run the code for themselves. It's best to keep all of the files in the same directory as they currently use relative paths to call one another.
 
 ## Explanation of Plotting Method
 
