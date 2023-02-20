@@ -23,7 +23,7 @@ The following information is provided to D3.js in the JSON object.
 
 - **Nodes**
   - **id**: unique identifier of each node
-  - **label**: matches the id unless the node is a recombination node when it merges the two ids together
+  - **label**: the node label when plotting (matches the id unless the node is a recombination node when it merges the two tskit node ids together)
   - **flag**: msprime node flag
   - **time**: time of the node from tskit
   - **fy**: fixed y position in the plot relating to their age
