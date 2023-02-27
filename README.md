@@ -7,6 +7,7 @@
 A method for drawing ancestral recombination graphs from tskit tree sequences in Python using D3.js.
 
 **Python Dependencies**: jupyter, msprime, numpy
+
 **JavaScript Dependencies**: D3 (loaded from CDN)
 
 ## Files
