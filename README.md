@@ -1,7 +1,7 @@
 # Ancestral Recombination Graph Visualizer
 
 <p align="center">
-  <img alt="ARG Visualizer Example" src="./README_pics/arg_visualizer.png" width="500">
+  <img alt="ARG Visualizer Example" src="./README_pics/stylized/arg_visualizer.png" width="500">
 </p>
 
 A method for drawing ancestral recombination graphs from tskit tree sequences in Python using D3.js.
@@ -13,10 +13,9 @@ A method for drawing ancestral recombination graphs from tskit tree sequences in
 ## Files
 
 - **arg_visualizer.ipynb**: Jupyter Notebook with Python code for creating data.js and viewing the plot
-- **data.js**: JavaScript file with all of the ARG data for plotting (ugly, but simple method to pass data from Python into JavaScript)
-- **visualizer.html**: HTML file for plotting using JavaScript alongside CSS styles
+- **visualizer.js**: JavaScript file for plotting
 
-The arg_visualizer.ipynb writes to data.js which is called by visualizer.html. An IFrame of visualizer.html is displayed in arg_visualizer.ipynb. Users only need to open the Jupyter Notebook to run the code for themselves. It's best to keep all of the files in the same directory as they currently use relative paths to call one another.
+The Jupyter Notebook calls `visualizer.js` using a relative path, so these two files need to be kept together unless the code is updated accordingly.
 
 ## Explanation of Plotting Method
 
