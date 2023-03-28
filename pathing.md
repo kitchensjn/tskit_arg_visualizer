@@ -33,6 +33,9 @@ The path type of an edge is based on the combination of input/output connections
 - **tL and tR**: A recombination node connected on either the left (L) or right (R). "t" is short for "true direction". This means that the source node is in the same direction of the connection.
 - **fL and fR**: A recombination node connected on either the left (L) or right (R). "f" is short for "false direction". This means that the source node is in the opposite direction of the connection.
 
+### What Causes A "False Direction"?
+
+When there are multiple parent connections into a target node, they need to enter on opposite sides. This is easy when the parents are on opposite sides of the child. But when the parents are on the same side, one connection needs to be rerouted to the alternate side. The younger parent is given priority in the direction that they connect to the child; this was chosen to potentially reduce crossover between the connections. The same thing happens with source nodes when both children are on the same side. In this case, the older child has priority.
 
 ### Connection Combo to Path Type
 
