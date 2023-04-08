@@ -1,11 +1,11 @@
-var width = 700, height = 600;
+var width = $width, height = $height;
 var line = d3.line();
 var step = d3.line().curve(d3.curveStep);
 var stepAfter = d3.line().curve(d3.curveStepAfter);
 var stepBefore = d3.line().curve(d3.curveStepBefore);
 
 function draw_force_diagram() {
-    var svg = d3.select("#maindiv${divnum}").append("svg")
+    var svg = d3.select("#arg_${divnum}").append("svg")
         .attr("width", width)
         .attr("height", height);
     var graph = $arg;
@@ -37,9 +37,15 @@ function draw_force_diagram() {
 
     var link = link_container
         .append("path")
-        //.style("stroke", "#053e4e")
+        .style("stroke", "#053e4e")
         .style("stroke-width", 3)
-        .style("fill", "none");
+        .style("fill", "none")
+        .attr("left", function(d) {
+            return d.left;
+        })
+        .attr("right", function(d) {
+            return d.right;
+        });
     
     var node = svg
         .append("g")
@@ -52,7 +58,7 @@ function draw_force_diagram() {
             return String($divnum) + "_node" + d.id
         })
         .attr("r", 7)
-        .attr("fill", "#053e4e")//#1eebb1")
+        .attr("fill", "#1eebb1")
         .attr("stroke", "#053e4e")//#053e4e")
         .attr("stroke-width", 3)
         .call(
@@ -239,7 +245,7 @@ function draw_force_diagram() {
 
         node
             .attr("cx", function(d) {
-                return d.x = Math.max(100, Math.min(600, d.x));
+                return d.x = Math.max(50, Math.min(width-50, d.x));
             })
             .attr("cy", function(d) {
                 return d.y
@@ -273,6 +279,7 @@ function draw_force_diagram() {
             });
 
         link
+            /*
             .style("stroke", function(d) {
                 const path_type = determine_path_type(d)[0];
                 const simple_path_type = Array.from(path_type)[0] + Array.from(path_type)[2];
@@ -282,6 +289,7 @@ function draw_force_diagram() {
                 const step_paths = ["tt"];
                 const mid_paths = ["rb", "ff"];
 
+                
                 if (after_paths.includes(simple_path_type)) {
                     return "blue";
                 } else if (before_paths.includes(simple_path_type)) {
@@ -292,6 +300,7 @@ function draw_force_diagram() {
                     return "black";
                 }
             })
+            */
             .attr("path_type", function(d) {
                 return determine_path_type(d)[0];
             })
@@ -345,6 +354,55 @@ function draw_force_diagram() {
 
     function dragended(d) {
         if (!d3.event.active) simulation.alphaTarget(0);
+    }
+
+    if ($tree_highlighting) {
+        var breakpoints = svg.append("g")
+            .attr("class", "breakpoints")
+            .selectAll("rect")
+            .data(graph.breakpoints)
+            .enter()
+            .append("rect")
+            .attr("start", function(d) {
+                return d.start;
+            })
+            .attr("stop", function(d) {
+                return d.stop;
+            })
+            .attr("x", function(d) {
+                return d.x_pos;
+            })
+            .attr("y", height-90)
+            .attr("width", function(d) {
+                return d.width;
+            })
+            .attr("height", 40)
+            .attr("stroke", "#FFFFFF")
+            .attr("stroke-width", 5)
+            .attr("fill", "#053e4e")
+            .on('mouseover', function (d, i) {
+                d3.select(this)
+                    .transition()
+                        .duration('50')
+                        .style('fill', '#1eebb1')
+                    .style("cursor", "pointer");
+                d3.selectAll("path")
+                    .filter(function(j) {
+                        return j.right > d.start & j.left < d.stop;
+                    })
+                    .style("stroke", "#1eebb1")
+                    .style("stroke-width", 7);
+            })
+            .on('mouseout', function (d, i) {
+                d3.select(this)
+                    .transition()
+                        .duration('50')
+                        .style('fill', '#053e4e')
+                    .style("cursor", "default");
+                d3.selectAll("path")
+                    .style("stroke", "#053e4e")
+                    .style("stroke-width", 3);
+            });
     }
 
 }
