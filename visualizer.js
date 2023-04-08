@@ -31,12 +31,14 @@ function draw_force_diagram() {
     
     var underlink = link_container
         .append("path")
+        .attr("class", "underlink")
         .style("stroke", "#ffffff")
         .style("stroke-width", 10)
         .style("fill", "none");
 
     var link = link_container
         .append("path")
+        .attr("class", "link")
         .style("stroke", "#053e4e")
         .style("stroke-width", 3)
         .style("fill", "none")
@@ -382,11 +384,9 @@ function draw_force_diagram() {
             .attr("fill", "#053e4e")
             .on('mouseover', function (d, i) {
                 d3.select(this)
-                    .transition()
-                        .duration('50')
-                        .style('fill', '#1eebb1')
+                    .style('fill', '#1eebb1')
                     .style("cursor", "pointer");
-                d3.selectAll("path")
+                d3.selectAll(".link")
                     .filter(function(j) {
                         return j.right > d.start & j.left < d.stop;
                     })
@@ -395,11 +395,9 @@ function draw_force_diagram() {
             })
             .on('mouseout', function (d, i) {
                 d3.select(this)
-                    .transition()
-                        .duration('50')
-                        .style('fill', '#053e4e')
+                    .style('fill', '#053e4e')
                     .style("cursor", "default");
-                d3.selectAll("path")
+                d3.selectAll(".link")
                     .style("stroke", "#053e4e")
                     .style("stroke-width", 3);
             });
