@@ -6,9 +6,35 @@
 
 A method for drawing ancestral recombination graphs from tskit tree sequences in Python using D3.js.
 
-**Python Dependencies**: jupyter, msprime, numpy
+## How To Use
+
+Clone this repository. visualizer.py and visualizer.js
+
+**Python Dependencies**: msprime, numpy
 
 **JavaScript Dependencies**: D3 (loaded from CDN)
+
+```{python}
+import msprime
+import random
+import path/to/visualizer
+
+# Generate a random tree sequence with record_full_arg=True so that you get marked recombination nodes
+rs = random.randint(0,10000)   
+ts = msprime.sim_ancestry(
+    samples=2,
+    recombination_rate=1e-8,
+    sequence_length=3_000,
+    population_size=10_000,
+    record_full_arg=True,
+    random_seed=rs
+)
+
+print("random seed:", rs)
+print(ts.draw_text())
+visualizer = visualizer.D3ARG(ts=ts)
+visualizer.draw(width=500, height=750)
+```
 
 ## Files
 
@@ -36,6 +62,8 @@ The following information is provided to D3.js in the JSON object.
   - **target**: child node
   - *optional*
     - **direction_reference**: the id of the alternative parent for recombination nodes
+
+- **Breakpoints**
 
 ARGs are plotted using a D3's [force layout](https://github.com/d3/d3-force). All nodes have a fixed position on the y-axis set by fy. Sample nodes have a fixed position on the x-axis set by fx; the ordering of the sample nodes comes from the first tree in the tskit tree sequence (this is not always the optimal ordering but is generally a good starting point for plotting). The x positions of other nodes are set by a force simulation where all nodes repel each other countered by a linkage force between connected nodes in the graph.
 

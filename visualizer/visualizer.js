@@ -1,13 +1,18 @@
-var width = $width, height = $height;
 var line = d3.line();
 var step = d3.line().curve(d3.curveStep);
 var stepAfter = d3.line().curve(d3.curveStepAfter);
 var stepBefore = d3.line().curve(d3.curveStepBefore);
 
 function draw_force_diagram() {
-    var svg = d3.select("#arg_${divnum}").append("svg")
-        .attr("width", width)
-        .attr("height", height);
+    if ($tree_highlighting) {
+        var svg = d3.select("#arg_${divnum}").append("svg")
+            .attr("width", $width)
+            .attr("height", $height);
+    } else {
+        var svg = d3.select("#arg_${divnum}").append("svg")
+            .attr("width", $width)
+            .attr("height", $height);
+    }
     var graph = $arg;
 
     var simulation = d3
@@ -27,7 +32,13 @@ function draw_force_diagram() {
         .selectAll("path")
         .data(graph.links)
         .enter()
-        .append("g");
+        .append("g")
+        .attr("left", function(d) {
+            return d.left;
+        })
+        .attr("right", function(d) {
+            return d.right;
+        });
     
     var underlink = link_container
         .append("path")
@@ -41,13 +52,7 @@ function draw_force_diagram() {
         .attr("class", "link")
         .style("stroke", "#053e4e")
         .style("stroke-width", 3)
-        .style("fill", "none")
-        .attr("left", function(d) {
-            return d.left;
-        })
-        .attr("right", function(d) {
-            return d.right;
-        });
+        .style("fill", "none");
     
     var node = svg
         .append("g")
@@ -61,7 +66,7 @@ function draw_force_diagram() {
         })
         .attr("r", 7)
         .attr("fill", "#1eebb1")
-        .attr("stroke", "#053e4e")//#053e4e")
+        .attr("stroke", "#053e4e")
         .attr("stroke-width", 3)
         .call(
             d3
@@ -69,7 +74,11 @@ function draw_force_diagram() {
                 .on("start", dragstarted)
                 .on("drag", dragged)
                 .on("end", dragended)
-        );
+        )
+        .on('mouseover', function (d, i) {
+            d3.select(this)
+                .style("cursor", "pointer")
+        });
 
     var label = svg
         .append("g")
@@ -98,54 +107,54 @@ function draw_force_diagram() {
             var alt_child_y = alt_child.getAttribute("cy");
         }
         if (d.source.flag == 131072) {
-            path_type += "r0";   //0
+            path_type += "r0";
             start_position_y = d.source.y + 20;
         } else {
             if (d.target.y < alt_child_y) {
                 if (d.target.x < d.source.x) {
                     if (d.target.x < d.source.x - 40) {
-                        path_type += "tL";   //L
+                        path_type += "tL";
                     } else {
-                        path_type += "fL";   //L
+                        path_type += "fL";
                     }
                     start_position_x = d.source.x - 20;
                 } else {
                     if (d.target.x > d.source.x + 40) {
-                        path_type += "tR";   //R
+                        path_type += "tR";
                     } else {
-                        path_type += "fR";   //R
+                        path_type += "fR";
                     }
                     start_position_x = d.source.x + 20;
                 }
             } else if (d.target.y > alt_child_y) {
                 if (alt_child_x < d.source.x) {
                     if (d.target.x < d.source.x + 40) {
-                        path_type += "fR";   //R
+                        path_type += "fR";
                     } else {
-                        path_type += "tR";   //R
+                        path_type += "tR";
                     }
                     start_position_x = d.source.x + 20;
                 } else {
                     if (d.target.x > d.source.x - 40) {
-                        path_type += "fL";   //L
+                        path_type += "fL";
                     } else {
-                        path_type += "tL";   //L
+                        path_type += "tL";
                     }
                     start_position_x = d.source.x - 20;
                 }
             } else {
                 if (d.target.x < alt_child_x) {
                     if (d.target.x < d.source.x - 40) {
-                        path_type += "tL";   //L
+                        path_type += "tL";
                     } else {
-                        path_type += "fL";   //L
+                        path_type += "fL";
                     }
                     start_position_x = d.source.x - 20;
                 } else if (d.target.x > alt_child_x) {
                     if (d.target.x > d.source.x + 40) {
-                        path_type += "tR";   //R
+                        path_type += "tR";
                     } else {
-                        path_type += "fR";   //R
+                        path_type += "fR";
                     }
                     start_position_x = d.source.x + 20;
                 } else {
@@ -168,32 +177,32 @@ function draw_force_diagram() {
             if (d.source.y < alt_parent_y) {
                 if (alt_parent_x < d.target.x) {
                     if (d.source.x < d.target.x + 40) {
-                        path_type += "fR";   //R
+                        path_type += "fR";
                     } else {
-                        path_type += "tR";   //R
+                        path_type += "tR";
                     }
                     stop_position_x = d.target.x + 20;
                 } else {
                     if (d.source.x > d.target.x - 40) {
-                        path_type += "fL";   //L
+                        path_type += "fL";
                     } else {
-                        path_type += "tL";   //L
+                        path_type += "tL";
                     }
                     stop_position_x = d.target.x - 20;
                 }
             } else if (d.source.y > alt_parent_y) {
                 if (d.source.x < d.target.x) {
                     if (d.source.x < d.target.x - 40) {
-                        path_type += "tL";   //L
+                        path_type += "tL";
                     } else {
-                        path_type += "fL";   //L
+                        path_type += "fL";
                     }
                     stop_position_x = d.target.x - 20;
                 } else {
                     if (d.source.x > d.target.x + 40) {
-                        path_type += "tR";   //R
+                        path_type += "tR";
                     } else {
-                        path_type += "fR";   //R
+                        path_type += "fR";
                     }
                     stop_position_x = d.target.x + 20;
                 }
@@ -207,7 +216,7 @@ function draw_force_diagram() {
                 }
             }
         } else {
-            path_type += "b0";   //0
+            path_type += "b0";
             stop_position_y = d.target.y - 20;
         }
         if (path_type == "fLb0" ) {
@@ -247,10 +256,10 @@ function draw_force_diagram() {
 
         node
             .attr("cx", function(d) {
-                return d.x = Math.max(50, Math.min(width-50, d.x));
+                return d.x = Math.max(50, Math.min($width-50, d.x));
             })
             .attr("cy", function(d) {
-                return d.y
+                return d.y;
             });
 
         underlink
@@ -374,7 +383,7 @@ function draw_force_diagram() {
             .attr("x", function(d) {
                 return d.x_pos;
             })
-            .attr("y", height-90)
+            .attr("y", $height-90)
             .attr("width", function(d) {
                 return d.width;
             })
@@ -386,10 +395,14 @@ function draw_force_diagram() {
                 d3.select(this)
                     .style('fill', '#1eebb1')
                     .style("cursor", "pointer");
-                d3.selectAll(".link")
-                    .filter(function(j) {
-                        return j.right > d.start & j.left < d.stop;
-                    })
+                var highlight_links = d3.select(".links")
+                    .selectAll("g")
+                        .filter(function(j) {
+                            return j.right > d.start & j.left < d.stop;
+                        });
+                highlight_links.raise();
+                highlight_links
+                    .select(".link")
                     .style("stroke", "#1eebb1")
                     .style("stroke-width", 7);
             })

@@ -1,2 +1,4 @@
 .ipynb_checkpoints
 legacy_code/
+.DS_Store
+__pycache__
