@@ -4,16 +4,36 @@ var stepAfter = d3.line().curve(d3.curveStepAfter);
 var stepBefore = d3.line().curve(d3.curveStepBefore);
 
 function draw_force_diagram() {
-    if ($tree_highlighting) {
-        var svg = d3.select("#arg_${divnum}").append("svg")
-            .attr("width", $width)
-            .attr("height", $height);
-    } else {
-        var svg = d3.select("#arg_${divnum}").append("svg")
-            .attr("width", $width)
-            .attr("height", $height);
-    }
+    var svg = d3.select("#arg_${divnum}").append("svg")
+        .attr("width", $width)
+        .attr("height", $height);
+
     var graph = $arg;
+
+    var result = $y_axis_ticks.map(function (x) { 
+        return parseInt(x, 10); 
+    });
+
+
+    if ($y_axis_labels) {
+        var bottom = $height - 50;
+        if ($tree_highlighting) {
+            bottom = $height - 150;
+        }
+        var yscale = d3.scaleLinear() 
+            .domain([$y_axis_max_min[0], $y_axis_max_min[1]]) 
+            .range([bottom, 50]); 
+
+        var y_axis = d3.axisRight().scale(yscale)
+            .tickValues(result)
+            .tickFormat((d, i) => $y_axis_text[i]); 
+
+        var y_axis_labels = svg
+            .append("g")
+            .attr("class", "yaxis")
+            .attr("transform", "translate(5,0)")
+            .call(y_axis);
+    }
 
     var simulation = d3
         .forceSimulation(graph.nodes)
@@ -42,17 +62,11 @@ function draw_force_diagram() {
     
     var underlink = link_container
         .append("path")
-        .attr("class", "underlink")
-        .style("stroke", "#ffffff")
-        .style("stroke-width", 10)
-        .style("fill", "none");
+        .attr("class", "underlink");
 
     var link = link_container
         .append("path")
-        .attr("class", "link")
-        .style("stroke", "#053e4e")
-        .style("stroke-width", 3)
-        .style("fill", "none");
+        .attr("class", "link");
     
     var node = svg
         .append("g")
@@ -87,11 +101,7 @@ function draw_force_diagram() {
         .data(graph.nodes)
         .enter()
         .append("text")
-            .text(function (d) { return d.label; })
-            .style("text-anchor", "middle")
-            .style("fill", "#053e4e")
-            .style("font-family", "Arial")
-            .style("font-size", 12);
+            .text(function (d) { return d.label; });
 
     
     function determine_path_type(d) {
@@ -100,7 +110,10 @@ function draw_force_diagram() {
         var start_position_y = d.source.y;
         var stop_position_x = d.target.x;
         var stop_position_y = d.target.y;
-
+        var vnub = 20;
+        if ("$y_axis_scale" == "time") {
+            vnub = 0;
+        }
         var alt_child = document.getElementById(String($divnum) + "_node" + d.alt_child);
         if (alt_child != null) {
             var alt_child_x = alt_child.getAttribute("cx");
@@ -108,7 +121,7 @@ function draw_force_diagram() {
         }
         if (d.source.flag == 131072) {
             path_type += "r0";
-            start_position_y = d.source.y + 20;
+            start_position_y = d.source.y + vnub;
         } else {
             if (d.target.y < alt_child_y) {
                 if (d.target.x < d.source.x) {
@@ -217,7 +230,7 @@ function draw_force_diagram() {
             }
         } else {
             path_type += "b0";
-            stop_position_y = d.target.y - 20;
+            stop_position_y = d.target.y - vnub;
         }
         if (path_type == "fLb0" ) {
             if (start_position_x >= stop_position_x) {
@@ -256,7 +269,11 @@ function draw_force_diagram() {
 
         node
             .attr("cx", function(d) {
-                return d.x = Math.max(50, Math.min($width-50, d.x));
+                if ($y_axis_labels) {
+                    return d.x = Math.max(100, Math.min($width-50, d.x));
+                } else {
+                    return d.x = Math.max(50, Math.min($width-50, d.x));
+                }
             })
             .attr("cy", function(d) {
                 return d.y;

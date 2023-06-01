@@ -1,0 +1,33 @@
+.yaxis path {
+    stroke: #053e4e;
+    stroke-width: 3;
+}
+
+.yaxis line {
+    stroke: #053e4e;
+    stroke-width: 3;
+}
+
+.yaxis text {
+    fill: #053e4e;
+    stroke: 1;
+}
+
+.underlink {
+    stroke: #ffffff;
+    stroke-width: 10;
+    fill: none;
+}
+
+.link {
+    stroke: #053e4e;
+    stroke-width: 3;
+    fill: none;
+}
+
+.labels {
+    text-anchor: middle;
+    fill: #053e4e;
+    font-family: Arial;
+    font-size: 12;
+}

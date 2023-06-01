@@ -8,8 +8,14 @@ import os
 
 
 def running_in_notebook():
-    """
-    Function adapted from https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
+    """Checks whether the code is being executed within a Jupyter Notebook.
+    
+    Adapted from https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
+
+    Returns
+    -------
+    bool
+        True if being executed within a Jupyter Notebook, False otherwise
     """
 
     try:
@@ -25,19 +31,58 @@ def running_in_notebook():
 
 
 class D3ARG:
+    """Stores the ARG in a D3.js friendly format ready for plotting
+
+    Attributes
+    ----------
+    nodes : list
+        a list of node dicts that contain info about the nodes
+    edges : list
+        a list of edge dicts that contain info about the edges
+    breakpoints : list
+        a list of breakpoint dicts that contain info about the breakpoints
+
+    Methods
+    -------
+    draw(width=500, height=500, tree_highlighting=True)
+        draws the ARG using D3.js
+
+    """
 
     def __init__(self, ts):
-        rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
-        self.nodes = self.convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm)
-        self.edges = self.convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm)
-        self.breakpoints = self.identify_breakpoints(ts=ts)
-
-    def convert_nodes_table(self, ts, recombination_nodes_to_merge):
+        """Converts a tskit tree sequence into the D3ARG object
+        
+        Parameters
+        ----------
+        ts : tskit.TreeSequence
+            tree sequence must have marked recombination nodes, such as using
+            msprime.sim_ancestry(...,record_full_arg=True)
         """
-        Builds the nodes json. A "reference" is the id of another node that is used to determine a property in the
+        rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
+        self.nodes = self._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm)
+        self.edges = self._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm)
+        self.breakpoints = self._identify_breakpoints(ts=ts)
+
+    def _convert_nodes_table(self, ts, recombination_nodes_to_merge):
+        """Creates nodes JSON from the tskit.TreeSequence nodes table
+        
+        A "reference" is the id of another node that is used to determine a property in the
         graph. Example: recombination nodes should have the same x position as their child, unless their child is
         also a recombination node. This isn't yet implemented automatically in the layout as it breaks the force
         layout.
+
+        Parameters
+        ----------
+        ts : tskit.TreeSequence
+            tree sequence must have marked recombination nodes, such as using
+            msprime.sim_ancestry(...,record_full_arg=True)
+        recombination_nodes_to_merge : list or numpy.Array
+            IDs of recombination nodes that need to be converted to their alternate ID
+
+        Returns
+        -------
+        nodes : list
+            List of dictionaries containing information about a given node
         """
 
         # Parameters for the dimensions of the D3 plot. Eventually want to handle this entirely in JS
@@ -54,7 +99,8 @@ class D3ARG:
                 "id": ID,
                 "flag": node.flags,
                 "time": node.time,
-                "fy": 1-(unique_times.index(node.time)*h_spacing) #fixed y position, property of force layout
+                "scaled_time":1-node.time/ts.max_root_time,
+                "scaled_rank": 1-(unique_times.index(node.time)*h_spacing) #fixed y position, property of force layout
             }
             label = ID
             if node.flags == 1:
@@ -68,15 +114,28 @@ class D3ARG:
                 info["x_pos_reference"] = ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]].child[0]
             info["label"] = label #label which is either the node ID or two node IDs for recombination nodes
             nodes.append(info)
-        
         return nodes
 
-    def convert_edges_table(self, ts, recombination_nodes_to_merge):
-        """
-        Builds the edges json. For recombination nodes, replaces the larger number with the smaller. The direction
+    def _convert_edges_table(self, ts, recombination_nodes_to_merge):
+        """Creates edges JSON from the tskit.TreeSequence edges table
+
+        Merges the recombination nodes, identified by the smaller of the two IDs. The direction
         that the edge should go relates to the positions of not just the nodes connected by that edge, but also the
         other edges connected to the child. See the JS for all of the different scenarios; still working through
         that.
+
+        Parameters
+        ----------
+        ts : tskit.TreeSequence
+            tree sequence must have marked recombination nodes, such as using
+            msprime.sim_ancestry(...,record_full_arg=True)
+        recombination_nodes_to_merge : list or numpy.Array
+            IDs of recombination nodes that need to be converted to their alternate ID
+
+        Returns
+        -------
+        links : list
+            List of dictionaries containing information about a given link
         """
         links = []
         for edge in ts.tables.edges:
@@ -117,8 +176,19 @@ class D3ARG:
                 })
         return links
     
-    def identify_breakpoints(self, ts):
-        """
+    def _identify_breakpoints(self, ts):
+        """Creates breakpoints JSON from the tskit.TreeSequence
+
+        Parameters
+        ----------
+        ts : tskit.TreeSequence
+            tree sequence must have marked recombination nodes, such as using
+            msprime.sim_ancestry(...,record_full_arg=True)
+        
+        Returns
+        -------
+        breakpoints : list
+            List of dictionaries containing information about breakpoints
         """
         
         breakpoints = []
@@ -134,23 +204,46 @@ class D3ARG:
                 start = bp
         return breakpoints
     
-    def draw(self, width=500, height=500, tree_highlighting=True):
+    def draw(
+            self,
+            width=500,
+            height=500,
+            tree_highlighting=True,
+            y_axis_labels=True,
+            y_axis_scale="rank"
+        ):
         """
         """
         
+        y_axis_ticks = []
+        y_axis_text = []
         transformed_nodes = []
         for node in self.nodes:
             if node.get("fx", -1) != -1:
-                node["fx"] = node["fx"] * (width-100) + 50
-            node["fy"] = node["fy"] * (height-100) + 50
+                if y_axis_labels:
+                    node["fx"] = node["fx"] * (width-100) + 100
+                else:
+                    node["fx"] = node["fx"] * (width-100) + 50
+            if y_axis_scale == "time":
+                node["fy"] = node["scaled_time"] * (height-100) + 50
+                y_axis_ticks.append(node["scaled_time"] * (height-100) + 50)
+            else:
+                node["fy"] = node["scaled_rank"] * (height-100) + 50
+                y_axis_ticks.append(node["scaled_rank"] * (height-100) + 50)
+            y_axis_text.append(round(node["time"]))
             transformed_nodes.append(node)
         if tree_highlighting:
             height += 100
         transformed_bps = []
         for bp in self.breakpoints:
-            bp["x_pos"] = bp["x_pos"] * width
+            if y_axis_labels:
+                bp["x_pos"] = bp["x_pos"] * width + 50
+            else:
+                bp["x_pos"] = bp["x_pos"] * width
             bp["width"] = bp["width"] * width
             transformed_bps.append(bp)
+        if y_axis_labels:
+            width += 50
         arg = {
             "arg":{
                 "nodes":transformed_nodes,
@@ -159,18 +252,24 @@ class D3ARG:
             },
             "width":width,
             "height":height,
-            "tree_highlighting":str(tree_highlighting).lower()
+            "tree_highlighting":str(tree_highlighting).lower(),
+            "y_axis_labels":str(y_axis_labels).lower(),
+            "y_axis_ticks":sorted(list(set(y_axis_ticks)), reverse=True),
+            "y_axis_max_min":[max(y_axis_ticks),min(y_axis_ticks)],
+            "y_axis_text":sorted(list(set(y_axis_text))),
+            "y_axis_scale":y_axis_scale
         }
         arg['divnum'] = str(random.randint(0,9999999999))
         JS_text = Template("<div id='arg_" + arg['divnum'] + "'></div><script>$main_text</script>")
-        main_text_template = Template( open(os.path.dirname(__file__) + "/visualizer.js","r").read() )
+        main_text_template = Template(open(os.path.dirname(__file__) + "/visualizer.js", "r").read())
         main_text = main_text_template.safe_substitute(arg)
         html = JS_text.safe_substitute({'main_text': main_text})
+        styles = open(os.path.dirname(__file__) + "/visualizer.css", "r").read()
         if running_in_notebook():
-            display(HTML("<script src='https://d3js.org/d3.v4.min.js'></script>" + html))
+            display(HTML("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html))
         else:
             with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
                 url = "file://" + f.name
-                f.write("<script src='https://d3js.org/d3.v4.min.js'></script>" + html)
+                f.write("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html)
             webbrowser.open(url, new=2)
     

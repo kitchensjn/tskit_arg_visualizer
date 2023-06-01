@@ -8,40 +8,19 @@ A method for drawing ancestral recombination graphs from tskit tree sequences in
 
 ## How To Use
 
-Clone this repository. visualizer.py and visualizer.js
+Clone this repository and ensure that dependencies are installed.
 
-**Python Dependencies**: msprime, numpy
+  * **Python Dependencies**: msprime, numpy
 
-**JavaScript Dependencies**: D3 (loaded from CDN)
+  * **JavaScript Dependencies**: D3 (loaded from CDN, so you must have connection to internet)
 
-```{python}
-import msprime
-import random
-import path/to/visualizer
+Open terminal, move into the tskit_arg_visualizer directory, and run:
 
-# Generate a random tree sequence with record_full_arg=True so that you get marked recombination nodes
-rs = random.randint(0,10000)   
-ts = msprime.sim_ancestry(
-    samples=2,
-    recombination_rate=1e-8,
-    sequence_length=3_000,
-    population_size=10_000,
-    record_full_arg=True,
-    random_seed=rs
-)
-
-print("random seed:", rs)
-print(ts.draw_text())
-visualizer = visualizer.D3ARG(ts=ts)
-visualizer.draw(width=500, height=750)
+```
+python example.py
 ```
 
-## Files
-
-- **arg_visualizer.ipynb**: Jupyter Notebook with Python code for creating data.js and viewing the plot
-- **visualizer.js**: JavaScript file for plotting
-
-The Jupyter Notebook calls `visualizer.js` using a relative path, so these two files need to be kept together unless the code is updated accordingly.
+This will launch a web browser with your plotted ARG.
 
 ## Explanation of Plotting Method
 
