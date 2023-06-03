@@ -111,7 +111,7 @@ function draw_force_diagram() {
         var stop_position_x = d.target.x;
         var stop_position_y = d.target.y;
         var vnub = 20;
-        if ("$y_axis_scale" == "time") {
+        if ("$y_axis_scale" == "time" | "$y_axis_scale" == "log_time") {
             vnub = 0;
         }
         var alt_child = document.getElementById(String($divnum) + "_node" + d.alt_child);

@@ -15,4 +15,4 @@ ts = msprime.sim_ancestry(
 
 print("random seed:", rs)
 d3arg = visualizer.D3ARG(ts=ts)
-d3arg.draw(width=1000, height=750, y_axis_labels=False, y_axis_scale="rank", tree_highlighting=True)
+d3arg.draw(width=1000, height=750, y_axis_labels=True, y_axis_scale="log_time", tree_highlighting=True)

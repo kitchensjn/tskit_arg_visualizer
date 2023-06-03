@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import math
 from string import Template
 from IPython.display import HTML, display
 import webbrowser
@@ -100,6 +101,7 @@ class D3ARG:
                 "flag": node.flags,
                 "time": node.time,
                 "scaled_time":1-node.time/ts.max_root_time,
+                "scaled_logtime":1-math.log(node.time+1)/math.log(ts.max_root_time),
                 "scaled_rank": 1-(unique_times.index(node.time)*h_spacing) #fixed y position, property of force layout
             }
             label = ID
@@ -227,6 +229,9 @@ class D3ARG:
             if y_axis_scale == "time":
                 node["fy"] = node["scaled_time"] * (height-100) + 50
                 y_axis_ticks.append(node["scaled_time"] * (height-100) + 50)
+            elif y_axis_scale == "log_time":
+                node["fy"] = node["scaled_logtime"] * (height-100) + 50
+                y_axis_ticks.append(node["scaled_logtime"] * (height-100) + 50)
             else:
                 node["fy"] = node["scaled_rank"] * (height-100) + 50
                 y_axis_ticks.append(node["scaled_rank"] * (height-100) + 50)
