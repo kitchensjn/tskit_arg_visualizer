@@ -235,8 +235,9 @@ class D3ARG:
             else:
                 node["fy"] = node["scaled_rank"] * (height-100) + 50
                 y_axis_ticks.append(node["scaled_rank"] * (height-100) + 50)
-            y_axis_text.append(round(node["time"]))
+            y_axis_text.append(node["time"])
             transformed_nodes.append(node)
+        y_axis_text = [round(t) for t in set(y_axis_text)]
         if tree_highlighting:
             height += 100
         transformed_bps = []
@@ -261,7 +262,7 @@ class D3ARG:
             "y_axis_labels":str(y_axis_labels).lower(),
             "y_axis_ticks":sorted(list(set(y_axis_ticks)), reverse=True),
             "y_axis_max_min":[max(y_axis_ticks),min(y_axis_ticks)],
-            "y_axis_text":sorted(list(set(y_axis_text))),
+            "y_axis_text":sorted(list(y_axis_text)),
             "y_axis_scale":y_axis_scale
         }
         arg['divnum'] = str(random.randint(0,9999999999))
