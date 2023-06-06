@@ -281,80 +281,64 @@ function draw_force_diagram() {
 
         underlink
             .attr("d", function(d) {
-                const output = determine_path_type(d);
+                if ("$line_type" == "ortho") {
+                    const output = determine_path_type(d);
                 
-                const path_type = output[0];
-                const simple_path_type = Array.from(path_type)[0] + Array.from(path_type)[2];
-                const start_position_x = output[1];
-                const start_position_y = output[2];
-                const stop_position_x = output[3];
-                const stop_position_y = output[4];
+                    const path_type = output[0];
+                    const simple_path_type = Array.from(path_type)[0] + Array.from(path_type)[2];
+                    const start_position_x = output[1];
+                    const start_position_y = output[2];
+                    const stop_position_x = output[3];
+                    const stop_position_y = output[4];
 
-                const after_paths = ["rf", "tb", "tf"];
-                const before_paths = ["rt", "fb", "ft"];
-                const step_paths = ["tt"];
-                const mid_paths = ["rb", "ff"];
+                    const after_paths = ["rf", "tb", "tf"];
+                    const before_paths = ["rt", "fb", "ft"];
+                    const step_paths = ["tt"];
+                    const mid_paths = ["rb", "ff"];
 
-                if (after_paths.includes(simple_path_type)) {
-                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepAfter([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-                } else if (before_paths.includes(simple_path_type)) {
-                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepBefore([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-                } else if (step_paths.includes(simple_path_type)) {
-                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + step([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-                } else if (mid_paths.includes(simple_path_type)) {
-                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y],[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y],[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                    if (after_paths.includes(simple_path_type)) {
+                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepAfter([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                    } else if (before_paths.includes(simple_path_type)) {
+                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepBefore([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                    } else if (step_paths.includes(simple_path_type)) {
+                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + step([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                    } else if (mid_paths.includes(simple_path_type)) {
+                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                    }
                 }
             });
 
         link
-            /*
-            .style("stroke", function(d) {
-                const path_type = determine_path_type(d)[0];
-                const simple_path_type = Array.from(path_type)[0] + Array.from(path_type)[2];
-
-                const after_paths = ["rf", "tb", "tf"];
-                const before_paths = ["rt", "fb", "ft"];
-                const step_paths = ["tt"];
-                const mid_paths = ["rb", "ff"];
-
-                
-                if (after_paths.includes(simple_path_type)) {
-                    return "blue";
-                } else if (before_paths.includes(simple_path_type)) {
-                    return "red";
-                } else if (step_paths.includes(simple_path_type)) {
-                    return "green";
-                } else if (mid_paths.includes(simple_path_type)) {
-                    return "black";
-                }
-            })
-            */
             .attr("path_type", function(d) {
                 return determine_path_type(d)[0];
             })
             .attr("d", function(d) {
-                const output = determine_path_type(d);
+                if ("$line_type" == "ortho") {
+                    const output = determine_path_type(d);
                 
-                const path_type = output[0];
-                const simple_path_type = Array.from(path_type)[0] + Array.from(path_type)[2];
-                const start_position_x = output[1];
-                const start_position_y = output[2];
-                const stop_position_x = output[3];
-                const stop_position_y = output[4];
+                    const path_type = output[0];
+                    const simple_path_type = Array.from(path_type)[0] + Array.from(path_type)[2];
+                    const start_position_x = output[1];
+                    const start_position_y = output[2];
+                    const stop_position_x = output[3];
+                    const stop_position_y = output[4];
 
-                const after_paths = ["rf", "tb", "tf"];
-                const before_paths = ["rt", "fb", "ft"];
-                const step_paths = ["tt"];
-                const mid_paths = ["rb", "ff"];
+                    const after_paths = ["rf", "tb", "tf"];
+                    const before_paths = ["rt", "fb", "ft"];
+                    const step_paths = ["tt"];
+                    const mid_paths = ["rb", "ff"];
 
-                if (after_paths.includes(simple_path_type)) {
-                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepAfter([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-                } else if (before_paths.includes(simple_path_type)) {
-                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepBefore([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-                } else if (step_paths.includes(simple_path_type)) {
-                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + step([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-                } else if (mid_paths.includes(simple_path_type)) {
-                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                    if (after_paths.includes(simple_path_type)) {
+                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepAfter([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                    } else if (before_paths.includes(simple_path_type)) {
+                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepBefore([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                    } else if (step_paths.includes(simple_path_type)) {
+                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + step([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                    } else if (mid_paths.includes(simple_path_type)) {
+                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                    }
+                } else if ("$line_type" == "line") {
+                    return line([[d.source.x, d.source.y], [d.target.x, d.target.y]])
                 }
             });
 

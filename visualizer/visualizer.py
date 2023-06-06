@@ -149,7 +149,10 @@ class D3ARG:
                 right = edge.right
                 if ts.tables.nodes.flags[edge.parent] != 131072:
                     children = ts.tables.edges[np.where(ts.tables.edges.parent == edge.parent)[0]].child
-                    alternative_child = children[np.where(children != edge.child)][0]
+                    if len(children) > 1:
+                        alternative_child = children[np.where(children != edge.child)][0]
+                    else:
+                        alternative_child = "" # this occurs when converting from SLiM simulations, needs to have better handling
                     #if len(possible_child) > 0:
                     #    alternative_child = possible_child[0]
                     if alternative_child in recombination_nodes_to_merge:
@@ -212,7 +215,8 @@ class D3ARG:
             height=500,
             tree_highlighting=True,
             y_axis_labels=True,
-            y_axis_scale="rank"
+            y_axis_scale="rank",
+            line_type="ortho"
         ):
         """
         """
@@ -263,7 +267,8 @@ class D3ARG:
             "y_axis_ticks":sorted(list(set(y_axis_ticks)), reverse=True),
             "y_axis_max_min":[max(y_axis_ticks),min(y_axis_ticks)],
             "y_axis_text":sorted(list(y_axis_text)),
-            "y_axis_scale":y_axis_scale
+            "y_axis_scale":y_axis_scale,
+            "line_type": line_type
         }
         arg['divnum'] = str(random.randint(0,9999999999))
         JS_text = Template("<div id='arg_" + arg['divnum'] + "'></div><script>$main_text</script>")
