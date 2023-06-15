@@ -88,7 +88,7 @@ class D3ARG:
 
         # Parameters for the dimensions of the D3 plot. Eventually want to handle this entirely in JS
         w_spacing = 1 / (ts.num_samples - 1)
-        h_spacing = 1 / (ts.num_nodes - ts.num_samples - np.count_nonzero(ts.tables.nodes.flags == 131072)/2)
+        h_spacing = 1 / (len(np.unique(ts.tables.nodes.time))-1) #(ts.num_nodes - ts.num_samples - np.count_nonzero(ts.tables.nodes.flags == 131072)/2)
         ordered_nodes = [] # Ordering of sample nodes is the same as the first tree in the sequence
         for node in ts.first().nodes(order="minlex_postorder"):
             if node < ts.num_samples:
@@ -111,7 +111,9 @@ class D3ARG:
                 if ID in recombination_nodes_to_merge:
                     continue
                 label = str(ID)+"/"+str(ID+1)
-                info["x_pos_reference"] = ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]].child[0]
+                parent_of = ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]]
+                if len(parent_of) > 0:
+                    info["x_pos_reference"] = parent_of.child[0]
             elif node.flags == 262144:
                 info["x_pos_reference"] = ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]].child[0]
             info["label"] = label #label which is either the node ID or two node IDs for recombination nodes
@@ -141,44 +143,38 @@ class D3ARG:
         """
         links = []
         for edge in ts.tables.edges:
+            parent = edge.parent
             child = edge.child
             alternative_child = ""
             alternative_parent = ""
-            if edge.parent not in recombination_nodes_to_merge:
-                left = edge.left
-                right = edge.right
-                if ts.tables.nodes.flags[edge.parent] != 131072:
-                    children = ts.tables.edges[np.where(ts.tables.edges.parent == edge.parent)[0]].child
-                    if len(children) > 1:
-                        alternative_child = children[np.where(children != edge.child)][0]
-                    else:
-                        alternative_child = "" # this occurs when converting from SLiM simulations, needs to have better handling
-                    #if len(possible_child) > 0:
-                    #    alternative_child = possible_child[0]
-                    if alternative_child in recombination_nodes_to_merge:
-                        alternative_child -= 1
+            left = edge.left
+            right = edge.right
+            if ts.tables.nodes.flags[edge.parent] != 131072:
+                children = np.unique(ts.tables.edges[np.where(ts.tables.edges.parent == edge.parent)[0]].child)
+                if len(children) > 1:
+                    alternative_child = children[np.where(children != edge.child)][0]
                 else:
-                    alt_edge = ts.tables.edges[np.where(ts.tables.edges.parent == edge.parent + 1)[0]]
-                    if left > alt_edge.left[0]:
-                        left = alt_edge.left[0]
-                    if right < alt_edge.right[0]:
-                        right = alt_edge.right[0]
-                if ts.tables.nodes.flags[edge.child] == 131072:
-                    if edge.child in recombination_nodes_to_merge:
-                        alt_id = edge.child - 1
-                    else:
-                        alt_id = edge.child + 1
-                    alternative_parent = ts.tables.edges[np.where(ts.tables.edges.child == alt_id)[0]].parent[0]
+                    alternative_child = -1 # this occurs when converting from SLiM simulations, needs to have better handling
+                if alternative_child in recombination_nodes_to_merge:
+                    alternative_child -= 1
+            elif edge.parent in recombination_nodes_to_merge:
+                parent = edge.parent - 1
+            if ts.tables.nodes.flags[edge.child] == 131072:
                 if edge.child in recombination_nodes_to_merge:
-                    child = edge.child - 1
-                links.append({
-                    "source": edge.parent,
-                    "target": child,
-                    "left": left,
-                    "right": right,
-                    "alt_parent": alternative_parent, #recombination nodes have an alternative parent
-                    "alt_child": alternative_child
-                })
+                    alt_id = edge.child - 1
+                else:
+                    alt_id = edge.child + 1
+                alternative_parent = ts.tables.edges[np.where(ts.tables.edges.child == alt_id)[0]].parent[0]
+            if edge.child in recombination_nodes_to_merge:
+                child = edge.child - 1
+            links.append({
+                "source": parent,
+                "target": child,
+                "left": left,
+                "right": right,
+                "alt_parent": alternative_parent, #recombination nodes have an alternative parent
+                "alt_child": alternative_child
+            })
         return links
     
     def _identify_breakpoints(self, ts):
