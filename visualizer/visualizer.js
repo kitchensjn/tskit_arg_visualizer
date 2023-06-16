@@ -413,7 +413,7 @@ function draw_force_diagram() {
                 d3.select(this)
                     .style('fill', '#1eebb1')
                     .style("cursor", "pointer");
-                var highlight_links = d3.select(".links")
+                var highlight_links = d3.select("#arg_${divnum} .links")
                     .selectAll("g")
                         .filter(function(j) {
                             return j.right > d.start & j.left < d.stop;
@@ -428,7 +428,7 @@ function draw_force_diagram() {
                 d3.select(this)
                     .style('fill', '#053e4e')
                     .style("cursor", "default");
-                d3.selectAll(".link")
+                d3.selectAll("#arg_${divnum} .link")
                     .style("stroke", "#053e4e")
                     .style("stroke-width", 3);
             });
