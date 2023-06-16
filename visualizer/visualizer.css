@@ -31,3 +31,21 @@
     font-family: Arial;
     font-size: 12;
 }
+
+svg {
+    display: block;
+}
+
+button {
+    display: block;
+    cursor: pointer;
+}
+
+.saving {
+    display: flex;
+    flex-direction: row;
+}
+
+.saving .message {
+    display: none;
+}

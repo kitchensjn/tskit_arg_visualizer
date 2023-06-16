@@ -30,6 +30,22 @@ def running_in_notebook():
     except NameError:
         return False      # Probably standard Python interpreter
 
+def draw_D3(arg_json):
+    arg_json["source"] = arg_json.copy()
+    arg_json["divnum"] = str(random.randint(0,9999999999))
+    JS_text = Template("<div id='arg_" + arg_json['divnum'] + "'></div><script>$main_text</script>")
+    main_text_template = Template(open(os.path.dirname(__file__) + "/visualizer.js", "r").read())
+    main_text = main_text_template.safe_substitute(arg_json)
+    html = JS_text.safe_substitute({'main_text': main_text})
+    styles = open(os.path.dirname(__file__) + "/visualizer.css", "r").read()
+    if running_in_notebook():
+        display(HTML("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html))
+    else:
+        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
+            url = "file://" + f.name
+            f.write("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html)
+        webbrowser.open(url, new=2)
+
 
 class D3ARG:
     """Stores the ARG in a D3.js friendly format ready for plotting
@@ -266,17 +282,5 @@ class D3ARG:
             "y_axis_scale":y_axis_scale,
             "line_type": line_type
         }
-        arg['divnum'] = str(random.randint(0,9999999999))
-        JS_text = Template("<div id='arg_" + arg['divnum'] + "'></div><script>$main_text</script>")
-        main_text_template = Template(open(os.path.dirname(__file__) + "/visualizer.js", "r").read())
-        main_text = main_text_template.safe_substitute(arg)
-        html = JS_text.safe_substitute({'main_text': main_text})
-        styles = open(os.path.dirname(__file__) + "/visualizer.css", "r").read()
-        if running_in_notebook():
-            display(HTML("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html))
-        else:
-            with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
-                url = "file://" + f.name
-                f.write("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html)
-            webbrowser.open(url, new=2)
+        draw_D3(arg_json=arg)
     

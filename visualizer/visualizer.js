@@ -4,11 +4,28 @@ var stepAfter = d3.line().curve(d3.curveStepAfter);
 var stepBefore = d3.line().curve(d3.curveStepBefore);
 
 function draw_force_diagram() {
+    
+    var graph = $arg;
+
+    //d3.select("#arg_${divnum}").style("position", "relative");
+
+    var saving = d3.select("#arg_${divnum}").append("div").attr("class", "saving");
+    
+    saving.append("button")
+        .text("Copy Source To Clipboard")
+        .on("click", function(d) {
+            navigator.clipboard.writeText("${source}".replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"'));
+            d3.select(".message").style("display", "block");
+            setTimeout( function() {
+                d3.select(".message").style("display", "none");
+            }, 1000);
+        });
+
+    saving.append("div").attr("class", "message").text("Copied!");
+
     var svg = d3.select("#arg_${divnum}").append("svg")
         .attr("width", $width)
         .attr("height", $height);
-
-    var graph = $arg;
 
     var result = $y_axis_ticks.map(function (x) { 
         return parseInt(x, 10); 
