@@ -15,9 +15,9 @@ function draw_force_diagram() {
         .text("Copy Source To Clipboard")
         .on("click", function(d) {
             navigator.clipboard.writeText("${source}".replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"'));
-            d3.select(".message").style("display", "block");
+            d3.select("#arg_${divnum} .message").style("display", "block");
             setTimeout( function() {
-                d3.select(".message").style("display", "none");
+                d3.select("#arg_${divnum} .message").style("display", "none");
             }, 1000);
         });
 
