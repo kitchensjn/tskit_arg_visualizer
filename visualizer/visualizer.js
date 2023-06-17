@@ -23,6 +23,17 @@ function draw_force_diagram() {
 
     saving.append("div").attr("class", "message").text("Copied!");
 
+    d3.select("#arg_${divnum}").append("button")
+        .text("Reheat Simulation")
+        .on("click", function(j) {
+            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            d3.selectAll("#arg_${divnum} .node").classed("unfix", function(d) {
+                if (d.flag != 1) {
+                    d.fx = null;
+                }
+            });
+        });
+
     var svg = d3.select("#arg_${divnum}").append("svg")
         .attr("width", $width)
         .attr("height", $height);
@@ -95,6 +106,7 @@ function draw_force_diagram() {
         .attr("id", function(d) {
             return String($divnum) + "_node" + d.id
         })
+        .attr("class", "node")
         .attr("r", 7)
         .attr("fill", "#1eebb1")
         .attr("stroke", "#053e4e")
@@ -104,7 +116,6 @@ function draw_force_diagram() {
                 .drag()
                 .on("start", dragstarted)
                 .on("drag", dragged)
-                .on("end", dragended)
         )
         .on('mouseover', function (d, i) {
             d3.select(this)
@@ -381,12 +392,8 @@ function draw_force_diagram() {
         d.fx = d3.event.x;
     }
 
-    function dragended(d) {
-        if (!d3.event.active) simulation.alphaTarget(0);
-    }
-
     if ($tree_highlighting) {
-        var breakpoints = svg.append("g")
+        svg.append("g")
             .attr("class", "breakpoints")
             .selectAll("rect")
             .data(graph.breakpoints)
