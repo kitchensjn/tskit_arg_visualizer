@@ -64,6 +64,7 @@ subset_nodes : list (EXPERIMENTAL)
     will have full opacity; other nodes will be faint (default=None, parameter is ignored and all
     nodes will have opacity)
 """
+```
 
 A quick note about line_type="ortho" (more details can be found within pathing.md) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" line_type.
 
