@@ -16,13 +16,52 @@ Clone this repository and ensure that dependencies are installed.
 
   * **JavaScript Dependencies**: D3 (loaded from CDN, so you must have connection to internet)
 
-Open terminal, move into the tskit_arg_visualizer directory, and run:
+```
+import msprime
+import tskit
+import random
+from visualizer import visualizer
+
+# Generate a random tree sequence with record_full_arg=True so that you get marked recombination nodes
+ts_rs = random.randint(0,10000)   
+ts = msprime.sim_ancestry(
+    samples=3,
+    recombination_rate=1e-8,
+    sequence_length=3_000,
+    population_size=10_000,
+    record_full_arg=True,
+    random_seed=ts_rs
+)
+
+d3arg = visualizer.D3ARG(ts=ts)
+d3arg.draw(width=1000, height=750, y_axis_labels=True, y_axis_scale="rank", tree_highlighting=True, edge_type="ortho")
+```
+
+The above code can be run in three ways: terminal, Jupyter Notebook, or JupyterLab. For Jupyter Notebook and JupyterLab, you will need to add the following code block to the top of the document to properly load D3.js.
+
+### Jupyter Notebook
 
 ```
-python example.py
+%%javascript
+require.config({ 
+    paths: { 
+    d3: 'https://d3js.org/d3.v4.min'
+}});
+
+require(["d3"], function(d3) {
+    window.d3 = d3;
+});
 ```
 
-This will launch a web browser with your plotted ARG.
+### JupyterLab
+
+```
+%%javascript
+var script = document.createElement('script');
+script.type = 'text/javascript';
+script.src = 'https://d3js.org/d3.v4.min';
+document.head.appendChild(script);
+```
 
 ## Drawing Parameters
 
