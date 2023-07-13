@@ -39,7 +39,7 @@ d3arg.draw(width=1000, height=750, y_axis_labels=True, y_axis_scale="rank", tree
 
 The above code can be run in three ways: terminal, Jupyter Notebook, or JupyterLab. For Jupyter Notebook and JupyterLab, you will need to add the following code block to the top of the document to properly load D3.js.
 
-### Jupyter Notebook
+### Jupyter Notebook -
 
 ```
 %%javascript
@@ -53,7 +53,7 @@ require(["d3"], function(d3) {
 });
 ```
 
-### JupyterLab
+### JupyterLab - 
 
 ```
 %%javascript
