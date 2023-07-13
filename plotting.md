@@ -80,8 +80,8 @@ Boolean for whether to include the tree highlighting based on the breakpoints li
 ## edge_type
 
 Pathing type for edges between nodes. Options:
-* "line" (default) - simple straight lines between the nodes
-* "ortho" - custom pathing (see pathing.md for more details, should only be used with full ARGs)
+* "line" - simple straight lines between the nodes
+* "ortho" - custom pathing (see [pathing.md](pathing.md) for more details, should only be used with full ARGs)
 
 ## subset_nodes (EXPERIMENTAL)
 
