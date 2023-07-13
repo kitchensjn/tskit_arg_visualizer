@@ -13,6 +13,18 @@
     stroke: 1;
 }
 
+.node {
+    fill: #1eebb1;
+    stroke: #053e4e;
+    stroke-width: 3;
+}
+
+.hiddennode {
+    fill: lightgrey;
+    stroke: lightgrey;
+    stroke-width: 3;
+}
+
 .underlink {
     stroke: #ffffff;
     stroke-width: 10;
@@ -25,9 +37,22 @@
     fill: none;
 }
 
-.labels {
+.hiddenlink {
+    stroke: lightgrey;
+    stroke-width: 3;
+    fill: none;
+}
+
+.label {
     text-anchor: middle;
     fill: #053e4e;
+    font-family: Arial;
+    font-size: 12;
+}
+
+.hiddenlabel {
+    text-anchor: middle;
+    fill: lightgrey;
     font-family: Arial;
     font-size: 12;
 }

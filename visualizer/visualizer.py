@@ -53,16 +53,24 @@ class D3ARG:
     Attributes
     ----------
     nodes : list
-        a list of node dicts that contain info about the nodes
+        List of node dicts that contain info about the nodes
     edges : list
-        a list of edge dicts that contain info about the edges
+        List of edge dicts that contain info about the edges
     breakpoints : list
-        a list of breakpoint dicts that contain info about the breakpoints
+        List of breakpoint dicts that contain info about the breakpoints
 
     Methods
     -------
-    draw(width=500, height=500, tree_highlighting=True)
-        draws the ARG using D3.js
+    draw(
+        width=500,
+        height=500,
+        tree_highlighting=True,
+        y_axis_labels=True,
+        y_axis_scale="rank",
+        line_type="ortho",
+        subset_nodes=[]
+    )
+        Draws the ARG using D3.js
 
     """
 
@@ -167,7 +175,10 @@ class D3ARG:
             right = edge.right
             if ts.tables.nodes.flags[edge.parent] != 131072:
                 children = np.unique(ts.tables.edges[np.where(ts.tables.edges.parent == edge.parent)[0]].child)
-                if len(children) > 1:
+                if len(children) > 2:
+                    print(children[np.where(children != edge.child)])
+                    alternative_child = children[np.where(children != edge.child)][0]
+                elif len(children) > 1:
                     alternative_child = children[np.where(children != edge.child)][0]
                 else:
                     alternative_child = -1 # this occurs when converting from SLiM simulations, needs to have better handling
@@ -228,9 +239,35 @@ class D3ARG:
             tree_highlighting=True,
             y_axis_labels=True,
             y_axis_scale="rank",
-            line_type="ortho"
+            edge_type="line",
+            subset_nodes=None
         ):
-        """
+        """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
+
+        Parameters
+        ----------
+        width : int
+            Width of the force layout graph plot in pixels (default=500)
+        height : int
+            Height of the force layout graph plot in pixels (default=500)
+        tree_highlighting : bool
+            Include the interactive chromosome at the bottom of the figure to
+            to let users highlight trees in the ARG (default=True)
+        y_axis_labels : bool
+            Includes labelled y-axis on the left of the figure (default=True)
+        y_axis_scale : string
+            Scale used for the positioning nodes along the y-axis. Options:
+                "rank" (default) - equal vertical spacing between nodes
+                "time" - vertical spacing is proportional to the time
+                "log_time" - proportional to the log of time
+        edge_type : string
+            Pathing type for edges between nodes. Options:
+                "line" (default) - simple straight lines between the nodes
+                "ortho" - custom pathing (see pathing.md for more details, should only be used with full ARGs)
+        subset_nodes : list (EXPERIMENTAL)
+            List of nodes that user wants to stand out within the ARG. These nodes and the edges between them
+            will have full opacity; other nodes will be faint (default=None, parameter is ignored and all
+            nodes will have opacity)
         """
         
         y_axis_ticks = []
@@ -266,6 +303,8 @@ class D3ARG:
             transformed_bps.append(bp)
         if y_axis_labels:
             width += 50
+        if not subset_nodes:
+            subset_nodes = [node["id"] for node in self.nodes]
         arg = {
             "arg":{
                 "nodes":transformed_nodes,
@@ -274,13 +313,16 @@ class D3ARG:
             },
             "width":width,
             "height":height,
+            "y_axis":{
+                "include_labels":str(y_axis_labels).lower(),
+                "ticks":sorted(list(set(y_axis_ticks)), reverse=True),
+                "text":sorted(list(y_axis_text)),
+                "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
+                "scale":y_axis_scale,
+            },
             "tree_highlighting":str(tree_highlighting).lower(),
-            "y_axis_labels":str(y_axis_labels).lower(),
-            "y_axis_ticks":sorted(list(set(y_axis_ticks)), reverse=True),
-            "y_axis_max_min":[max(y_axis_ticks),min(y_axis_ticks)],
-            "y_axis_text":sorted(list(y_axis_text)),
-            "y_axis_scale":y_axis_scale,
-            "line_type": line_type
+            "edge_type": edge_type,
+            "subset_nodes": subset_nodes
         }
         draw_D3(arg_json=arg)
     
