@@ -9,6 +9,7 @@ function draw_force_diagram() {
     
     var graph = $arg;
     var y_axis = $y_axis;
+    console.log(y_axis.include_labels);
     var subset = $subset_nodes;
 
     //d3.select("#arg_${divnum}").style("position", "relative");
@@ -47,7 +48,7 @@ function draw_force_diagram() {
     });
 
 
-    if (y_axis.include_labels) {
+    if (y_axis.include_labels == "true") {
         var bottom = $height - 50;
         if ($tree_highlighting) {
             bottom = $height - 150;
@@ -326,10 +327,10 @@ function draw_force_diagram() {
 
         node
             .attr("cx", function(d) {
-                if (y_axis.include_labels) {
-                    return d.x = Math.max(100, Math.min($width-50, d.x));
-                } else {
+                if (y_axis.include_labels == "false") {
                     return d.x = Math.max(50, Math.min($width-50, d.x));
+                } else {
+                    return d.x = Math.max(100, Math.min($width-50, d.x));
                 }
             })
             .attr("cy", function(d) {
