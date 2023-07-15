@@ -78,8 +78,6 @@ function draw_force_diagram() {
         .force("charge", d3.forceManyBody().strength(-10))
         .on("tick", ticked);
 
-    console.log(simulation);
-
     var link_container = svg
         .append("g")
         .attr("class", "links")
