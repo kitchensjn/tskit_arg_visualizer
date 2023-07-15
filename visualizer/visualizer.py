@@ -6,6 +6,7 @@ from IPython.display import HTML, display
 import webbrowser
 import tempfile
 import os
+import graphviz
 
 
 def running_in_notebook():
@@ -46,6 +47,70 @@ def draw_D3(arg_json):
             f.write("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html)
         webbrowser.open(url, new=2)
 
+def calc_graphviz_x_pos(ts):
+    """
+    Plot ARG using GraphViz. Variation on code from Anastasia Ignatieva 
+    (https://github.com/tskit-dev/tutorials/issues/43). I would eventually like
+    to create my own plotting function, but for now this works.
+    """
+    
+    dot = graphviz.Digraph(strict=False)
+    nodes = []
+
+    # Internal nodes
+    itr = iter(range(ts.num_samples, ts.num_nodes))
+    for i in itr:
+        if ts.node(i).flags == 131072:
+            # Only add one of the recombination nodes and make the other one invisible
+            with dot.subgraph() as s:
+                s.attr(rank = 'same')
+                s.node(str(i), **{'shape': 'rectangle'}, label = str(i) + "/" + str(i+1))
+                nodes.append(i)
+                next(itr, None)
+        else:
+            dot.node(str(i), **{'shape': 'circle'})
+            nodes.append(i)
+
+    # Add sample nodes
+    with dot.subgraph() as s:
+        s.attr(rank = 'same')
+        for n in ts.samples(): 
+            s.node(str(n), **{'shape': 'doublecircle'})
+
+    nodes = sorted(nodes)
+    remove_nodes = []
+
+    # Add edges
+    check = [0,0]
+    for e in ts.edges():
+        ch = e.child
+        pa = e.parent
+
+        # Preventing duplicate edges
+        if check == [pa, ch]:
+            continue
+        check = [pa, ch]
+
+        # Check which edge to draw if there is a recombination
+        if e.parent >= 1 and ts.node(pa).time == ts.node(pa-1).time and ts.node(pa).flags == ts.node(pa-1).flags == 131072:
+            ch = pa = -1
+        elif e.child >= 1 and ts.node(ch).time == ts.node(ch-1).time and ts.node(ch).flags == ts.node(ch-1).flags == 131072:
+            ch -= 1
+
+        if(ch >= 0 and pa >= 0):
+            if ch >= ts.num_samples and pa == nodes[nodes.index(ch)+1]:
+                remove_nodes.append(ch)
+            color = 'black'
+            dot.edge(str(pa), str(ch), **{'arrowhead': 'none', 'color':color})
+
+    needed_connections = [x for x in nodes if x not in remove_nodes]
+    for node in needed_connections[:-1]:
+        dot.edge(str(nodes[nodes.index(node)+1]), str(node), weight='0', **{'style':'invis', 'arrowhead': 'none'})
+    graph_text = dot.pipe(format='plain').decode().split()
+    nodes_info = graph_text[graph_text.index("node"):graph_text.index("edge")]
+    node_x_pos = dict(zip([x.replace('"',"") for x in nodes_info[6::11]], [float(x) for x in nodes_info[2::11]]))
+    return node_x_pos
+
 
 class D3ARG:
     """Stores the ARG in a D3.js friendly format ready for plotting
@@ -74,7 +139,7 @@ class D3ARG:
 
     """
 
-    def __init__(self, ts):
+    def __init__(self, ts, use_graphviz_positions=False):
         """Converts a tskit tree sequence into the D3ARG object
         
         Parameters
@@ -84,11 +149,11 @@ class D3ARG:
             msprime.sim_ancestry(...,record_full_arg=True)
         """
         rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
-        self.nodes = self._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm)
+        self.nodes = self._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, use_graphviz_positions=use_graphviz_positions)
         self.edges = self._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm)
         self.breakpoints = self._identify_breakpoints(ts=ts)
 
-    def _convert_nodes_table(self, ts, recombination_nodes_to_merge):
+    def _convert_nodes_table(self, ts, recombination_nodes_to_merge, use_graphviz_positions):
         """Creates nodes JSON from the tskit.TreeSequence nodes table
         
         A "reference" is the id of another node that is used to determine a property in the
@@ -117,6 +182,8 @@ class D3ARG:
         for node in ts.first().nodes(order="minlex_postorder"):
             if node < ts.num_samples:
                 ordered_nodes.append(node)
+        if use_graphviz_positions:
+            x_pos = calc_graphviz_x_pos(ts=ts)
         unique_times = list(np.unique(ts.tables.nodes.time)) # Determines the rank (y position) of each time point 
         nodes = []
         for ID, node in enumerate(ts.tables.nodes):
@@ -129,9 +196,7 @@ class D3ARG:
                 "scaled_rank": 1-(unique_times.index(node.time)*h_spacing) #fixed y position, property of force layout
             }
             label = ID
-            if node.flags == 1:
-                info["fx"] = ordered_nodes.index(ID)*w_spacing #sample nodes have a fixed x position
-            elif node.flags == 131072:
+            if node.flags == 131072:
                 if ID in recombination_nodes_to_merge:
                     continue
                 label = str(ID)+"/"+str(ID+1)
@@ -141,6 +206,17 @@ class D3ARG:
             elif node.flags == 262144:
                 info["x_pos_reference"] = ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]].child[0]
             info["label"] = label #label which is either the node ID or two node IDs for recombination nodes
+            if use_graphviz_positions:
+                min_pos = min(x_pos.values())
+                max_pos = max(x_pos.values())
+                for x in x_pos:
+                    x_pos[x] = (x_pos[x] - min_pos) / (max_pos - min_pos)
+                if node.flags == 1:
+                    info["fx"] = x_pos[str(label)]
+                else:
+                    info["x"] = x_pos[str(label)]
+            elif node.flags == 1:
+                info["fx"] = ordered_nodes.index(ID)*w_spacing #sample nodes have a fixed x position
             nodes.append(info)
         return nodes
 
@@ -279,6 +355,11 @@ class D3ARG:
                     node["fx"] = node["fx"] * (width-100) + 100
                 else:
                     node["fx"] = node["fx"] * (width-100) + 50
+            if node.get("x", -1) != -1:
+                if y_axis_labels:
+                    node["x"] = node["x"] * (width-100) + 100
+                else:
+                    node["x"] = node["x"] * (width-100) + 50
             if y_axis_scale == "time":
                 node["fy"] = node["scaled_time"] * (height-100) + 50
                 y_axis_ticks.append(node["scaled_time"] * (height-100) + 50)
@@ -288,6 +369,7 @@ class D3ARG:
             else:
                 node["fy"] = node["scaled_rank"] * (height-100) + 50
                 y_axis_ticks.append(node["scaled_rank"] * (height-100) + 50)
+            node["y"] = node["fy"]
             y_axis_text.append(node["time"])
             transformed_nodes.append(node)
         y_axis_text = [round(t) for t in set(y_axis_text)]
