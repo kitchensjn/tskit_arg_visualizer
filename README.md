@@ -111,7 +111,7 @@ A quick note about line_type="ortho" (more details can be found within [pathing.
 
 ## Saving Figures
 
-Each figure is actually just a JSON object that D3.js interprets and plots to the screen (see [plotting.md](plotting.md) for more information about this object **TODO**). The "Copy Source To Clipboard" button to the top left of each figure copies that specific figure's JSON object to your computer's clipboard. This object includes all of the information needed to replicate the figure in a subsequent simulation and can be pasted into a `.json` file for later. To revisualize this figure:
+Each figure is actually just a JSON object that D3.js interprets and plots to the screen (see [plotting.md](plotting.md) for more information about this object). The "Copy Source To Clipboard" button to the top left of each figure copies that specific figure's JSON object to your computer's clipboard. This object includes all of the information needed to replicate the figure in a subsequent simulation and can be pasted into a `.json` file for later. To revisualize this figure:
 
 ```
 import json
