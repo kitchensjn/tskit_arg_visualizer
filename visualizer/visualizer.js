@@ -4,12 +4,9 @@ var stepAfter = d3.line().curve(d3.curveStepAfter);
 var stepBefore = d3.line().curve(d3.curveStepBefore);
 
 function draw_force_diagram() {
-
-
     
     var graph = $arg;
     var y_axis = $y_axis;
-    console.log(y_axis.include_labels);
     var subset = $subset_nodes;
 
     //d3.select("#arg_${divnum}").style("position", "relative");
@@ -321,7 +318,6 @@ function draw_force_diagram() {
         }
         return [path_type, start_position_x, start_position_y, stop_position_x, stop_position_y];
     }
-        
 
     function ticked() {
 
