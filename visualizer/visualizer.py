@@ -124,9 +124,9 @@ class D3ARG:
                 "id": ID,
                 "flag": node.flags,
                 "time": node.time,
-                "scaled_time":1-node.time/ts.max_root_time,
-                "scaled_logtime":1-math.log(node.time+1)/math.log(ts.max_root_time),
-                "scaled_rank": 1-(unique_times.index(node.time)*h_spacing) #fixed y position, property of force layout
+                "time_01":1-node.time/ts.max_root_time,
+                "logtime_01":1-math.log(node.time+1)/math.log(ts.max_root_time),
+                "rank_01": 1-(unique_times.index(node.time)*h_spacing) #fixed y position, property of force layout
             }
             label = ID
             if node.flags == 131072:
@@ -140,7 +140,7 @@ class D3ARG:
                 info["x_pos_reference"] = ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]].child[0]
             info["label"] = label #label which is either the node ID or two node IDs for recombination nodes
             if node.flags == 1:
-                info["fx"] = ordered_nodes.index(ID)*w_spacing #sample nodes have a fixed x position
+                info["fx_01"] = ordered_nodes.index(ID)*w_spacing #sample nodes have a fixed x position
             nodes.append(info)
         return nodes
 
@@ -226,8 +226,8 @@ class D3ARG:
                 breakpoints.append({
                     "start": start,
                     "stop": bp,
-                    "x_pos":(start/ts.sequence_length),
-                    "width":((bp - start)/ts.sequence_length)
+                    "x_pos_01":(start/ts.sequence_length),
+                    "width_01":((bp - start)/ts.sequence_length)
                 })
                 start = bp
         return breakpoints
@@ -274,25 +274,20 @@ class D3ARG:
         y_axis_text = []
         transformed_nodes = []
         for node in self.nodes:
-            if node.get("fx", -1) != -1:
+            if node.get("fx_01", -1) != -1:
                 if y_axis_labels:
-                    node["fx"] = node["fx"] * (width-100) + 100
+                    node["fx"] = node["fx_01"] * (width-100) + 100
                 else:
-                    node["fx"] = node["fx"] * (width-100) + 50
-            if node.get("x", -1) != -1:
-                if y_axis_labels:
-                    node["x"] = node["x"] * (width-100) + 100
-                else:
-                    node["x"] = node["x"] * (width-100) + 50
+                    node["fx"] = node["fx_01"] * (width-100) + 50
             if y_axis_scale == "time":
-                node["fy"] = node["scaled_time"] * (height-100) + 50
-                y_axis_ticks.append(node["scaled_time"] * (height-100) + 50)
+                node["fy"] = node["time_01"] * (height-100) + 50
+                y_axis_ticks.append(node["time_01"] * (height-100) + 50)
             elif y_axis_scale == "log_time":
-                node["fy"] = node["scaled_logtime"] * (height-100) + 50
-                y_axis_ticks.append(node["scaled_logtime"] * (height-100) + 50)
+                node["fy"] = node["logtime_01"] * (height-100) + 50
+                y_axis_ticks.append(node["logtime_01"] * (height-100) + 50)
             else:
-                node["fy"] = node["scaled_rank"] * (height-100) + 50
-                y_axis_ticks.append(node["scaled_rank"] * (height-100) + 50)
+                node["fy"] = node["rank_01"] * (height-100) + 50
+                y_axis_ticks.append(node["rank_01"] * (height-100) + 50)
             node["y"] = node["fy"]
             y_axis_text.append(node["time"])
             transformed_nodes.append(node)
@@ -302,10 +297,10 @@ class D3ARG:
         transformed_bps = []
         for bp in self.breakpoints:
             if y_axis_labels:
-                bp["x_pos"] = bp["x_pos"] * width + 50
+                bp["x_pos"] = bp["x_pos_01"] * width + 50
             else:
-                bp["x_pos"] = bp["x_pos"] * width
-            bp["width"] = bp["width"] * width
+                bp["x_pos"] = bp["x_pos_01"] * width
+            bp["width"] = bp["width_01"] * width
             transformed_bps.append(bp)
         if y_axis_labels:
             width += 50

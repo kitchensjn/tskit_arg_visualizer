@@ -7,12 +7,12 @@ from visualizer import visualizer
 # Generate a random tree sequence with record_full_arg=True so that you get marked recombination nodes
 ts_rs = random.randint(0,10000)   
 ts = msprime.sim_ancestry(
-    samples=10,
+    samples=2,
     recombination_rate=1e-8,
     sequence_length=3_000,
     population_size=10_000,
     record_full_arg=True,
-    random_seed=ts_rs
+    random_seed=1
 )
 print(ts_rs)
 
