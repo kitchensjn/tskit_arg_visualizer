@@ -43,7 +43,7 @@ def draw_D3(arg_json):
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
-            f.write("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html)
+            f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script></head><body>" + html + "</body></html>")
         webbrowser.open(url, new=2)
 
 
