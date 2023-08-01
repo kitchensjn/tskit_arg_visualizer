@@ -27,8 +27,8 @@ function draw_force_diagram() {
 
     d3.select("#arg_${divnum}").append("button")
         .text("Reheat Simulation")
-        .on("click", function(j) {
-            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+        .on("click", function(event, j) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
             d3.selectAll("#arg_${divnum} .node").classed("unfix", function(d) {
                 if (d.flag != 1) {
                     d.fx = null;
@@ -409,13 +409,13 @@ function draw_force_diagram() {
             });
     }
 
-    function dragstarted(d) {
-        if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
     }
 
-    function dragged(d) {
-        d.fx = d3.event.x;
+    function dragged(event, d) {
+        d.fx = event.x;
     }
 
     if ($tree_highlighting) {
@@ -442,15 +442,18 @@ function draw_force_diagram() {
             .attr("stroke", "#FFFFFF")
             .attr("stroke-width", 5)
             .attr("fill", "#053e4e")
-            .on('mouseover', function (d, i) {
+            .on('mouseover', function (event, d) {
                 d3.select(this)
                     .style('fill', '#1eebb1')
                     .style("cursor", "pointer");
                 var highlight_links = d3.select("#arg_${divnum} .links")
                     .selectAll("g")
                         .filter(function(j) {
+                            console.log(j);
+                            console.log(d);
                             return j.right > d.start & j.left < d.stop;
                         });
+                console.log(highlight_links);
                 highlight_links.raise();
                 highlight_links
                     .select(".link")
