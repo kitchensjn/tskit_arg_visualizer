@@ -33,7 +33,7 @@ def running_in_notebook():
 def draw_D3(arg_json):
     arg_json["source"] = arg_json.copy()
     arg_json["divnum"] = str(random.randint(0,9999999999))
-    JS_text = Template("<div id='arg_" + arg_json['divnum'] + "'></div><script>$main_text</script>")
+    JS_text = Template("<div id='arg_" + arg_json['divnum'] + "'class='d3arg'></div><script>$main_text</script>")
     main_text_template = Template(open(os.path.dirname(__file__) + "/visualizer.js", "r").read())
     main_text = main_text_template.safe_substitute(arg_json)
     html = JS_text.safe_substitute({'main_text': main_text})
@@ -176,7 +176,7 @@ class D3ARG:
             if ts.tables.nodes.flags[edge.parent] != 131072:
                 children = np.unique(ts.tables.edges[np.where(ts.tables.edges.parent == edge.parent)[0]].child)
                 if len(children) > 2:
-                    print(children[np.where(children != edge.child)])
+                    #print(children[np.where(children != edge.child)])
                     alternative_child = children[np.where(children != edge.child)][0]
                 elif len(children) > 1:
                     alternative_child = children[np.where(children != edge.child)][0]
