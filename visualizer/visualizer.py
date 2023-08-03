@@ -33,7 +33,7 @@ def running_in_notebook():
 def draw_D3(arg_json):
     arg_json["source"] = arg_json.copy()
     arg_json["divnum"] = str(random.randint(0,9999999999))
-    JS_text = Template("<div id='arg_" + arg_json['divnum'] + "'class='d3arg'></div><script>$main_text</script>")
+    JS_text = Template("<div id='arg_" + arg_json['divnum'] + "'class='d3arg' style='width:" + str(arg_json["width"]) + "px;'></div><script>$main_text</script>")
     main_text_template = Template(open(os.path.dirname(__file__) + "/visualizer.js", "r").read())
     main_text = main_text_template.safe_substitute(arg_json)
     html = JS_text.safe_substitute({'main_text': main_text})
@@ -293,7 +293,7 @@ class D3ARG:
             transformed_nodes.append(node)
         y_axis_text = [round(t) for t in set(y_axis_text)]
         if tree_highlighting:
-            height += 100
+            height += 50
         transformed_bps = []
         for bp in self.breakpoints:
             if y_axis_labels:

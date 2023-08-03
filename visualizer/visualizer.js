@@ -11,7 +11,25 @@ function draw_force_diagram() {
 
     //d3.select("#arg_${divnum}").style("position", "relative");
 
-    var saving = d3.select("#arg_${divnum}").append("div").attr("class", "saving");
+    var dashboard = d3.select("#arg_${divnum}").append("div").attr("class", "dashboard");
+
+    var hider = dashboard.append("button")
+        .attr("class", "hide_controls")
+        .text("Hide Controls");
+    
+    var controls = dashboard.append("div").attr("class", "controls");
+
+    hider.on("click", function() {
+        if (this.innerHTML == "Hide Controls") {
+            this.innerHTML = "Show Controls";
+            controls.style("display", "none");
+        } else {
+            this.innerHTML = "Hide Controls";
+            controls.style("display", "block");
+        }
+    });
+
+    var saving = controls.append("div").attr("class", "saving");
     
     saving.append("button")
         .text("Copy Source To Clipboard")
@@ -25,9 +43,9 @@ function draw_force_diagram() {
 
     saving.append("div").attr("class", "message").text("Copied!");
 
-    d3.select("#arg_${divnum}").append("button")
+    controls.append("button")
         .text("Reheat Simulation")
-        .on("click", function(event, j) {
+        .on("click", function(event) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d3.selectAll("#arg_${divnum} .node").classed("unfix", function(d) {
                 if (d.flag != 1) {
@@ -48,7 +66,7 @@ function draw_force_diagram() {
     if (y_axis.include_labels == "true") {
         var bottom = $height - 50;
         if ($tree_highlighting) {
-            bottom = $height - 150;
+            bottom = $height - 100;
         }
         var yscale = d3.scaleLinear() 
             .domain([y_axis.max_min[0], y_axis.max_min[1]]) 
@@ -434,7 +452,7 @@ function draw_force_diagram() {
             .attr("x", function(d) {
                 return d.x_pos;
             })
-            .attr("y", $height-90)
+            .attr("y", $height-50)
             .attr("width", function(d) {
                 return d.width;
             })
