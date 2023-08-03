@@ -15,9 +15,9 @@ function draw_force_diagram() {
 
     var hider = dashboard.append("button")
         .attr("class", "hide_controls")
-        .text("Hide Controls");
+        .text("Show Controls");
     
-    var controls = dashboard.append("div").attr("class", "controls");
+    var controls = dashboard.append("div").attr("class", "controls").style("display", "none");
 
     hider.on("click", function() {
         if (this.innerHTML == "Hide Controls") {
