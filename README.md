@@ -45,7 +45,7 @@ The above code can be run in three ways: terminal, Jupyter Notebook, or JupyterL
 %%javascript
 require.config({ 
     paths: { 
-    d3: 'https://d3js.org/d3.v4.min'
+    d3: 'https://d3js.org/d3.v7.min'
 }});
 
 require(["d3"], function(d3) {
@@ -59,7 +59,7 @@ require(["d3"], function(d3) {
 %%javascript
 var script = document.createElement('script');
 script.type = 'text/javascript';
-script.src = 'https://d3js.org/d3.v4.min';
+script.src = 'https://d3js.org/d3.v7.min';
 document.head.appendChild(script);
 ```
 
