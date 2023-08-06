@@ -11,4 +11,5 @@ setup(
         "msprime",
         "IPython",
     ],
+    include_package_data=True,
 )
