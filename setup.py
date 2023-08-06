@@ -9,6 +9,7 @@ setup(
     packages=["tskit_arg_visualizer"],
     install_requires=[
         "msprime",
+        "jupyter",
         "IPython",
     ],
     include_package_data=True,
