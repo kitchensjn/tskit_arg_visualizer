@@ -11,5 +11,10 @@ setup(
         "msprime",
         "IPython",
     ],
-    include_package_data=True,
+    package_data={
+        "tskit_arg_visualizer": [
+            "tskit_arg_visualizer/visualizer.js",
+            "tskit_arg_visualizer/visualizer.css",
+        ],
+    },
 )
