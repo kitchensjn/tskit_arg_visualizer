@@ -117,10 +117,10 @@ Each figure is actually just a JSON object that D3.js interprets and plots to th
 
 ```
 import json
-from visualizer import visualizer
+import tskit_arg_visualizer
 
 arg_json = json.load(open("example.json", "r"))
-visualizer.draw_D3(arg_json=arg_json)
+tskit_arg_visualizer.draw_D3(arg_json=arg_json)
 ```
 
 ## Reheating A Figure (EXPERIMENTAL)
