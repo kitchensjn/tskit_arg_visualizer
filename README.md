@@ -10,7 +10,7 @@ Users can click and drag the nodes (including the sample) along the x-axis to fu
 
 ## Installation
 
-`pip install git+https://github.com/kitchensjn/tskit_arg_visualizer.git@setup`
+`pip install git+https://github.com/kitchensjn/tskit_arg_visualizer.git`
 
 This package loads D3.js using a CDN, so requires access to the internet.
 
