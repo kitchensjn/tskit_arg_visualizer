@@ -2,10 +2,10 @@ import numpy as np
 import random
 import math
 from string import Template
-from IPython.display import HTML, display
 import webbrowser
 import tempfile
 import os
+from IPython.display import HTML, display
 
 
 def running_in_notebook():
