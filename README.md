@@ -36,7 +36,7 @@ ts = msprime.sim_ancestry(
 
 d3arg = tskit_arg_visualizer.D3ARG(ts=ts)
 d3arg.draw(
-    width=1000,
+    width=750,
     height=750,
     y_axis_labels=True,
     y_axis_scale="rank",
