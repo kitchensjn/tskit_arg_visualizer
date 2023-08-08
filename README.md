@@ -20,7 +20,6 @@ This package loads D3.js using a CDN, so requires access to the internet.
 
 ```
 import msprime
-import tskit
 import random
 import tskit_arg_visualizer
 
