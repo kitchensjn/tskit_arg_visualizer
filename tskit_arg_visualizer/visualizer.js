@@ -467,11 +467,8 @@ function draw_force_diagram() {
                 var highlight_links = d3.select("#arg_${divnum} .links")
                     .selectAll("g")
                         .filter(function(j) {
-                            console.log(j);
-                            console.log(d);
                             return j.right > d.start & j.left < d.stop;
                         });
-                console.log(highlight_links);
                 highlight_links.raise();
                 highlight_links
                     .select(".link")

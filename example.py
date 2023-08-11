@@ -12,7 +12,7 @@ ts = msprime.sim_ancestry(
     sequence_length=2_000,
     population_size=10_000,
     record_full_arg=True,
-    random_seed=3905#606
+    random_seed=3905 #606
 )
 
 #mts_rs = random.randint(1,10000)

@@ -40,11 +40,11 @@ def draw_D3(arg_json):
     html = JS_text.safe_substitute({'main_text': main_text})
     styles = open(os.path.dirname(__file__) + "/visualizer.css", "r").read()
     if running_in_notebook():
-        display(HTML("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html))
+        display(HTML("<style>"+styles+"</style><script src='https://d3js.org/d3.v7.min.js'></script>" + html))
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
-            f.write("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html)
+            f.write("<style>"+styles+"</style><script src='https://d3js.org/d3.v7.min.js'></script>" + html)
         webbrowser.open(url, new=2)
 
 def calc_graphviz_x_positions(ts):
