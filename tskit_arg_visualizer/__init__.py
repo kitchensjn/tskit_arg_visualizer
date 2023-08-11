@@ -47,7 +47,7 @@ def draw_D3(arg_json):
             f.write("<style>"+styles+"</style><script src='https://d3js.org/d3.v4.min.js'></script>" + html)
         webbrowser.open(url, new=2)
 
-def calc_graphviz_x_pos(ts):
+def calc_graphviz_x_positions(ts):
     """
     Plot ARG using GraphViz. Variation on code from Anastasia Ignatieva 
     (https://github.com/tskit-dev/tutorials/issues/43). I would eventually like
@@ -139,7 +139,7 @@ class D3ARG:
 
     """
 
-    def __init__(self, ts, use_graphviz_positions=False):
+    def __init__(self, ts, fixed_x_positions={}, starting_x_positions={}):
         """Converts a tskit tree sequence into the D3ARG object
         
         Parameters
@@ -149,11 +149,11 @@ class D3ARG:
             msprime.sim_ancestry(...,record_full_arg=True)
         """
         rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
-        self.nodes = self._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, use_graphviz_positions=use_graphviz_positions)
+        self.nodes = self._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, fixed_x_positions=fixed_x_positions, starting_x_positions=starting_x_positions)
         self.edges = self._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm)
         self.breakpoints = self._identify_breakpoints(ts=ts)
 
-    def _convert_nodes_table(self, ts, recombination_nodes_to_merge, use_graphviz_positions):
+    def _convert_nodes_table(self, ts, recombination_nodes_to_merge, fixed_x_positions, starting_x_positions):
         """Creates nodes JSON from the tskit.TreeSequence nodes table
         
         A "reference" is the id of another node that is used to determine a property in the
@@ -182,8 +182,6 @@ class D3ARG:
         for node in ts.first().nodes(order="minlex_postorder"):
             if node < ts.num_samples:
                 ordered_nodes.append(node)
-        if use_graphviz_positions:
-            x_pos = calc_graphviz_x_pos(ts=ts)
         unique_times = list(np.unique(ts.tables.nodes.time)) # Determines the rank (y position) of each time point 
         nodes = []
         for ID, node in enumerate(ts.tables.nodes):
@@ -206,15 +204,24 @@ class D3ARG:
             elif node.flags == 262144:
                 info["x_pos_reference"] = ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]].child[0]
             info["label"] = label #label which is either the node ID or two node IDs for recombination nodes
-            if use_graphviz_positions:
-                min_pos = min(x_pos.values())
-                max_pos = max(x_pos.values())
-                for x in x_pos:
-                    x_pos[x] = (x_pos[x] - min_pos) / (max_pos - min_pos)
+            if len(fixed_x_positions) > 0:
+                min_pos = min(fixed_x_positions.values())
+                max_pos = max(fixed_x_positions.values())
+                for x in fixed_x_positions:
+                    fixed_x_positions[x] = (fixed_x_positions[x] - min_pos) / (max_pos - min_pos)
                 if node.flags == 1:
-                    info["fx"] = x_pos[str(label)]
+                    info["fx"] = fixed_x_positions[str(label)]
                 else:
-                    info["x"] = x_pos[str(label)]
+                    info["fx"] = fixed_x_positions[str(label)]
+            elif len(starting_x_positions) > 0:
+                min_pos = min(starting_x_positions.values())
+                max_pos = max(starting_x_positions.values())
+                for x in starting_x_positions:
+                    starting_x_positions[x] = (starting_x_positions[x] - min_pos) / (max_pos - min_pos)
+                if node.flags == 1:
+                    info["fx"] = starting_x_positions[str(label)]
+                else:
+                    info["x"] = starting_x_positions[str(label)]
             elif node.flags == 1:
                 info["fx"] = ordered_nodes.index(ID)*w_spacing #sample nodes have a fixed x position
             nodes.append(info)
@@ -252,7 +259,6 @@ class D3ARG:
             if ts.tables.nodes.flags[edge.parent] != 131072:
                 children = np.unique(ts.tables.edges[np.where(ts.tables.edges.parent == edge.parent)[0]].child)
                 if len(children) > 2:
-                    print(children[np.where(children != edge.child)])
                     alternative_child = children[np.where(children != edge.child)][0]
                 elif len(children) > 1:
                     alternative_child = children[np.where(children != edge.child)][0]

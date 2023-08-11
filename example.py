@@ -14,7 +14,6 @@ ts = msprime.sim_ancestry(
     record_full_arg=True,
     random_seed=ts_rs
 )
-print(ts_rs)
 
 #mts_rs = random.randint(1,10000)
 #mts = msprime.sim_mutations(
@@ -33,7 +32,9 @@ print(ts_rs)
 
 #ts = tskit.load("/Users/jameskitchens/Documents/GitHub/sparg2.0/ARGweaver/slim/condensed.trees")
 
-d3arg = viz.D3ARG(ts=ts, use_graphviz_positions=True)
+
+x_positions = viz.calc_graphviz_x_positions(ts=ts)
+d3arg = viz.D3ARG(ts=ts, fixed_x_positions=x_positions)
 d3arg.draw(width=1000, height=750, y_axis_labels=True, y_axis_scale="rank", tree_highlighting=True, edge_type="ortho")
 
 
