@@ -1,3 +1,16 @@
+.d3arg {
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    background-color: white;
+    padding: 10px;
+}
+
+.dashboard {
+    width: 100%;
+}
+
 .yaxis path {
     stroke: #053e4e;
     stroke-width: 3;

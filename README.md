@@ -8,19 +8,20 @@ A method for drawing ancestral recombination graphs from tskit tree sequences in
 
 Users can click and drag the nodes (including the sample) along the x-axis to further clean up the layout of the graph. The simulation does not take into account line crosses, which can often be improved with some fiddling. Once a node has been moved by a user, its position is fixed with regards to the force simulation.
 
+## Installation
+
+```
+pip install git+https://github.com/kitchensjn/tskit_arg_visualizer.git
+```
+
+This package loads D3.js using a CDN, so requires access to the internet.
+
 ## Quickstart
-
-Clone this repository and ensure that dependencies are installed.
-
-  * **Python Dependencies**: msprime, numpy
-
-  * **JavaScript Dependencies**: D3 (loaded from CDN, so you must have connection to internet)
 
 ```
 import msprime
-import tskit
 import random
-from visualizer import visualizer
+import tskit_arg_visualizer
 
 # Generate a random tree sequence with record_full_arg=True so that you get marked recombination nodes
 ts_rs = random.randint(0,10000)   
@@ -33,8 +34,15 @@ ts = msprime.sim_ancestry(
     random_seed=ts_rs
 )
 
-d3arg = visualizer.D3ARG(ts=ts)
-d3arg.draw(width=1000, height=750, y_axis_labels=True, y_axis_scale="rank", tree_highlighting=True, edge_type="ortho")
+d3arg = tskit_arg_visualizer.D3ARG(ts=ts)
+d3arg.draw(
+    width=750,
+    height=750,
+    y_axis_labels=True,
+    y_axis_scale="rank",
+    tree_highlighting=True,
+    edge_type="ortho"
+)
 ```
 
 The above code can be run in three ways: terminal, Jupyter Notebook, or JupyterLab. For Jupyter Notebook and JupyterLab, you will need to add the following code block to the top of the document to properly load D3.js.
@@ -45,7 +53,7 @@ The above code can be run in three ways: terminal, Jupyter Notebook, or JupyterL
 %%javascript
 require.config({ 
     paths: { 
-    d3: 'https://d3js.org/d3.v4.min'
+    d3: 'https://d3js.org/d3.v7.min'
 }});
 
 require(["d3"], function(d3) {
@@ -59,7 +67,7 @@ require(["d3"], function(d3) {
 %%javascript
 var script = document.createElement('script');
 script.type = 'text/javascript';
-script.src = 'https://d3js.org/d3.v4.min';
+script.src = 'https://d3js.org/d3.v7.min';
 document.head.appendChild(script);
 ```
 
@@ -75,7 +83,7 @@ def draw(
     tree_highlighting=True,
     y_axis_labels=True,
     y_axis_scale="rank",
-    line_type="line",
+    edge_type="line",
     subset_nodes=None
 ):
 """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
@@ -115,10 +123,10 @@ Each figure is actually just a JSON object that D3.js interprets and plots to th
 
 ```
 import json
-from visualizer import visualizer
+import tskit_arg_visualizer
 
 arg_json = json.load(open("example.json", "r"))
-visualizer.draw_D3(arg_json=arg_json)
+tskit_arg_visualizer.draw_D3(arg_json=arg_json)
 ```
 
 ## Reheating A Figure (EXPERIMENTAL)
