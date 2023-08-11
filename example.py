@@ -2,7 +2,7 @@ import msprime
 import tskit
 import random
 import json
-from visualizer import visualizer
+import tskit_arg_visualizer as viz
 
 # Generate a random tree sequence with record_full_arg=True so that you get marked recombination nodes
 ts_rs = random.randint(0,10000)   
@@ -33,7 +33,7 @@ print(ts_rs)
 
 #ts = tskit.load("/Users/jameskitchens/Documents/GitHub/sparg2.0/ARGweaver/slim/condensed.trees")
 
-d3arg = visualizer.D3ARG(ts=ts, use_graphviz_positions=True)
+d3arg = viz.D3ARG(ts=ts, use_graphviz_positions=True)
 d3arg.draw(width=1000, height=750, y_axis_labels=True, y_axis_scale="rank", tree_highlighting=True, edge_type="ortho")
 
 
