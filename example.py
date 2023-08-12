@@ -33,7 +33,7 @@ print(ts_rs)
 #ts = tskit.load("/Users/jameskitchens/Documents/GitHub/sparg2.0/ARGweaver/slim/condensed.trees")
 
 d3arg = tskit_arg_visualizer.D3ARG(ts=ts)
-d3arg.draw(width=1000, height=750, y_axis_labels=True, y_axis_scale="log_time", tree_highlighting=True, edge_type="line")
+d3arg.draw(width=500, height=500, y_axis_labels=True, y_axis_scale="rank", tree_highlighting=True, edge_type="ortho")
 
 
 # Or draw from a previously saved tree sequence which is stored in a JSON file

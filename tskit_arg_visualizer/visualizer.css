@@ -1,14 +1,60 @@
 .d3arg {
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     background-color: white;
-    padding: 10px;
+    padding: 20px;
+}
+
+.d3arg:hover .dashboard {
+    visibility: visible;
 }
 
 .dashboard {
-    width: 100%;
+    display: flex;
+    visibility: hidden;
+}
+
+.dashboard button {
+    position: relative;
+    font-size: 30px;
+    border: 0px;
+    background-color: white;
+    width: 30px;
+    height: 30px;
+}
+
+.dashboard button .tip {
+    width: 120px;
+    font-size: 12px;
+    background-color: lightgrey;
+    color: #053e4e;
+    text-align: center;
+    padding: 5px 0px;
+    position: absolute;
+    z-index: 1;
+    top: 100%;
+    left: 50%; 
+    margin-left: -60px;
+    visibility: hidden;
+}
+
+.dashboard button:hover .desc {
+    visibility: visible;
+}
+
+.dashboard path {
+    fill: grey;
+}
+
+.dashboard button:hover path {
+    fill: #053e4e;
+}
+
+.dashboard button:active path {
+    fill: #1eebb1;
 }
 
 .yaxis path {
