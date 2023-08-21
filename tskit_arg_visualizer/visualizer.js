@@ -9,54 +9,45 @@ function draw_force_diagram() {
     var y_axis = $y_axis;
     var subset = $subset_nodes;
 
-    //d3.select("#arg_${divnum}").style("position", "relative");
-
     var dashboard = d3.select("#arg_${divnum}").append("div").attr("class", "dashboard");
-
-    var hider = dashboard.append("button")
-        .attr("class", "hide_controls")
-        .text("Show Controls");
     
-    var controls = dashboard.append("div").attr("class", "controls").style("display", "none");
-
-    hider.on("click", function() {
-        if (this.innerHTML == "Hide Controls") {
-            this.innerHTML = "Show Controls";
-            controls.style("display", "none");
-        } else {
-            this.innerHTML = "Hide Controls";
-            controls.style("display", "block");
-        }
-    });
-
-    var saving = controls.append("div").attr("class", "saving");
-    
-    saving.append("button")
-        .text("Copy Source To Clipboard")
-        .on("click", function(d) {
+    var clipboard = dashboard.append("button")
+        .on("click", function() {
             navigator.clipboard.writeText("${source}".replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"'));
-            d3.select("#arg_${divnum} .message").style("display", "block");
+            d3.select("#arg_${divnum} .copymessage").style("visibility", "visible");
             setTimeout( function() {
-                d3.select("#arg_${divnum} .message").style("display", "none");
+                d3.select("#arg_${divnum} .copymessage").style("visibility", "hidden");
             }, 1000);
         });
+    clipboard.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+        .attr("xmlns", "http://www.w3.org/2000/svg")
+        .attr("viewBox", "0 0 448 512")
+        .append("path")
+        .attr("d", "M208 0H332.1c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9V336c0 26.5-21.5 48-48 48H208c-26.5 0-48-21.5-48-48V48c0-26.5 21.5-48 48-48zM48 128h80v64H64V448H256V416h64v48c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48z");
+    clipboard.append("span").attr("class", "tip desc").text("Copy To Clipboard");
+    clipboard.append("span").attr("class", "tip copymessage").text("Copied!");
 
-    saving.append("div").attr("class", "message").text("Copied!");
-
-    controls.append("button")
-        .text("Reheat Simulation")
+    var reheat = dashboard.append("button")
         .on("click", function(event) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d3.selectAll("#arg_${divnum} .node").classed("unfix", function(d) {
                 if (d.flag != 1) {
                     d.fx = null;
                 }
-            });
+            })
         });
+    reheat.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+        .attr("xmlns", "http://www.w3.org/2000/svg")
+        .attr("viewBox", "0 0 384 512")
+        .append("path")
+        .attr("d", "M153.6 29.9l16-21.3C173.6 3.2 180 0 186.7 0C198.4 0 208 9.6 208 21.3V43.5c0 13.1 5.4 25.7 14.9 34.7L307.6 159C356.4 205.6 384 270.2 384 337.7C384 434 306 512 209.7 512H192C86 512 0 426 0 320v-3.8c0-48.8 19.4-95.6 53.9-130.1l3.5-3.5c4.2-4.2 10-6.6 16-6.6C85.9 176 96 186.1 96 198.6V288c0 35.3 28.7 64 64 64s64-28.7 64-64v-3.9c0-18-7.2-35.3-19.9-48l-38.6-38.6c-24-24-37.5-56.7-37.5-90.7c0-27.7 9-54.8 25.6-76.9z");
+    reheat.append("span").attr("class", "tip desc").text("Reheat Simulation");
+
 
     var svg = d3.select("#arg_${divnum}").append("svg")
         .attr("width", $width)
-        .attr("height", $height);
+        .attr("height", $height)
+        .style("padding-top", "10px");
 
     var result = y_axis.ticks.map(function (x) { 
         return parseInt(x, 10); 
@@ -487,7 +478,6 @@ function draw_force_diagram() {
                     .style("stroke-width", 3);
             });
     }
-
 }
 
 draw_force_diagram()
