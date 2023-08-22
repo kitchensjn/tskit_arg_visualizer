@@ -32,7 +32,7 @@ function draw_force_diagram() {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d3.selectAll("#arg_${divnum} .node").classed("unfix", function(d) {
                 if (d.flag != 1) {
-                    d.fx = null;
+                    delete d.fx;
                 }
             })
         });

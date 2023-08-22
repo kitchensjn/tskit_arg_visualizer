@@ -37,5 +37,5 @@ d3arg.draw(width=500, height=500, y_axis_labels=True, y_axis_scale="rank", tree_
 
 
 # Or draw from a previously saved tree sequence which is stored in a JSON file
-#arg_json = json.load(open("test.json", "r"))
-#visualizer.draw_D3(arg_json=arg_json)
+#arg_json = json.load(open("example3.json", "r"))
+#tskit_arg_visualizer.draw_D3(arg_json=arg_json)

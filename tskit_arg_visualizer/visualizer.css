@@ -59,46 +59,46 @@
 
 .yaxis path {
     stroke: #053e4e;
-    stroke-width: 3;
+    stroke-width: 3px;
 }
 
 .yaxis line {
     stroke: #053e4e;
-    stroke-width: 3;
+    stroke-width: 3px;
 }
 
 .yaxis text {
     fill: #053e4e;
-    stroke: 1;
+    stroke: 1px;
 }
 
 .node {
     fill: #1eebb1;
     stroke: #053e4e;
-    stroke-width: 3;
+    stroke-width: 3px;
 }
 
 .hiddennode {
     fill: lightgrey;
     stroke: lightgrey;
-    stroke-width: 3;
+    stroke-width: 3px;
 }
 
 .underlink {
     stroke: #ffffff;
-    stroke-width: 10;
+    stroke-width: 10px;
     fill: none;
 }
 
 .link {
     stroke: #053e4e;
-    stroke-width: 3;
+    stroke-width: 3px;
     fill: none;
 }
 
 .hiddenlink {
     stroke: lightgrey;
-    stroke-width: 3;
+    stroke-width: 3px;
     fill: none;
 }
 
@@ -106,14 +106,14 @@
     text-anchor: middle;
     fill: #053e4e;
     font-family: Arial;
-    font-size: 12;
+    font-size: 12px;
 }
 
 .hiddenlabel {
     text-anchor: middle;
     fill: lightgrey;
     font-family: Arial;
-    font-size: 12;
+    font-size: 12px;
 }
 
 svg {
