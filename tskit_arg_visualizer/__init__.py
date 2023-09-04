@@ -120,24 +120,32 @@ class D3ARG:
         unique_times = list(np.unique(ts.tables.nodes.time)) # Determines the rank (y position) of each time point 
         nodes = []
         for ID, node in enumerate(ts.tables.nodes):
+            child_of = list(np.unique(ts.tables.edges[np.where(ts.tables.edges.child == ID)[0]].parent))
+            for i,child in enumerate(child_of):
+                if child in recombination_nodes_to_merge:
+                    child_of[i] -= 1
+            parent_of = list(np.unique(ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]].child))
+            for i,parent in enumerate(parent_of):
+                if parent in recombination_nodes_to_merge:
+                    parent_of[i] -= 1
             info = {
                 "id": ID,
                 "flag": node.flags,
                 "time": node.time,
                 "time_01":1-node.time/ts.max_root_time,
                 "logtime_01":1-math.log(node.time+1)/math.log(ts.max_root_time),
-                "rank_01": 1-(unique_times.index(node.time)*h_spacing) #fixed y position, property of force layout
+                "rank_01": 1-(unique_times.index(node.time)*h_spacing), #fixed y position, property of force layout
+                "child_of": list(np.unique(child_of)),
+                "parent_of": list(np.unique(parent_of))
             }
             label = ID
             if node.flags == 131072:
                 if ID in recombination_nodes_to_merge:
                     continue
                 label = str(ID)+"/"+str(ID+1)
-                parent_of = ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]]
-                if len(parent_of) > 0:
-                    info["x_pos_reference"] = parent_of.child[0]
+                info["x_pos_reference"] = parent_of[0]
             elif node.flags == 262144:
-                info["x_pos_reference"] = ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]].child[0]
+                info["x_pos_reference"] = parent_of[0]
             info["label"] = label #label which is either the node ID or two node IDs for recombination nodes
             if node.flags == 1:
                 info["fx_01"] = ordered_nodes.index(ID)*w_spacing #sample nodes have a fixed x position
