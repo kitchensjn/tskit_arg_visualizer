@@ -132,6 +132,12 @@ function draw_force_diagram() {
                 return "hiddennode"
             }
         })
+        .attr("parents", function(d) {
+            return d.child_of.toString().replace(",", " ")
+        })
+        .attr("children", function(d) {
+            return d.parent_of.toString().replace(",", " ")
+        })
         .attr("r", 7)
         .call(
             d3
@@ -407,14 +413,25 @@ function draw_force_diagram() {
 
         label
             .attr("x", function(d) {
-                if (d.flag == 131072) {
+                if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
                     return d.x;
+                } else if (d.child_of.length == 1) {
+                    var parent_x = document.getElementById(String($divnum) + "_node" + d.child_of[0]).getAttribute("cx");
+                    if (parent_x > d.x) {
+                        return d.x - 15
+                    } else {
+                        return d.x + 15
+                    }
                 } else {
                     return d.x + 15;
                 }
             })
             .attr("y", function(d) {
-                return d.y - 15;
+                if (d.parent_of.length == 0) {
+                    return d.y + 25;
+                } else {
+                    return d.y - 15;
+                }
             });
     }
 
@@ -458,11 +475,8 @@ function draw_force_diagram() {
                 var highlight_links = d3.select("#arg_${divnum} .links")
                     .selectAll("g")
                         .filter(function(j) {
-                            console.log(j);
-                            console.log(d);
                             return j.right > d.start & j.left < d.stop;
                         });
-                console.log(highlight_links);
                 highlight_links.raise();
                 highlight_links
                     .select(".link")
