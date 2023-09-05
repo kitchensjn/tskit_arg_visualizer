@@ -301,7 +301,7 @@ class D3ARG:
             transformed_nodes.append(node)
         y_axis_text = [round(t) for t in set(y_axis_text)]
         if tree_highlighting:
-            height += 50
+            height += 75
         transformed_bps = []
         for bp in self.breakpoints:
             if y_axis_labels:

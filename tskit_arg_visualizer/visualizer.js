@@ -445,7 +445,11 @@ function draw_force_diagram() {
     }
 
     if ($tree_highlighting) {
-        svg.append("g")
+        
+        var th_group = svg.append("g").attr("class", "tree_highlighting");
+        
+        th_group
+            .append("g")
             .attr("class", "breakpoints")
             .selectAll("rect")
             .data(graph.breakpoints)
@@ -460,7 +464,7 @@ function draw_force_diagram() {
             .attr("x", function(d) {
                 return d.x_pos;
             })
-            .attr("y", $height-50)
+            .attr("y", $height-55)
             .attr("width", function(d) {
                 return d.width;
             })
@@ -491,6 +495,24 @@ function draw_force_diagram() {
                     .style("stroke", "#053e4e")
                     .style("stroke-width", 3);
             });
+        
+        var endpoints = th_group.append("g").attr("class", "endpoints");
+        
+        endpoints
+            .append("text")
+                .attr("class", "label")
+                .style("text-anchor", "start")
+                .text(graph.breakpoints[0].start)
+                .attr("x", graph.breakpoints[0].x_pos)
+                .attr("y", $height);
+        
+        endpoints
+            .append("text")
+                .attr("class", "label")
+                .style("text-anchor", "end")
+                .text(graph.breakpoints[graph.breakpoints.length-1].stop)
+                .attr("x", $width)
+                .attr("y", $height);
     }
 }
 
