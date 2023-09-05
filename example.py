@@ -15,8 +15,6 @@ ts = msprime.sim_ancestry(
 )
 print(ts_rs)
 
-print(ts.draw_text())
-
 #mts_rs = random.randint(1,10000)
 #mts = msprime.sim_mutations(
 #    tree_sequence=ts, 
