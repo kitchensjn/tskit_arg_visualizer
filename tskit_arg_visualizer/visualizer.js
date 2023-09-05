@@ -57,7 +57,7 @@ function draw_force_diagram() {
     if (y_axis.include_labels == "true") {
         var bottom = $height - 50;
         if ($tree_highlighting) {
-            bottom = $height - 100;
+            bottom = $height - 125;
         }
         var yscale = d3.scaleLinear() 
             .domain([y_axis.max_min[0], y_axis.max_min[1]]) 
