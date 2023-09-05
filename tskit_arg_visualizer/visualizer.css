@@ -102,15 +102,17 @@
     fill: none;
 }
 
-.label {
+.labels {
     text-anchor: middle;
+}
+
+.label {
     fill: #053e4e;
     font-family: Arial;
     font-size: 12px;
 }
 
 .hiddenlabel {
-    text-anchor: middle;
     fill: lightgrey;
     font-family: Arial;
     font-size: 12px;
