@@ -10,10 +10,12 @@ ts = msprime.sim_ancestry(
     recombination_rate=1e-8,
     sequence_length=3_000,
     population_size=10_000,
-    record_full_arg=True,
-    random_seed=2523
+    record_full_arg=False,
+    random_seed=ts_rs
 )
 print(ts_rs)
+
+print(ts.draw_text())
 
 #mts_rs = random.randint(1,10000)
 #mts = msprime.sim_mutations(
@@ -33,7 +35,7 @@ print(ts_rs)
 #ts = tskit.load("/Users/jameskitchens/Documents/GitHub/sparg2.0/ARGweaver/slim/condensed.trees")
 
 d3arg = tskit_arg_visualizer.D3ARG(ts=ts)
-d3arg.draw(width=500, height=500, edge_type="ortho", tree_highlighting=True)
+d3arg.draw(width=500, height=500, edge_type="line")
 
 
 # Or draw from a previously saved tree sequence which is stored in a JSON file
