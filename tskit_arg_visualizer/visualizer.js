@@ -174,7 +174,6 @@ function draw_force_diagram() {
         var stop_position_x = d.target.x;
         var stop_position_y = d.target.y;
         var vnub = Math.min((stop_position_y-start_position_y)/2, 20);
-        if ((start_position_y + 40) < stop_position_y)
         if ("y_axis.scale" == "time" | "y_axis.scale" == "log_time") {
             vnub = 0;
         }
