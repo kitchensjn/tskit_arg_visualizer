@@ -10,7 +10,7 @@ ts = msprime.sim_ancestry(
     recombination_rate=1e-8,
     sequence_length=3_000,
     population_size=10_000,
-    record_full_arg=False,
+    record_full_arg=True,
     random_seed=ts_rs
 )
 print(ts_rs)
