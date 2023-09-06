@@ -199,7 +199,11 @@ class D3ARG:
                     alt_id = edge.child - 1
                 else:
                     alt_id = edge.child + 1
-                alternative_parent = ts.tables.edges[np.where(ts.tables.edges.child == alt_id)[0]].parent[0]
+                alt_id_parents = ts.tables.edges[np.where(ts.tables.edges.child == alt_id)[0]].parent
+                if len(alt_id_parents):
+                    alternative_parent = alt_id_parents[0]
+                else:
+                    alternative_parent = ""
             if edge.child in recombination_nodes_to_merge:
                 child = edge.child - 1
             links.append({
