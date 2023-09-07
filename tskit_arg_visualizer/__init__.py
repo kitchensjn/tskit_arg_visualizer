@@ -34,10 +34,14 @@ def draw_D3(arg_json):
     arg_json["source"] = arg_json.copy()
     arg_json["divnum"] = str(random.randint(0,9999999999))
     JS_text = Template("<div id='arg_" + arg_json['divnum'] + "'class='d3arg' style='min-width:" + str(arg_json["width"]+40) + "px; min-height:" + str(arg_json["height"]+80) + "px;'></div><script>$main_text</script>")
-    main_text_template = Template(open(os.path.dirname(__file__) + "/visualizer.js", "r").read())
+    visualizerjs = open(os.path.dirname(__file__) + "/visualizer.js", "r")
+    main_text_template = Template(visualizerjs.read())
+    visualizerjs.close()
     main_text = main_text_template.safe_substitute(arg_json)
     html = JS_text.safe_substitute({'main_text': main_text})
-    styles = open(os.path.dirname(__file__) + "/visualizer.css", "r").read()
+    css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
+    styles = css.read()
+    css.close()
     if running_in_notebook():
         display(HTML("<style>"+styles+"</style><script src='https://d3js.org/d3.v7.min.js'></script>" + html))
     else:
