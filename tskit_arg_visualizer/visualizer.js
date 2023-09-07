@@ -416,9 +416,14 @@ function draw_force_diagram() {
                 if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
                     return d.x;
                 } else if (d.child_of.length == 1) {
-                    var parent_x = document.getElementById(String($divnum) + "_node" + d.child_of[0]).getAttribute("cx");
-                    if (parent_x > d.x) {
-                        return d.x - 15
+                    var parent = document.getElementById(String($divnum) + "_node" + d.child_of[0])
+                    if (parent != null) {
+                        var parent_x = parent.getAttribute("cx");
+                        if (parent_x > d.x) {
+                            return d.x - 15
+                        } else {
+                            return d.x + 15
+                        }
                     } else {
                         return d.x + 15
                     }
