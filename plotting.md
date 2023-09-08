@@ -23,13 +23,16 @@ This is a list of dictionaries, each corresponding to a given node in the graph.
 * **label**: string for the node label when plotting (matches the id unless the node is a recombination node when it merges the two tskit node ids together)
 * **flag**: msprime node flag
 * **time**: time of the node, pulled directly from tskit.TreeSequence
-* **scaled_time**: rescaled node time given the height of the plot
-* **scaled_logtime**: rescaled log of node time given the height of the plot
-* **scaled_rank**: rescaled rank of the node given the height of the plot
-* **fx**: fixed x position in the plot (used for sample nodes or nodes that have been dragged), these nodes will have vx=0
-* **fy**: fixed y position in the plot, will match ether scaled_rank, scaled_time, scaled_logtime depending on y_axis_scale parameter, these nodes will have vy=0
-* **x**: current x position
-* **y**: current y position
+* **time_01**: rescaled node time between 0 and 1
+* **logtime_01**: rescaled log of node time between 0 and 1
+* **rank_01**: rescaled rank of the node between 0 and 1
+* **child_of**: list of parents (recombination node IDs have been merged)
+* **parent_of**: list of children (recombination node IDs have been merged)
+* **fx_01** fixed x position scaled between 0 and 1 (used for sample nodes to specify that they shouldn't move)
+* **fx**: fixed x position after rescaled to the width of the plot (used for nodes that have been dragged), these nodes will have vx=0
+* **fy**: fixed y position after rescaled to the height of the plot, will match ether scaled_rank, scaled_time, scaled_logtime depending on y_axis_scale parameter, these nodes will have vy=0
+* **x**: current x position in plot
+* **y**: current y position in plot
 * **vx**: current velocity along x-axis
 * **vy**: current velocity along y-axis
 * **x_pos_reference**: the id of another node that should be used to determine the x position of this node (not yet implemented as it breaks the force simulation)
@@ -54,16 +57,18 @@ Breakpoints mark recombination events along the chromosome, where each section i
 
 * **start**: start position (left bound) of tree given by tskit
 * **stop**: stop position (right bound) of tree
-* **x_pos**: scaled x position given the width of the figure
-* **width**: scaled width of the rectangle given the width of the figure
+* **x_pos_01**: x position scaled between 0 and 1
+* **x_pos**: x position scaled given the width of the figure
+* **width_01**: width of the rectangle scaled between 0 and 1
+* **width**: width of the rectangle scaled given the width of the figure
 
 ## width
 
-Integer for the width of the main force layout plot in pixels. Note: if y_axis.include_labels="true", the width of the whole SVG will be larger.
+Integer for the approximate width of the main force layout plot in pixels. Note: if y_axis.include_labels="true", the width of the whole SVG will be larger.
 
 ## height
 
-Integer for the height of the main force layout plot in pixels. Note: if tree_highlighting="true", the height of the whole SVG will be larger.
+Integer for the approximate height of the main force layout plot in pixels. Note: if tree_highlighting="true", the height of the whole SVG will be larger.
 
 ## y_axis
 
