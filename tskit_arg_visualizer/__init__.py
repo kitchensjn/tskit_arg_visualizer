@@ -147,9 +147,11 @@ class D3ARG:
                 if ID in recombination_nodes_to_merge:
                     continue
                 label = str(ID)+"/"+str(ID+1)
-                info["x_pos_reference"] = parent_of[0]
+                if len(parent_of) > 0:
+                    info["x_pos_reference"] = parent_of[0]
             elif node.flags == 262144:
-                info["x_pos_reference"] = parent_of[0]
+                if len(parent_of) > 0:
+                    info["x_pos_reference"] = parent_of[0]
             info["label"] = label #label which is either the node ID or two node IDs for recombination nodes
             if node.flags == 1:
                 info["fx_01"] = ordered_nodes.index(ID)*w_spacing #sample nodes have a fixed x position
