@@ -469,7 +469,7 @@ function draw_force_diagram() {
             .attr("x", function(d) {
                 return d.x_pos;
             })
-            .attr("y", $height-55)
+            .attr("y", $height-60)
             .attr("width", function(d) {
                 return d.width;
             })
@@ -509,7 +509,7 @@ function draw_force_diagram() {
                 .style("text-anchor", "start")
                 .text(graph.breakpoints[0].start)
                 .attr("x", graph.breakpoints[0].x_pos)
-                .attr("y", $height);
+                .attr("y", $height-5);
         
         endpoints
             .append("text")
@@ -517,7 +517,7 @@ function draw_force_diagram() {
                 .style("text-anchor", "end")
                 .text(graph.breakpoints[graph.breakpoints.length-1].stop)
                 .attr("x", $width)
-                .attr("y", $height);
+                .attr("y", $height-5);
     }
 }
 
