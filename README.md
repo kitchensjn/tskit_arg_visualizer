@@ -115,7 +115,7 @@ subset_nodes : list (EXPERIMENTAL)
 """
 ```
 
-A quick note about line_type="ortho" (more details can be found within [pathing.md](pathing.md)) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags and where nodes have a maximum of two parents or children. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" line_type.
+A quick note about line_type="ortho" (more details can be found within [pathing.md](pathing.md)) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags and where nodes have a maximum of two parents or children. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" edge_type.
 
 ## Saving Figures
 
