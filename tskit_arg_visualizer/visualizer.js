@@ -97,21 +97,36 @@ function draw_force_diagram() {
         .attr("bounds", function(d) {
             return d.bounds;
         });
-    
+
     var underlink = link_container
         .append("path")
         .attr("class", "underlink");
 
-    var link = link_container
-        .append("path")
-        .attr("class", function(d) {
-            if (subset.includes(d.source.id) & subset.includes(d.target.id)) {
-                return "link"
-            } else {
-                return "hiddenlink"
-            }
-        });
-    
+    if ($variable_edge_width) {
+        var link = link_container
+            .append("path")
+            .attr("class", function(d) {
+                if (subset.includes(d.source.id) & subset.includes(d.target.id)) {
+                    return "link"
+                } else {
+                    return "hiddenlink"
+                }
+            })
+            .style("stroke-width", function(d) {
+                return d.region_fraction * 7 + 1;
+            });
+    } else {
+        var link = link_container
+            .append("path")
+            .attr("class", function(d) {
+                if (subset.includes(d.source.id) & subset.includes(d.target.id)) {
+                    return "link"
+                } else {
+                    return "hiddenlink"
+                }
+            });
+    }
+
     var node = svg
         .append("g")
         .attr("class", "nodes")
@@ -487,18 +502,29 @@ function draw_force_diagram() {
                             });
                         });
                 highlight_links.raise();
-                highlight_links
-                    .select(".link")
-                    .style("stroke", "#1eebb1")
-                    .style("stroke-width", 7);
+                if ($variable_edge_width) {
+                    highlight_links
+                        .select(".link")
+                        .style("stroke", "#1eebb1");
+                } else {
+                    highlight_links
+                        .select(".link")
+                        .style("stroke", "#1eebb1")
+                        .style("stroke-width", 7);
+                };
             })
             .on('mouseout', function (d, i) {
                 d3.select(this)
                     .style('fill', '#053e4e')
                     .style("cursor", "default");
-                d3.selectAll("#arg_${divnum} .link")
-                    .style("stroke", "#053e4e")
-                    .style("stroke-width", 3);
+                if ($variable_edge_width) {
+                    d3.selectAll("#arg_${divnum} .link")
+                        .style("stroke", "#053e4e");
+                } else {
+                    d3.selectAll("#arg_${divnum} .link")
+                        .style("stroke", "#053e4e")
+                        .style("stroke-width", 3);
+                };     
             });
         
         var endpoints = th_group.append("g").attr("class", "endpoints");
