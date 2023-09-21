@@ -179,18 +179,21 @@ class D3ARG:
         links : list
             List of dictionaries containing information about a given link
         """
+
+        uniq_child_parent = np.unique(np.column_stack((ts.edges_child, ts.edges_parent)), axis=0) #Find unique parent-child pairs.
         links = []
-        for edge in ts.tables.edges:
-            parent = edge.parent
-            child = edge.child
+        for combo in uniq_child_parent:
+            child = combo[0]
+            parent = combo[1]
+            equivalent_edges = ts.tables.edges[np.where((ts.edges_child == child) & (ts.edges_parent == parent))[0]]
+            bounds = ""
+            for edge in equivalent_edges:
+                bounds += f"{edge.left}-{edge.right} "
             alternative_child = ""
             alternative_parent = ""
-            left = edge.left
-            right = edge.right
             if ts.tables.nodes.flags[edge.parent] != 131072:
-                children = np.unique(ts.tables.edges[np.where(ts.tables.edges.parent == edge.parent)[0]].child)
+                children = np.unique(ts.tables.edges[np.where(ts.edges_parent == edge.parent)[0]].child)
                 if len(children) > 2:
-                    #print(children[np.where(children != edge.child)])
                     alternative_child = children[np.where(children != edge.child)][0]
                 elif len(children) > 1:
                     alternative_child = children[np.where(children != edge.child)][0]
@@ -213,13 +216,12 @@ class D3ARG:
             if edge.child in recombination_nodes_to_merge:
                 child = edge.child - 1
             links.append({
-                "source": parent,
-                "target": child,
-                "left": left,
-                "right": right,
-                "alt_parent": alternative_parent, #recombination nodes have an alternative parent
-                "alt_child": alternative_child
-            })
+                    "source": parent,
+                    "target": child,
+                    "bounds": bounds[:-1],
+                    "alt_parent": alternative_parent, #recombination nodes have an alternative parent
+                    "alt_child": alternative_child
+                })
         return links
     
     def _identify_breakpoints(self, ts):

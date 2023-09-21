@@ -94,11 +94,8 @@ function draw_force_diagram() {
         .data(graph.links)
         .enter()
         .append("g")
-        .attr("left", function(d) {
-            return d.left;
-        })
-        .attr("right", function(d) {
-            return d.right;
+        .attr("bounds", function(d) {
+            return d.bounds;
         });
     
     var underlink = link_container
@@ -484,7 +481,10 @@ function draw_force_diagram() {
                 var highlight_links = d3.select("#arg_${divnum} .links")
                     .selectAll("g")
                         .filter(function(j) {
-                            return j.right > d.start & j.left < d.stop;
+                            return j.bounds.split(" ").some(function(region) {
+                                region = region.split("-");
+                                return (parseFloat(region[1]) > d.start) & (parseFloat(region[0]) < d.stop)
+                            });
                         });
                 highlight_links.raise();
                 highlight_links
