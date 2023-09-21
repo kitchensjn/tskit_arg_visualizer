@@ -45,8 +45,7 @@ Links are the edges between the nodes. This is similarly stored as a list of dic
 
 * **source**: ancestor node
 * **target**: descendent node
-* **left**: left bound of edge from the tskit.TreeSequence edge table
-* **right**: right bound of edge from the tskit.TreeSequence edge table 
+* **bounds**: a string with the boundaries of any region that contains this edge (ex. "0-1 5-8 9-10") NOTE: this differs from how edges are stored in the tskit.TreeSequence edge table
 * **alt_parent**: if the node has more than one parent, ID of the other parent, used for pathing method
 * **alt_child**: if the node has more than one child, ID of the other child, used for pathing method
 
