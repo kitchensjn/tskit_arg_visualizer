@@ -3,3 +3,4 @@ legacy_code/
 .DS_Store
 __pycache__
 tskit_arg_visualizer.egg-info/
+kreitman/
