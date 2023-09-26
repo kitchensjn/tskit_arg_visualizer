@@ -1,7 +1,7 @@
-var line = d3.line();
-var step = d3.line().curve(d3.curveStep);
-var stepAfter = d3.line().curve(d3.curveStepAfter);
-var stepBefore = d3.line().curve(d3.curveStepBefore);
+const line = d3.line();
+const step = d3.line().curve(d3.curveStep);
+const stepAfter = d3.line().curve(d3.curveStepAfter);
+const stepBefore = d3.line().curve(d3.curveStepBefore);
 
 function draw_force_diagram() {
     
@@ -419,7 +419,15 @@ function draw_force_diagram() {
                         return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
                     }
                 } else if ("$edge_type" == "line") {
-                    return line([[d.source.x, d.source.y], [d.target.x, d.target.y]])
+                    if (d.source.id == d.alt_parent) {
+                        var leftOrRight = 20;
+                        if (d.index % 2 == 0) {
+                            leftOrRight = -20;
+                        }
+                        return "M " + d.source.x + " " + d.source.y + " C " + (d.source.x + leftOrRight).toString() + " " +  (d.source.y - 10).toString() + ", " + (d.target.x + leftOrRight).toString() + " " + (d.target.y + 10).toString() + ", " + d.target.x + " " + d.target.y;
+                    } else {
+                        return line([[d.source.x, d.source.y], [d.target.x, d.target.y]]);
+                    }
                 }
             });
 

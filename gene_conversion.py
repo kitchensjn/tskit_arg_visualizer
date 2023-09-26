@@ -5,4 +5,4 @@ ts = msprime.sim_ancestry(
     3, gene_conversion_rate=0.02, gene_conversion_tract_length=1,
     sequence_length=10, random_seed=3)
 
-viz.D3ARG(ts=ts).draw()
+viz.D3ARG(ts=ts).draw(variable_edge_width=True)
