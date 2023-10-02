@@ -4,3 +4,4 @@ legacy_code/
 __pycache__
 tskit_arg_visualizer.egg-info/
 kreitman/
+unused.txt
