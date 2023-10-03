@@ -84,6 +84,7 @@ def draw(
     y_axis_labels=True,
     y_axis_scale="rank",
     edge_type="line",
+    variable_edge_width=False,
     subset_nodes=None
 ):
 """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
@@ -108,6 +109,9 @@ edge_type : string
     Pathing type for edges between nodes. Options:
         "line" (default) - simple straight lines between the nodes
         "ortho" - custom pathing (see pathing.md for more details, should only be used with full ARGs)
+variable_edge_width : bool
+    Scales the stroke width of edges in the visualization will be proportional to the fraction of
+    sequence in which that edge is found. (default=False)
 subset_nodes : list (EXPERIMENTAL)
     List of nodes that user wants to stand out within the ARG. These nodes and the edges between them
     will have full opacity; other nodes will be faint (default=None, parameter is ignored and all

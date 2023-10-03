@@ -1,7 +1,7 @@
-var line = d3.line();
-var step = d3.line().curve(d3.curveStep);
-var stepAfter = d3.line().curve(d3.curveStepAfter);
-var stepBefore = d3.line().curve(d3.curveStepBefore);
+const line = d3.line();
+const step = d3.line().curve(d3.curveStep);
+const stepAfter = d3.line().curve(d3.curveStepAfter);
+const stepBefore = d3.line().curve(d3.curveStepBefore);
 
 function draw_force_diagram() {
     
@@ -94,27 +94,39 @@ function draw_force_diagram() {
         .data(graph.links)
         .enter()
         .append("g")
-        .attr("left", function(d) {
-            return d.left;
-        })
-        .attr("right", function(d) {
-            return d.right;
+        .attr("bounds", function(d) {
+            return d.bounds;
         });
-    
+
     var underlink = link_container
         .append("path")
         .attr("class", "underlink");
 
-    var link = link_container
-        .append("path")
-        .attr("class", function(d) {
-            if (subset.includes(d.source.id) & subset.includes(d.target.id)) {
-                return "link"
-            } else {
-                return "hiddenlink"
-            }
-        });
-    
+    if ($variable_edge_width) {
+        var link = link_container
+            .append("path")
+            .attr("class", function(d) {
+                if (subset.includes(d.source.id) & subset.includes(d.target.id)) {
+                    return "link"
+                } else {
+                    return "hiddenlink"
+                }
+            })
+            .style("stroke-width", function(d) {
+                return d.region_fraction * 7 + 1;
+            });
+    } else {
+        var link = link_container
+            .append("path")
+            .attr("class", function(d) {
+                if (subset.includes(d.source.id) & subset.includes(d.target.id)) {
+                    return "link"
+                } else {
+                    return "hiddenlink"
+                }
+            });
+    }
+
     var node = svg
         .append("g")
         .attr("class", "nodes")
@@ -407,7 +419,15 @@ function draw_force_diagram() {
                         return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
                     }
                 } else if ("$edge_type" == "line") {
-                    return line([[d.source.x, d.source.y], [d.target.x, d.target.y]])
+                    if (d.source.id == d.alt_parent) {
+                        var leftOrRight = 20;
+                        if (d.index % 2 == 0) {
+                            leftOrRight = -20;
+                        }
+                        return "M " + d.source.x + " " + d.source.y + " C " + (d.source.x + leftOrRight).toString() + " " +  (d.source.y - 10).toString() + ", " + (d.target.x + leftOrRight).toString() + " " + (d.target.y + 10).toString() + ", " + d.target.x + " " + d.target.y;
+                    } else {
+                        return line([[d.source.x, d.source.y], [d.target.x, d.target.y]]);
+                    }
                 }
             });
 
@@ -484,21 +504,35 @@ function draw_force_diagram() {
                 var highlight_links = d3.select("#arg_${divnum} .links")
                     .selectAll("g")
                         .filter(function(j) {
-                            return j.right > d.start & j.left < d.stop;
+                            return j.bounds.split(" ").some(function(region) {
+                                region = region.split("-");
+                                return (parseFloat(region[1]) > d.start) & (parseFloat(region[0]) < d.stop)
+                            });
                         });
                 highlight_links.raise();
-                highlight_links
-                    .select(".link")
-                    .style("stroke", "#1eebb1")
-                    .style("stroke-width", 7);
+                if ($variable_edge_width) {
+                    highlight_links
+                        .select(".link")
+                        .style("stroke", "#1eebb1");
+                } else {
+                    highlight_links
+                        .select(".link")
+                        .style("stroke", "#1eebb1")
+                        .style("stroke-width", 7);
+                };
             })
             .on('mouseout', function (d, i) {
                 d3.select(this)
                     .style('fill', '#053e4e')
                     .style("cursor", "default");
-                d3.selectAll("#arg_${divnum} .link")
-                    .style("stroke", "#053e4e")
-                    .style("stroke-width", 3);
+                if ($variable_edge_width) {
+                    d3.selectAll("#arg_${divnum} .link")
+                        .style("stroke", "#053e4e");
+                } else {
+                    d3.selectAll("#arg_${divnum} .link")
+                        .style("stroke", "#053e4e")
+                        .style("stroke-width", 3);
+                };     
             });
         
         var endpoints = th_group.append("g").attr("class", "endpoints");

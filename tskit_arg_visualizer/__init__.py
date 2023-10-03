@@ -179,47 +179,57 @@ class D3ARG:
         links : list
             List of dictionaries containing information about a given link
         """
+
+        parents = list(ts.edges_parent)
+        for i,parent in enumerate(parents):
+            if parent in recombination_nodes_to_merge:
+                parents[i] -= 1
+
+        uniq_child_parent = np.unique(np.column_stack((ts.edges_child, parents)), axis=0) #Find unique parent-child pairs.
         links = []
-        for edge in ts.tables.edges:
-            parent = edge.parent
-            child = edge.child
+        for combo in uniq_child_parent:
+            child = combo[0]
+            parent = combo[1]
+            equivalent_edges = ts.tables.edges[np.where((ts.edges_child == child) & (parents == parent))[0]]
+            region_size = 0
+            bounds = ""
+            for edge in equivalent_edges:
+                bounds += f"{edge.left}-{edge.right} "
+                region_size += edge.right - edge.left
             alternative_child = ""
             alternative_parent = ""
-            left = edge.left
-            right = edge.right
-            if ts.tables.nodes.flags[edge.parent] != 131072:
-                children = np.unique(ts.tables.edges[np.where(ts.tables.edges.parent == edge.parent)[0]].child)
+            if ts.tables.nodes.flags[parent] != 131072:
+                children = np.unique(ts.tables.edges[np.where(parents == parent)[0]].child)
                 if len(children) > 2:
-                    #print(children[np.where(children != edge.child)])
-                    alternative_child = children[np.where(children != edge.child)][0]
+                    alternative_child = children[np.where(children != child)][0]
                 elif len(children) > 1:
-                    alternative_child = children[np.where(children != edge.child)][0]
+                    alternative_child = children[np.where(children != child)][0]
                 else:
                     alternative_child = -1 # this occurs when converting from SLiM simulations, needs to have better handling
                 if alternative_child in recombination_nodes_to_merge:
                     alternative_child -= 1
-            elif edge.parent in recombination_nodes_to_merge:
+            elif parent in recombination_nodes_to_merge:
                 parent = edge.parent - 1
-            if ts.tables.nodes.flags[edge.child] == 131072:
-                if edge.child in recombination_nodes_to_merge:
-                    alt_id = edge.child - 1
+            if ts.tables.nodes.flags[child] == 131072:
+                if child in recombination_nodes_to_merge:
+                    alt_id = child - 1
                 else:
-                    alt_id = edge.child + 1
+                    alt_id = child + 1
                 alt_id_parents = ts.tables.edges[np.where(ts.tables.edges.child == alt_id)[0]].parent
                 if len(alt_id_parents):
                     alternative_parent = alt_id_parents[0]
                 else:
                     alternative_parent = ""
-            if edge.child in recombination_nodes_to_merge:
-                child = edge.child - 1
+            if child in recombination_nodes_to_merge:
+                child = child - 1
             links.append({
-                "source": parent,
-                "target": child,
-                "left": left,
-                "right": right,
-                "alt_parent": alternative_parent, #recombination nodes have an alternative parent
-                "alt_child": alternative_child
-            })
+                    "source": parent,
+                    "target": child,
+                    "bounds": bounds[:-1],
+                    "alt_parent": alternative_parent, #recombination nodes have an alternative parent
+                    "alt_child": alternative_child,
+                    "region_fraction": region_size / ts.sequence_length
+                })
         return links
     
     def _identify_breakpoints(self, ts):
@@ -258,6 +268,7 @@ class D3ARG:
             y_axis_labels=True,
             y_axis_scale="rank",
             edge_type="line",
+            variable_edge_width=False,
             subset_nodes=None
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
@@ -282,6 +293,9 @@ class D3ARG:
             Pathing type for edges between nodes. Options:
                 "line" (default) - simple straight lines between the nodes
                 "ortho" - custom pathing (see pathing.md for more details, should only be used with full ARGs)
+        variable_edge_width : bool
+            Scales the stroke width of edges in the visualization will be proportional to the fraction of
+            sequence in which that edge is found. (default=False)
         subset_nodes : list (EXPERIMENTAL)
             List of nodes that user wants to stand out within the ARG. These nodes and the edges between them
             will have full opacity; other nodes will be faint (default=None, parameter is ignored and all
@@ -341,6 +355,7 @@ class D3ARG:
             },
             "tree_highlighting":str(tree_highlighting).lower(),
             "edge_type": edge_type,
+            "variable_edge_width": str(variable_edge_width).lower(),
             "subset_nodes": subset_nodes
         }
         draw_D3(arg_json=arg)
