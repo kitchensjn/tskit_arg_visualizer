@@ -1,5 +1,7 @@
 # What is a D3ARG?
 
+![D3ARG](https://github.com/kitchensjn/tskit_arg_visualizer/assets/40303683/1893c4e7-abaa-40cd-8e5b-1a74240a0535)
+
 tskit_arg_visualizer.D3ARG(ts=ts) converts a tskit.TreeSequence into a D3ARG object. This object contains much of the same content as a tskit.TreeSequence, but represents the ARG in a slightly different (but very important) way. Below are the two steps for converting the edge and node tables:
 
 - Edges are merged together if they fall into either of the two following categories. These are shown as a single graph edge composed of several intervals (see the "bounds" attribute of a link).
@@ -11,8 +13,6 @@ tskit_arg_visualizer.D3ARG(ts=ts) converts a tskit.TreeSequence into a D3ARG obj
 - All parent and child node IDs in the edges table are updated to reflect the new recombination node ID mapping.
 
 # Why change the representation of the ARG from the tskit.TreeSequence?
-
-*TO DO: ADD IMAGE OF THE TWO REPRESENTATIONS FOR A SIMPLE SCENARIO.* 
 
 The ARG representation used by the D3ARG object hosts some distinct advantages over the original tskit.TreeSequence. As recombination node pairs really refer to the same event, it is clearest visually to merge nodes in the ARG. In most cases, the ARG can be represented by a directed graph rather than a directed multigraph ("diamonds" are the only instance when a multigraph is necessary). This reduces the number of edges that are drawn to the screen without any loss of information as an edge now represents a line of inheritance from a parent node and a child node and includes all of the regions inherited along that connection, even if these regions are disjoint. This opens up the possibility for visualizations and interactions that focus on the relative amount of inheritance between two nodes in the ARG, which would not be as straightforward if the visualization used the tskit.TreeSequence edge representation.
 
