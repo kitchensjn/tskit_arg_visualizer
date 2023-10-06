@@ -38,9 +38,6 @@ d3arg = tskit_arg_visualizer.D3ARG(ts=ts)
 d3arg.draw(
     width=750,
     height=750,
-    y_axis_labels=True,
-    y_axis_scale="rank",
-    tree_highlighting=True,
     edge_type="ortho"
 )
 ```
@@ -85,7 +82,8 @@ def draw(
     y_axis_scale="rank",
     edge_type="line",
     variable_edge_width=False,
-    subset_nodes=None
+    subset_nodes=None,
+    include_node_labels=True
 ):
 """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -116,6 +114,8 @@ subset_nodes : list (EXPERIMENTAL)
     List of nodes that user wants to stand out within the ARG. These nodes and the edges between them
     will have full opacity; other nodes will be faint (default=None, parameter is ignored and all
     nodes will have opacity)
+include_node_labels : bool
+            Includes the node labels for each node in the ARG (default=True)
 """
 ```
 
@@ -131,6 +131,18 @@ import tskit_arg_visualizer
 
 arg_json = json.load(open("example.json", "r"))
 tskit_arg_visualizer.draw_D3(arg_json=arg_json)
+```
+
+## Modifying Node Labels
+
+```
+d3arg.set_node_labels(labels={0:"James",6:""})
+```
+
+Node labels can be changed using the `set_node_labels()` function. The example above will change the labels of Nodes 0 and 6 to "James" and "", respectively. An empty string is equivalent to removing the label of that specific node. Labels are always converted to strings. You can then redraw `d3arg` with the updated labels. If you wish to go back to the default labelling scheme, you run:
+
+```
+d3arg.reset_node_labels()
 ```
 
 ## Reheating A Figure (EXPERIMENTAL)
