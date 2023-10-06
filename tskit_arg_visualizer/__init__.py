@@ -260,6 +260,29 @@ class D3ARG:
                 start = bp
         return breakpoints
     
+    def set_node_labels(self, labels):
+        """Sets custom node labels
+
+        Labels are converted to strings
+
+        Parameters
+        ----------
+        labels : dict
+            ID of the node and its new label
+        """
+        
+        for node in labels:
+            self.nodes[node]["label"] = str(labels[node])
+
+    def reset_node_labels(self):
+        """Resets node labels to default (based on msprime IDs)"""
+
+        for node in self.nodes:
+            if node["flag"] == 131072:
+                node["label"] = str(node["id"]) + "/" + str(node["id"]+1)
+            else:
+                node["label"] = node["id"]
+    
     def draw(
             self,
             width=500,
@@ -269,7 +292,8 @@ class D3ARG:
             y_axis_scale="rank",
             edge_type="line",
             variable_edge_width=False,
-            subset_nodes=None
+            subset_nodes=None,
+            include_node_labels=True
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -300,6 +324,8 @@ class D3ARG:
             List of nodes that user wants to stand out within the ARG. These nodes and the edges between them
             will have full opacity; other nodes will be faint (default=None, parameter is ignored and all
             nodes will have opacity)
+        include_node_labels : bool
+            Includes the node labels for each node in the ARG (default=True)
         """
         
         y_axis_ticks = []
@@ -356,7 +382,8 @@ class D3ARG:
             "tree_highlighting":str(tree_highlighting).lower(),
             "edge_type": edge_type,
             "variable_edge_width": str(variable_edge_width).lower(),
-            "subset_nodes": subset_nodes
+            "subset_nodes": subset_nodes,
+            "include_node_labels": str(include_node_labels).lower()
         }
         draw_D3(arg_json=arg)
     

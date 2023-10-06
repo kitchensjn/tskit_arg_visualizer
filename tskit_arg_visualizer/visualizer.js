@@ -162,22 +162,24 @@ function draw_force_diagram() {
                 .style("cursor", "pointer")
         });
 
-    var label = svg
-        .append("g")
-        .attr("class", "labels")
-        .selectAll("text")
-        .data(graph.nodes)
-        .enter()
-        .append("text")
-            .attr("class", function(d) {
-                if (subset.includes(d.id)) {
-                    return "label"
-                } else {
-                    return "hiddenlabel"
-                }
-            })
-            .text(function (d) { return d.label; });
-
+    
+    if ($include_node_labels) {
+        var label = svg
+            .append("g")
+            .attr("class", "labels")
+            .selectAll("text")
+            .data(graph.nodes)
+            .enter()
+            .append("text")
+                .attr("class", function(d) {
+                    if (subset.includes(d.id)) {
+                        return "label"
+                    } else {
+                        return "hiddenlabel"
+                    }
+                })
+                .text(function (d) { return d.label; });
+    };
     
     function determine_path_type(d) {
         path_type = ""
@@ -431,33 +433,57 @@ function draw_force_diagram() {
                 }
             });
 
-        label
-            .attr("x", function(d) {
-                if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
-                    return d.x;
-                } else if (d.child_of.length == 1) {
-                    var parent = document.getElementById(String($divnum) + "_node" + d.child_of[0])
-                    if (parent != null) {
-                        var parent_x = parent.getAttribute("cx");
-                        if (parent_x > d.x) {
-                            return d.x - 15
-                        } else {
-                            return d.x + 15
-                        }
+        function determine_label_positioning(d) {
+            if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
+                return "c";
+            } else if (d.child_of.length == 1) {
+                var parent = document.getElementById(String($divnum) + "_node" + d.child_of[0])
+                if (parent != null) {
+                    var parent_x = parent.getAttribute("cx");
+                    if (parent_x > d.x) {
+                        return "l";
                     } else {
-                        return d.x + 15
+                        return "r";
                     }
                 } else {
-                    return d.x + 15;
+                    return "r";
                 }
-            })
-            .attr("y", function(d) {
-                if (d.parent_of.length == 0) {
-                    return d.y + 25;
-                } else {
-                    return d.y - 15;
-                }
-            });
+            } else {
+                return "r";
+            }
+        };
+
+        if ($include_node_labels) {
+
+            label
+                .attr("x", function(d) {
+                    var positioning = determine_label_positioning(d);
+                    if (positioning == "l") {
+                        return d.x - 15;
+                    } else if (positioning == "r") {
+                        return d.x + 15;
+                    } else {
+                        return d.x;
+                    }
+                })
+                .style("text-anchor", function(d) {
+                    var positioning = determine_label_positioning(d);
+                    if (positioning == "l") {
+                        return "end";
+                    } else if (positioning == "r") {
+                        return "start";
+                    } else {
+                        return "middle";
+                    }
+                })
+                .attr("y", function(d) {
+                    if (d.parent_of.length == 0) {
+                        return d.y + 25;
+                    } else {
+                        return d.y - 15;
+                    }
+                });
+        };
     }
 
     function dragstarted(event, d) {
