@@ -72,9 +72,16 @@ class D3ARG:
         y_axis_labels=True,
         y_axis_scale="rank",
         line_type="ortho",
-        subset_nodes=[]
+        subset_nodes=[],
+        include_node_labels=True
     )
         Draws the ARG using D3.js
+
+    set_node_labels(labels={})
+        Customizes node labels in visualization
+
+    reset_node_labels()
+        Sets the node labels back to default values
 
     """
 
