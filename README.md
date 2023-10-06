@@ -115,7 +115,7 @@ subset_nodes : list (EXPERIMENTAL)
     will have full opacity; other nodes will be faint (default=None, parameter is ignored and all
     nodes will have opacity)
 include_node_labels : bool
-            Includes the node labels for each node in the ARG (default=True)
+    Includes the node labels for each node in the ARG (default=True)
 """
 ```
 
