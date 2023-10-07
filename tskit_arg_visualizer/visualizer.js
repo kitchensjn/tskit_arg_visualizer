@@ -1,7 +1,7 @@
-const line = d3.line();
-const step = d3.line().curve(d3.curveStep);
-const stepAfter = d3.line().curve(d3.curveStepAfter);
-const stepBefore = d3.line().curve(d3.curveStepBefore);
+var line = d3.line();
+var step = d3.line().curve(d3.curveStep);
+var stepAfter = d3.line().curve(d3.curveStepAfter);
+var stepBefore = d3.line().curve(d3.curveStepBefore);
 
 function draw_force_diagram() {
     
@@ -102,28 +102,45 @@ function draw_force_diagram() {
         .append("path")
         .attr("class", "underlink");
 
+    var link = link_container
+        .append("path")
+        .attr("class", function(d) {
+            if (subset.includes(d.source.id) & subset.includes(d.target.id)) {
+                return "link"
+            } else {
+                return "hiddenlink"
+            }
+        });
+    
     if ($variable_edge_width) {
-        var link = link_container
-            .append("path")
-            .attr("class", function(d) {
-                if (subset.includes(d.source.id) & subset.includes(d.target.id)) {
-                    return "link"
-                } else {
-                    return "hiddenlink"
-                }
-            })
+        link
             .style("stroke-width", function(d) {
                 return d.region_fraction * 7 + 1;
             });
-    } else {
-        var link = link_container
-            .append("path")
-            .attr("class", function(d) {
-                if (subset.includes(d.source.id) & subset.includes(d.target.id)) {
-                    return "link"
-                } else {
-                    return "hiddenlink"
-                }
+    }
+    
+    if ($tree_highlighting) {
+        link
+            .on('mouseover', function (event, d) {
+                d3.select(this)
+                    .style('stroke', '#1eebb1')
+                    .style("cursor", "pointer");
+                d3.select("#arg_${divnum} .breakpoints")
+                    .selectAll("rect")
+                        .filter(function(j) {
+                            return d.bounds.split(" ").some(function(region) {
+                                region = region.split("-");
+                                return (parseFloat(region[0]) <= j.start) & (parseFloat(region[1]) >= j.stop)
+                            });
+                        })
+                        .style('fill', '#1eebb1');
+            })
+            .on('mouseout', function (d, i) {
+                d3.select(this)
+                    .style('stroke', '#053e4e')
+                    .style("cursor", "default")
+                d3.select("#arg_${divnum} .breakpoints").selectAll("rect")
+                    .style("fill", "#053e4e")
             });
     }
 
@@ -536,29 +553,29 @@ function draw_force_diagram() {
                             });
                         });
                 highlight_links.raise();
-                if ($variable_edge_width) {
+                //if ($variable_edge_width) {
                     highlight_links
                         .select(".link")
                         .style("stroke", "#1eebb1");
-                } else {
-                    highlight_links
-                        .select(".link")
-                        .style("stroke", "#1eebb1")
-                        .style("stroke-width", 7);
-                };
+                //} else {
+                //    highlight_links
+                //        .select(".link")
+                //        .style("stroke", "#1eebb1")
+                //        .style("stroke-width", 7);
+                //};
             })
             .on('mouseout', function (d, i) {
                 d3.select(this)
                     .style('fill', '#053e4e')
                     .style("cursor", "default");
-                if ($variable_edge_width) {
+                //if ($variable_edge_width) {
                     d3.selectAll("#arg_${divnum} .link")
                         .style("stroke", "#053e4e");
-                } else {
-                    d3.selectAll("#arg_${divnum} .link")
-                        .style("stroke", "#053e4e")
-                        .style("stroke-width", 3);
-                };     
+                //} else {
+                //    d3.selectAll("#arg_${divnum} .link")
+                //        .style("stroke", "#053e4e")
+                //        .style("stroke-width", 3);
+                //};     
             });
         
         var endpoints = th_group.append("g").attr("class", "endpoints");

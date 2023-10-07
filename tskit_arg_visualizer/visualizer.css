@@ -75,13 +75,13 @@
 .node {
     fill: #1eebb1;
     stroke: #053e4e;
-    stroke-width: 3px;
+    stroke-width: 4px;
 }
 
 .hiddennode {
     fill: lightgrey;
     stroke: lightgrey;
-    stroke-width: 3px;
+    stroke-width: 4px;
 }
 
 .underlink {
@@ -92,13 +92,13 @@
 
 .link {
     stroke: #053e4e;
-    stroke-width: 3px;
+    stroke-width: 4px;
     fill: none;
 }
 
 .hiddenlink {
     stroke: lightgrey;
-    stroke-width: 3px;
+    stroke-width: 4px;
     fill: none;
 }
 
