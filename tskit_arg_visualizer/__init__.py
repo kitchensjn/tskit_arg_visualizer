@@ -280,10 +280,11 @@ class D3ARG:
             ID of the node and its new label
         """
 
-        for node in labels:
-            for i,n in enumerate(self.nodes):
-                if n["id"] == node:
-                    self.nodes[i]["label"] = str(labels[node])
+        id_map = {n["id"]: i for i,n in enumerate(self.nodes)}
+        for label in labels:
+            if label not in id_map:
+                raise ValueError(f"Node {label} not in the graph. Cannot update the node label.")
+            self.nodes[id_map[label]]["label"] = str(labels[label])
 
     def reset_node_labels(self):
         """Resets node labels to default (based on msprime IDs)"""
