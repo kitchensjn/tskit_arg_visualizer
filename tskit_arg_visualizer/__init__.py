@@ -159,7 +159,7 @@ class D3ARG:
             elif node.flags == 262144:
                 if len(parent_of) > 0:
                     info["x_pos_reference"] = parent_of[0]
-            info["label"] = label #label which is either the node ID or two node IDs for recombination nodes
+            info["label"] = str(label) #label which is either the node ID or two node IDs for recombination nodes
             if node.flags == 1:
                 info["fx_01"] = ordered_nodes.index(ID)*w_spacing #sample nodes have a fixed x position
             nodes.append(info)
@@ -270,16 +270,20 @@ class D3ARG:
     def set_node_labels(self, labels):
         """Sets custom node labels
 
-        Labels are converted to strings
+        Updates node labels based on the D3ARG node "id" using the labels dictionary.
+        Final labels will always be strings. Do not rely on the ordering of the
+        labels dictionary.
 
         Parameters
         ----------
         labels : dict
             ID of the node and its new label
         """
-        
+
         for node in labels:
-            self.nodes[node]["label"] = str(labels[node])
+            for i,n in enumerate(self.nodes):
+                if n["id"] == node:
+                    self.nodes[i]["label"] = str(labels[node])
 
     def reset_node_labels(self):
         """Resets node labels to default (based on msprime IDs)"""
@@ -288,7 +292,7 @@ class D3ARG:
             if node["flag"] == 131072:
                 node["label"] = str(node["id"]) + "/" + str(node["id"]+1)
             else:
-                node["label"] = node["id"]
+                node["label"] = str(node["id"])
     
     def draw(
             self,
