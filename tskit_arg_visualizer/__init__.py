@@ -29,6 +29,27 @@ def running_in_notebook():
             return False  # Other type (?)
     except NameError:
         return False      # Probably standard Python interpreter
+    
+def calculate_evenly_distributed_positions(num_elements, start=0, end=1):
+    """Returns a list of `num_elements` evenly distributed positions on a given `length`
+
+    Parameters
+    ----------
+    num_elements : int
+        Number of positions to be returned
+    length : int or float
+        Range of positions
+
+    Returns
+    -------
+    List of float positions
+    """
+
+    if num_elements > 1:
+        w_spacing = (end-start) / (num_elements - 1)
+        return [i * w_spacing + start for i in range(num_elements)]
+    else:
+        return [(end-start) / 2]
 
 def draw_D3(arg_json):
     arg_json["source"] = arg_json.copy()
@@ -95,6 +116,7 @@ class D3ARG:
             msprime.sim_ancestry(...,record_full_arg=True)
         """
         rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
+        self.ts = ts
         self.nodes = self._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm)
         self.edges = self._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm)
         self.breakpoints = self._identify_breakpoints(ts=ts)
@@ -122,7 +144,6 @@ class D3ARG:
         """
 
         # Parameters for the dimensions of the D3 plot. Eventually want to handle this entirely in JS
-        w_spacing = 1 / (ts.num_samples - 1)
         h_spacing = 1 / (len(np.unique(ts.tables.nodes.time))-1) #(ts.num_nodes - ts.num_samples - np.count_nonzero(ts.tables.nodes.flags == 131072)/2)
         ordered_nodes = [] # Ordering of sample nodes is the same as the first tree in the sequence
         for node in ts.first().nodes(order="minlex_postorder"):
@@ -160,8 +181,6 @@ class D3ARG:
                 if len(parent_of) > 0:
                     info["x_pos_reference"] = parent_of[0]
             info["label"] = str(label) #label which is either the node ID or two node IDs for recombination nodes
-            if node.flags == 1:
-                info["fx_01"] = ordered_nodes.index(ID)*w_spacing #sample nodes have a fixed x position
             nodes.append(info)
         return nodes
 
@@ -283,7 +302,7 @@ class D3ARG:
         id_map = {n["id"]: i for i,n in enumerate(self.nodes)}
         for label in labels:
             if label not in id_map:
-                raise ValueError(f"Node {label} not in the graph. Cannot update the node label.")
+                raise ValueError(f"Node '{label}' not in the graph. Cannot update the node label.")
             self.nodes[id_map[label]]["label"] = str(labels[label])
 
     def reset_node_labels(self):
@@ -295,6 +314,58 @@ class D3ARG:
             else:
                 node["label"] = str(node["id"])
     
+    def _check_all_nodes_are_samples(self, nodes):
+        """Checks whether the list of nodes includes only samples
+
+        Returns False
+        
+        Parameter
+        ---------
+        nodes : list
+            List of potential sample nodes
+
+        Returns
+        -------
+        tuple :
+            bool : whether all nodes in list are samples
+            int/None : the ID of the first node that is not a sample
+        """
+
+        id_map = {n["id"]: i for i,n in enumerate(self.nodes)}
+        for node in nodes:
+            if id_map.get(node,-1) != -1:
+                if self.nodes[id_map[node]]["flag"] != 1:
+                    return False, node
+            else:
+                raise ValueError(f"Node '{node}' not in the graph.")
+        return True, None
+
+    def _calculate_sample_order(self, order=[]):
+        """Sets the ordering of the sample nodes (tips) within the ARG
+    
+        Sample nodes in order list will come first, then any samples nodes not provided will be included
+        in minlex_postorder. Checks that only sample nodes are provided in order.
+
+        Parameter
+        ---------
+        order : list
+            Sample nodes in desired order. Must only include sample nodes, but does not
+            need to include all sample nodes.
+
+        Returns
+        -------
+        order : list
+            Sample nodes in desired order, including those not originally provided
+        """
+
+        check_samples = self._check_all_nodes_are_samples(nodes=order)
+        if not check_samples[0]:
+            raise ValueError(f"Node '{check_samples[1]}' not a sample and cannot be included in sample order.")
+        for node in self.ts.first().nodes(order="minlex_postorder"):
+            if self.ts.first().is_sample(node) and node not in order:
+                order.append(node)
+        return order
+
     def draw(
             self,
             width=500,
@@ -305,7 +376,8 @@ class D3ARG:
             edge_type="line",
             variable_edge_width=False,
             subset_nodes=None,
-            include_node_labels=True
+            include_node_labels=True,
+            sample_order=[]
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -338,17 +410,32 @@ class D3ARG:
             nodes will have opacity)
         include_node_labels : bool
             Includes the node labels for each node in the ARG (default=True)
+        sample_order : list
+            Sample nodes IDs in desired order. Must only include sample nodes IDs, but does not
+            need to include all sample nodes IDs. (default=[], order is set by first tree in tree sequence)
         """
         
         y_axis_ticks = []
         y_axis_text = []
         transformed_nodes = []
+        
+        x_shift = 50
+        if y_axis_labels:
+            x_shift = 100
+        sample_positions = calculate_evenly_distributed_positions(num_elements=self.ts.num_samples, start=x_shift, end=(width-100)+x_shift)
+        sample_order = self._calculate_sample_order(order=sample_order)
+        
         for node in self.nodes:
-            if node.get("fx_01", -1) != -1:
+            if node["flag"] == 1:
                 if y_axis_labels:
-                    node["fx"] = node["fx_01"] * (width-100) + 100
+                    node["fx"] = sample_positions[sample_order.index(node["id"])]
                 else:
-                    node["fx"] = node["fx_01"] * (width-100) + 50
+                    node["fx"] = sample_positions[sample_order.index(node["id"])]
+            else:
+                if y_axis_labels:
+                    node["x"] = 0.5 * (width-100) + x_shift
+                else:
+                    node["x"] = 0.5 * (width-100) + x_shift
             if y_axis_scale == "time":
                 node["fy"] = node["time_01"] * (height-100) + 50
                 y_axis_ticks.append(node["time_01"] * (height-100) + 50)
@@ -395,7 +482,8 @@ class D3ARG:
             "edge_type": edge_type,
             "variable_edge_width": str(variable_edge_width).lower(),
             "subset_nodes": subset_nodes,
-            "include_node_labels": str(include_node_labels).lower()
+            "include_node_labels": str(include_node_labels).lower(),
+            "evenly_distributed_positions": sample_positions
         }
         draw_D3(arg_json=arg)
     

@@ -8,6 +8,7 @@ function draw_force_diagram() {
     var graph = $arg;
     var y_axis = $y_axis;
     var subset = $subset_nodes;
+    var evenly_distributed_positions = $evenly_distributed_positions;
 
     var dashboard = d3.select("#arg_${divnum}").append("div").attr("class", "dashboard");
     
@@ -29,12 +30,15 @@ function draw_force_diagram() {
 
     var reheat = dashboard.append("button")
         .on("click", function(event) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
+            if (!event.active) simulation.alphaTarget(0.3).restart();       
+            var order = d3.selectAll("#arg_${divnum} .sample").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
             d3.selectAll("#arg_${divnum} .node").classed("unfix", function(d) {
                 if (d.flag != 1) {
                     delete d.fx;
+                } else {
+                    d.fx = evenly_distributed_positions[order.indexOf(d.id)];
                 }
-            })
+            });
         });
     reheat.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
         .attr("xmlns", "http://www.w3.org/2000/svg")
@@ -42,7 +46,20 @@ function draw_force_diagram() {
         .append("path")
         .attr("d", "M153.6 29.9l16-21.3C173.6 3.2 180 0 186.7 0C198.4 0 208 9.6 208 21.3V43.5c0 13.1 5.4 25.7 14.9 34.7L307.6 159C356.4 205.6 384 270.2 384 337.7C384 434 306 512 209.7 512H192C86 512 0 426 0 320v-3.8c0-48.8 19.4-95.6 53.9-130.1l3.5-3.5c4.2-4.2 10-6.6 16-6.6C85.9 176 96 186.1 96 198.6V288c0 35.3 28.7 64 64 64s64-28.7 64-64v-3.9c0-18-7.2-35.3-19.9-48l-38.6-38.6c-24-24-37.5-56.7-37.5-90.7c0-27.7 9-54.8 25.6-76.9z");
     reheat.append("span").attr("class", "tip desc").text("Reheat Simulation");
-
+    
+    var evenly_distribute = dashboard.append("button")
+        .on("click", function() {
+            var order = d3.selectAll("#arg_${divnum} .sample").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
+            d3.selectAll("#arg_${divnum} .sample").classed("distribute", function(d) {
+                d.fx = evenly_distributed_positions[order.indexOf(d.id)];
+            });
+        });
+    evenly_distribute.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+        .attr("xmlns", "http://www.w3.org/2000/svg")
+        .attr("viewBox", "0 0 512 512")
+        .append("path")
+        .attr("d", "M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22l0 56-192 0 0-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22l0-56 192 0 0 56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z")
+    evenly_distribute.append("span").attr("class", "tip desc").text("Space Samples");
 
     var svg = d3.select("#arg_${divnum}").append("svg")
         .attr("width", $width)
@@ -155,11 +172,16 @@ function draw_force_diagram() {
             return String($divnum) + "_node" + d.id
         })
         .attr("class", function(d) {
+            var classy = ""
             if (subset.includes(d.id)) {
-                return "node"
+                classy += "node";
             } else {
-                return "hiddennode"
+                classy += "hiddennode";
             }
+            if (d.flag == 1) {
+                classy += " sample";
+            }
+            return classy
         })
         .attr("parents", function(d) {
             return d.child_of.toString().replace(",", " ")
