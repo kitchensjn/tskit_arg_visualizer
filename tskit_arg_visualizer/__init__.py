@@ -106,7 +106,17 @@ class D3ARG:
 
     """
 
-    def __init__(self, ts):
+    def __init__(self, nodes, edges, breakpoints, num_samples, sample_order):
+        self.nodes = nodes
+        for node in self.nodes:
+            print(node)
+        self.edges = edges
+        self.breakpoints = breakpoints
+        self.num_samples = num_samples
+        self.sample_order = sample_order
+        
+    @classmethod
+    def from_ts(cls, ts):
         """Converts a tskit tree sequence into the D3ARG object
         
         Parameters
@@ -115,13 +125,40 @@ class D3ARG:
             tree sequence must have marked recombination nodes, such as using
             msprime.sim_ancestry(...,record_full_arg=True)
         """
-        rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
-        self.ts = ts
-        self.nodes = self._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm)
-        self.edges = self._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm)
-        self.breakpoints = self._identify_breakpoints(ts=ts)
 
-    def _convert_nodes_table(self, ts, recombination_nodes_to_merge):
+        rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
+        return cls(
+            nodes=cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm),
+            edges=cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm),
+            breakpoints=cls._identify_breakpoints(ts=ts),
+            num_samples=ts.num_samples,
+            sample_order=ts.first().nodes(order="minlex_postorder")
+        )
+    
+    @classmethod
+    def from_json(cls, json):
+        samples = []
+        samples_x_pos = []
+        nodes = json["arg"]["nodes"]
+        width = json["width"]
+        x_shift = 50
+        if json["y_axis"]["include_labels"]:
+            x_shift = 100
+            width -= 50
+        for i,node in enumerate(nodes):
+            if node["flag"] == 1:
+                samples.append(node["id"])
+                samples_x_pos.append(node["fx"])
+            nodes[i]["x_pos_01"] = (node["x"] - x_shift) / (width-100)
+        return cls(
+            nodes=nodes,
+            edges=json["arg"]["links"],
+            breakpoints=json["arg"]["breakpoints"],
+            num_samples=len(samples),
+            sample_order=[sample for _, sample in sorted(zip(samples_x_pos, samples))]
+        )
+
+    def _convert_nodes_table(ts, recombination_nodes_to_merge):
         """Creates nodes JSON from the tskit.TreeSequence nodes table
         
         A "reference" is the id of another node that is used to determine a property in the
@@ -184,7 +221,7 @@ class D3ARG:
             nodes.append(info)
         return nodes
 
-    def _convert_edges_table(self, ts, recombination_nodes_to_merge):
+    def _convert_edges_table(ts, recombination_nodes_to_merge):
         """Creates edges JSON from the tskit.TreeSequence edges table
 
         Merges the recombination nodes, identified by the smaller of the two IDs. The direction
@@ -258,7 +295,7 @@ class D3ARG:
                 })
         return links
     
-    def _identify_breakpoints(self, ts):
+    def _identify_breakpoints(ts):
         """Creates breakpoints JSON from the tskit.TreeSequence
 
         Parameters
@@ -361,9 +398,9 @@ class D3ARG:
         check_samples = self._check_all_nodes_are_samples(nodes=order)
         if not check_samples[0]:
             raise ValueError(f"Node '{check_samples[1]}' not a sample and cannot be included in sample order.")
-        for node in self.ts.first().nodes(order="minlex_postorder"):
-            if self.ts.first().is_sample(node) and node not in order:
-                order.append(node)
+        for node in self.nodes:
+            if node["flag"] == 1 and node["id"] not in order:
+                order.append(node["id"])
         return order
 
     def draw(
@@ -422,20 +459,16 @@ class D3ARG:
         x_shift = 50
         if y_axis_labels:
             x_shift = 100
-        sample_positions = calculate_evenly_distributed_positions(num_elements=self.ts.num_samples, start=x_shift, end=(width-100)+x_shift)
+        sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
         sample_order = self._calculate_sample_order(order=sample_order)
         
         for node in self.nodes:
-            if node["flag"] == 1:
-                if y_axis_labels:
-                    node["fx"] = sample_positions[sample_order.index(node["id"])]
-                else:
-                    node["fx"] = sample_positions[sample_order.index(node["id"])]
+            if node.get("x_pos_01", -1) != -1:
+                node["fx"] = node["x_pos_01"] * (width-100) + x_shift
+            elif node["flag"] == 1:
+                node["fx"] = sample_positions[sample_order.index(node["id"])]
             else:
-                if y_axis_labels:
-                    node["x"] = 0.5 * (width-100) + x_shift
-                else:
-                    node["x"] = 0.5 * (width-100) + x_shift
+                node["x"] = 0.5 * (width-100) + x_shift
             if y_axis_scale == "time":
                 node["fy"] = node["time_01"] * (height-100) + 50
                 y_axis_ticks.append(node["time_01"] * (height-100) + 50)
