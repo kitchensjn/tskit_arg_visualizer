@@ -50,7 +50,7 @@ The above code can be run in three ways: terminal, Jupyter Notebook, or JupyterL
 %%javascript
 require.config({ 
     paths: { 
-    d3: 'https://d3js.org/d3.v7.min.js'
+    d3: 'https://d3js.org/d3.v7.min'
 }});
 
 require(["d3"], function(d3) {
