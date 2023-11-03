@@ -1,3 +1,45 @@
+[project]
+name = "tskit_arg_visualizer"
+version = "0.0.1"
+authors = [{name="James Kitchens",email="kitchensjn@gmail.com"}]
+description = "Interactive visualization method for ancestral recombination graphs"
+readme = "README.md"
+keywords = [
+    "population genetics",
+    "tree sequence",
+    "ancestral recombination graph",
+    "visualization",
+    "D3.js",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "msprime",
+    "IPython",
+]
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 3 - Alpha",
+    "Environment :: Other Environment",
+    "Intended Audience :: Science/Research",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/kitchensjn/tskit_arg_visualizer"
+"Changelog" = "https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/CHANGELOG.rst"
+"Bug Tracker" = "https://github.com/kitchensjn/tskit_arg_visualizer/issues"
+
 [build-system]
 requires = [
     "setuptools>=42",

@@ -6,3 +6,4 @@ tskit_arg_visualizer.egg-info/
 unused.txt
 examples/
 tskit_arg_visualizer/_version.py
+dist/

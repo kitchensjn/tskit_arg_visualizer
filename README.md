@@ -1,7 +1,5 @@
-# Ancestral Recombination Graph Visualizer
-
 <p align="center">
-  <img alt="ARG Visualizer Example" src="./images/stylized_arg_visualizer.png" width="500">
+  <img alt="ARG Visualizer Example" src="https://raw.githubusercontent.com/kitchensjn/tskit_arg_visualizer/master/images/stylized_arg_visualizer.png" width="500">
 </p>
 
 A method for drawing ancestral recombination graphs from tskit tree sequences in Python using D3.js. ARGs are plotted using a D3's [force layout](https://github.com/d3/d3-force). All nodes have a fixed position on the y-axis set by fy. Sample nodes have a fixed position on the x-axis set by fx; the ordering of the sample nodes comes from the first tree in the tskit tree sequence (this is not always the optimal ordering but is generally a good starting point for plotting). The x positions of other nodes are set by a force simulation where all nodes repel each other countered by a linkage force between connected nodes in the graph.
@@ -11,7 +9,7 @@ Users can click and drag the nodes (including the sample) along the x-axis to fu
 ## Installation
 
 ```
-pip install git+https://github.com/kitchensjn/tskit_arg_visualizer.git
+pip install tskit_arg_visualizer
 ```
 
 This package loads D3.js using a CDN, so requires access to the internet.
@@ -123,11 +121,11 @@ sample_order : list
 """
 ```
 
-A quick note about line_type="ortho" (more details can be found within [pathing.md](pathing.md)) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags and where nodes have a maximum of two parents or children. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" edge_type.
+A quick note about line_type="ortho" (more details can be found within [pathing.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/pathing.md)) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags and where nodes have a maximum of two parents or children. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" edge_type.
 
 ## Saving Figures
 
-Each figure is actually just a JSON object that D3.js interprets and plots to the screen (see [plotting.md](plotting.md) for more information about this object). The "Copy Source To Clipboard" button to the top left of each figure copies that specific figure's JSON object to your computer's clipboard. This object includes all of the information needed to replicate the figure in a subsequent simulation and can be pasted into a `.json` file for later. To revisualize this figure:
+Each figure is actually just a JSON object that D3.js interprets and plots to the screen (see [plotting.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/plotting.md) for more information about this object). The "Copy Source To Clipboard" button to the top left of each figure copies that specific figure's JSON object to your computer's clipboard. This object includes all of the information needed to replicate the figure in a subsequent simulation and can be pasted into a `.json` file for later. To revisualize this figure:
 
 ```
 import json
