@@ -49,7 +49,7 @@ def calculate_evenly_distributed_positions(num_elements, start=0, end=1):
         w_spacing = (end-start) / (num_elements - 1)
         return [i * w_spacing + start for i in range(num_elements)]
     else:
-        return [(end-start) / 2]
+        return [0.5 * (end-start) + start]
 
 def draw_D3(arg_json):
     arg_json["source"] = arg_json.copy()
