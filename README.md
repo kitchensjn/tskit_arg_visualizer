@@ -34,7 +34,7 @@ ts = msprime.sim_ancestry(
     random_seed=ts_rs
 )
 
-d3arg = tskit_arg_visualizer.D3ARG(ts=ts)
+d3arg = tskit_arg_visualizer.D3ARG.from_ts(ts=ts)
 d3arg.draw(
     width=750,
     height=750,
@@ -83,7 +83,8 @@ def draw(
     edge_type="line",
     variable_edge_width=False,
     subset_nodes=None,
-    include_node_labels=True
+    include_node_labels=True,
+    sample_order=[]
 ):
 """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -116,6 +117,9 @@ subset_nodes : list (EXPERIMENTAL)
     nodes will have opacity)
 include_node_labels : bool
     Includes the node labels for each node in the ARG (default=True)
+sample_order : list
+    Sample nodes IDs in desired order. Must only include sample nodes IDs, but does not
+    need to include all sample nodes IDs. (default=[], order is set by first tree in tree sequence)
 """
 ```
 
@@ -132,6 +136,14 @@ import tskit_arg_visualizer
 arg_json = json.load(open("example.json", "r"))
 tskit_arg_visualizer.draw_D3(arg_json=arg_json)
 ```
+
+Alternatively, you can pass the JSON into a D3ARG object constructor, which then gives you access to all of the D3ARG object methods, such as drawing and modifying node labels.
+
+```
+d3arg = tskit_arg_visualizer.D3ARG.from_json(json=arg_json)
+d3arg.draw()
+```
+
 
 ## Modifying Node Labels
 
