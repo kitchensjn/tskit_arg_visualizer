@@ -1,15 +1,8 @@
 from setuptools import setup
 
 setup(
+    # The package name along with all the other metadata is specified in setup.cfg
+    # However, GitHub's dependency graph can't see the package unless we put this here.
     name="tskit_arg_visualizer",
-    version="0.10",
-    url='https://github.com/kitchensjn/tskit_arg_visualizer',
-    author="James Kitchens",
-    author_email="kitchensjn@gmail.com",
     packages=["tskit_arg_visualizer"],
-    install_requires=[
-        "msprime",
-        "IPython",
-    ],
-    include_package_data=True,
 )
