@@ -75,6 +75,8 @@ def draw_D3(arg_json):
 class D3ARG:
     """Stores the ARG in a D3.js friendly format ready for plotting
 
+    See 'Alternative Constructors' for common ways of creating this object
+
     Attributes
     ----------
     nodes : list
@@ -83,6 +85,18 @@ class D3ARG:
         List of edge dicts that contain info about the edges
     breakpoints : list
         List of breakpoint dicts that contain info about the breakpoints
+    num_samples : int
+        The number of samples in the ARG (with flag=1)
+    sample_order : list
+        Ordered list of sample IDs
+
+    Alternative Constructors
+    ------------------------
+    from_ts(ts)
+        Creates a D3ARG from a tskit.TreeSequence
+    
+    from_json(json)
+        Creates a D3ARG from a saved custom JSON
 
     Methods
     -------
@@ -107,9 +121,25 @@ class D3ARG:
     """
 
     def __init__(self, nodes, edges, breakpoints, num_samples, sample_order):
+        """Initializes a D3ARG object
+
+        This is the generalized function for initializing a D3ARG object. It is most
+        often called by another method, such as from_ts() or from_json(), though it
+        can be used separately if the parameters are in the correct format.
+
+        Parameters
+        ----------
+        nodes : list
+            List of node dicts that contain info about the nodes
+        edges : list
+            List of edge dicts that contain info about the edges
+        breakpoints : list
+            List of breakpoint dicts that contain info about the breakpoints
+        num_samples : int
+        sample_order : list or np.array
+        """
+
         self.nodes = nodes
-        for node in self.nodes:
-            print(node)
         self.edges = edges
         self.breakpoints = breakpoints
         self.num_samples = num_samples
@@ -117,13 +147,17 @@ class D3ARG:
         
     @classmethod
     def from_ts(cls, ts):
-        """Converts a tskit tree sequence into the D3ARG object
+        """Converts a tskit tree sequence into a D3ARG object
         
         Parameters
         ----------
         ts : tskit.TreeSequence
             tree sequence must have marked recombination nodes, such as using
             msprime.sim_ancestry(...,record_full_arg=True)
+        
+        Returns
+        -------
+        D3ARG : a corresponding D3ARG object ready to be plotted
         """
 
         rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
@@ -137,6 +171,19 @@ class D3ARG:
     
     @classmethod
     def from_json(cls, json):
+        """Converts a saved custom JSON into the D3ARG object
+        
+        Parameters
+        ----------
+        json : list of dictionaries
+            the custom output of that is copied to clipboard within the visualizer.
+            See plotting.md for more details on the format of the json structure
+
+        Returns
+        -------
+        D3ARG : a corresponding D3ARG object ready to be plotted
+        """
+
         samples = []
         samples_x_pos = []
         nodes = json["arg"]["nodes"]
