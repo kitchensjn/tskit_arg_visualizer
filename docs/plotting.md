@@ -2,7 +2,7 @@
 
 ![D3ARG](https://github.com/kitchensjn/tskit_arg_visualizer/assets/40303683/1893c4e7-abaa-40cd-8e5b-1a74240a0535)
 
-tskit_arg_visualizer.D3ARG(ts=ts) converts a tskit.TreeSequence into a D3ARG object. This object contains much of the same content as a tskit.TreeSequence, but represents the ARG in a slightly different (but very important) way. Below are the two steps for converting the edge and node tables:
+tskit_arg_visualizer.D3ARG.from_ts(ts=ts) converts a tskit.TreeSequence into a D3ARG object. This object contains much of the same content as a tskit.TreeSequence, but represents the ARG in a slightly different (but very important) way. Below are the two steps for converting the edge and node tables:
 
 - Edges are merged together if they fall into either of the two following categories. These are shown as a single graph edge composed of several intervals (see the "bounds" attribute of a link).
     - The edges have the same child node and parent node.
