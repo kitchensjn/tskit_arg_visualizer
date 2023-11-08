@@ -3,6 +3,71 @@ var step = d3.line().curve(d3.curveStep);
 var stepAfter = d3.line().curve(d3.curveStepAfter);
 var stepBefore = d3.line().curve(d3.curveStepBefore);
 
+
+// https://gist.github.com/Rokotyan/0556f8facbaf344507cdc45dc3622177
+// Below are the functions that handle actual exporting:
+// getSVGString ( svgNode ) and svgString2Image( svgString, width, height, format, callback )
+function getSVGString( svgNode ) {
+	svgNode.setAttribute('xlink', 'http://www.w3.org/1999/xlink');
+	var cssStyleText = getCSSStyles();
+	appendCSS( cssStyleText, svgNode );
+	var serializer = new XMLSerializer();
+	var svgString = serializer.serializeToString(svgNode);
+	svgString = svgString.replace(/(\w+)?:?xlink=/g, 'xmlns:xlink='); // Fix root xlink without namespace
+	svgString = svgString.replace(/NS\d+:href/g, 'xlink:href'); // Safari NS namespace fix
+	return svgString;
+
+	function getCSSStyles() {
+		// Extract CSS Rules
+		var extractedCSSText = "";
+		for (var i = 0; i < document.styleSheets.length; i++) {
+			var s = document.styleSheets[i];
+            try {
+			    if(!s.cssRules) continue;
+			} catch( e ) {
+                if(e.name !== 'SecurityError') throw e; // for Firefox
+                continue;
+		    }
+			var cssRules = s.cssRules;
+			for (var r = 0; r < cssRules.length; r++) {
+				extractedCSSText += cssRules[r].cssText;
+			}
+		}
+		return extractedCSSText;
+
+	}
+
+	function appendCSS( cssText, element ) {
+		var styleElement = document.createElement("style");
+		styleElement.setAttribute("type","text/css"); 
+		styleElement.innerHTML = cssText;
+		var refNode = element.hasChildNodes() ? element.children[0] : null;
+		element.insertBefore( styleElement, refNode );
+	}
+}
+
+
+function svgString2Image( svgString, width, height, format, callback ) {
+	var format = format ? format : 'png';
+	var imgsrc = 'data:image/svg+xml;base64,'+ btoa( unescape( encodeURIComponent( svgString ) ) ); // Convert SVG string to data URL
+	var canvas = document.createElement("canvas");
+	var context = canvas.getContext("2d");
+	canvas.width = width;
+	canvas.height = height;
+	var image = new Image();
+	image.onload = function() {
+		context.clearRect ( 0, 0, width, height);
+		context.drawImage(image, 0, 0, width, height);
+		canvas.toBlob( function(blob) {
+			var filesize = Math.round( blob.length/1024 ) + ' KB';
+			if ( callback ) callback( blob, filesize );
+		});
+	};
+	image.src = imgsrc;
+}
+
+
+
 function draw_force_diagram() {
     
     var graph = $arg;
@@ -12,23 +77,38 @@ function draw_force_diagram() {
 
     var dashboard = d3.select("#arg_${divnum}").append("div").attr("class", "dashboard");
     
-    var clipboard = dashboard.append("button")
-        .on("click", function() {
-            navigator.clipboard.writeText("${source}".replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"'));
-            d3.select("#arg_${divnum} .copymessage").style("visibility", "visible");
-            setTimeout( function() {
-                d3.select("#arg_${divnum} .copymessage").style("visibility", "hidden");
-            }, 1000);
-        });
-    clipboard.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
-        .attr("xmlns", "http://www.w3.org/2000/svg")
-        .attr("viewBox", "0 0 448 512")
-        .append("path")
-        .attr("d", "M208 0H332.1c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9V336c0 26.5-21.5 48-48 48H208c-26.5 0-48-21.5-48-48V48c0-26.5 21.5-48 48-48zM48 128h80v64H64V448H256V416h64v48c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48z");
-    clipboard.append("span").attr("class", "tip desc").text("Copy To Clipboard");
-    clipboard.append("span").attr("class", "tip copymessage").text("Copied!");
 
-    var reheat = dashboard.append("button")
+    var saving = dashboard.append("button").attr("class", "dashbutton");
+    saving.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+        .attr("xmlns", "http://www.w3.org/2000/svg")
+        .attr("viewBox", "0 0 512 512")
+        .append("path")
+        .attr("d", "M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V274.7l-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7V32zM64 352c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V416c0-35.3-28.7-64-64-64H346.5l-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352H64zm368 56a24 24 0 1 1 0 48 24 24 0 1 1 0-48z");
+    var saving_methods = saving.append("span").attr("class", "tip desc");
+    var methods = saving_methods.append("div").text("Download As:").append("div").attr("class", "savemethods")
+    
+    methods.append("button").text("JSON")
+        .on("click", function() {
+            var textBlob = new Blob(["${source}".replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"')], {type: "text/plain"});
+            saveAs(textBlob, "tskit_arg_visualizer.json");
+        });
+    methods.append("button").text("SVG")
+        .on('click', function(){
+            var svgString = getSVGString(svg.node());
+            var svgBlob = new Blob([svgString], {type:"image/svg+xml;charset=utf-8"});
+            saveAs( svgBlob, "tskit_arg_visualizer");
+        });
+    methods.append("button").text("PNG")
+        .on('click', function(){
+            var svgString = getSVGString(svg.node());
+            svgString2Image(svgString, 2*$width, 2*$height, 'png', save); // passes Blob and filesize String to the callback
+        
+            function save(dataBlob, filesize){
+                saveAs(dataBlob, "tskit_arg_visualizer"); // FileSaver.js function
+            }
+        });
+
+    var reheat = dashboard.append("button").attr("class", "dashbutton activecolor")
         .on("click", function(event) {
             if (!event.active) simulation.alphaTarget(0.3).restart();       
             var order = d3.selectAll("#arg_${divnum} .sample").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
@@ -47,7 +127,7 @@ function draw_force_diagram() {
         .attr("d", "M153.6 29.9l16-21.3C173.6 3.2 180 0 186.7 0C198.4 0 208 9.6 208 21.3V43.5c0 13.1 5.4 25.7 14.9 34.7L307.6 159C356.4 205.6 384 270.2 384 337.7C384 434 306 512 209.7 512H192C86 512 0 426 0 320v-3.8c0-48.8 19.4-95.6 53.9-130.1l3.5-3.5c4.2-4.2 10-6.6 16-6.6C85.9 176 96 186.1 96 198.6V288c0 35.3 28.7 64 64 64s64-28.7 64-64v-3.9c0-18-7.2-35.3-19.9-48l-38.6-38.6c-24-24-37.5-56.7-37.5-90.7c0-27.7 9-54.8 25.6-76.9z");
     reheat.append("span").attr("class", "tip desc").text("Reheat Simulation");
     
-    var evenly_distribute = dashboard.append("button")
+    var evenly_distribute = dashboard.append("button").attr("class", "dashbutton activecolor")
         .on("click", function() {
             var order = d3.selectAll("#arg_${divnum} .sample").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
             d3.selectAll("#arg_${divnum} .sample").classed("distribute", function(d) {
@@ -64,7 +144,7 @@ function draw_force_diagram() {
     var svg = d3.select("#arg_${divnum}").append("svg")
         .attr("width", $width)
         .attr("height", $height)
-        .style("padding-top", "10px");
+        .style("background-color", "white");
 
     var result = y_axis.ticks.map(function (x) { 
         return parseInt(x, 10); 
