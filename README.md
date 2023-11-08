@@ -125,13 +125,15 @@ A quick note about line_type="ortho" (more details can be found within [pathing.
 
 ## Saving Figures
 
-Each figure is actually just a JSON object that D3.js interprets and plots to the screen (see [plotting.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/plotting.md) for more information about this object). The "Copy Source To Clipboard" button to the top left of each figure copies that specific figure's JSON object to your computer's clipboard. This object includes all of the information needed to replicate the figure in a subsequent simulation and can be pasted into a `.json` file for later. To revisualize this figure:
+The leftmost button in the visualizer's dashboard provides options for downloading the figure in three formats: JSON, SVG, or PNG. Each figure is actually just a JSON object that D3.js interprets and plots to the screen (see [plotting.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/plotting.md) for more information about this object). All files are saved as "tskit_arg_visualizer.*x*", where *x* is the respective file format.
+
+The JSON file includes all of the information needed to replicate the figure in a subsequent simulation using the following code blocks:
 
 ```
 import json
 import tskit_arg_visualizer
 
-arg_json = json.load(open("example.json", "r"))
+arg_json = json.load(open("tskit_arg_visualizer.json", "r"))
 tskit_arg_visualizer.draw_D3(arg_json=arg_json)
 ```
 
@@ -141,6 +143,8 @@ Alternatively, you can pass the JSON into a D3ARG object constructor, which then
 d3arg = tskit_arg_visualizer.D3ARG.from_json(json=arg_json)
 d3arg.draw()
 ```
+
+Lastly, the PNG and SVG files are static files and directly match the current view of the visualizer but without interactivity. *A small note, opening the SVG in Illustrator does not properly import all styles (only inline styles, which are rarely used in the visualizer). Though all styles can be manually added or changed within Illustrator, this can be tedious. Styles are properly load when opening in a web browser.*
 
 
 ## Modifying Node Labels
