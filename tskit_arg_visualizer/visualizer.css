@@ -17,7 +17,7 @@
     visibility: hidden;
 }
 
-.dashboard button {
+.dashboard .dashbutton {
     position: relative;
     font-size: 30px;
     border: 0px;
@@ -26,7 +26,7 @@
     height: 30px;
 }
 
-.dashboard button .tip {
+.dashboard .dashbutton .tip {
     width: 120px;
     font-size: 12px;
     background-color: lightgrey;
@@ -41,7 +41,7 @@
     visibility: hidden;
 }
 
-.dashboard button:hover .desc {
+.dashboard .dashbutton:hover .desc {
     visibility: visible;
 }
 
@@ -49,13 +49,34 @@
     fill: grey;
 }
 
-.dashboard button:hover path {
+.dashboard .dashbutton:hover path {
     fill: #053e4e;
 }
 
-.dashboard button:active path {
+.dashboard .activecolor:active path {
     fill: #1eebb1;
 }
+
+.savemethods {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.savemethods button {
+    background-color: lightgrey;
+    color: #053e4e;
+    font-size: 12px;
+    width: auto;
+    border: none;
+}
+
+.savemethods button:hover {
+    color: #1eebb1;
+}
+
 
 .yaxis path {
     stroke: #053e4e;
