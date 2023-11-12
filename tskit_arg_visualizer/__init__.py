@@ -161,12 +161,16 @@ class D3ARG:
         """
 
         rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
+        ordered_nodes = [] # Ordering of sample nodes is the same as the first tree in the sequence
+        for node in ts.first().nodes(order="minlex_postorder"):
+            if node < ts.num_samples:
+                ordered_nodes.append(node)
         return cls(
             nodes=cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm),
             edges=cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm),
             breakpoints=cls._identify_breakpoints(ts=ts),
             num_samples=ts.num_samples,
-            sample_order=ts.first().nodes(order="minlex_postorder")
+            sample_order=ordered_nodes
         )
     
     @classmethod
