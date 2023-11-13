@@ -946,13 +946,14 @@
                 def generate_random_arg():
                     # Generate a random tree sequence with record_full_arg=True so that you get marked recombination nodes
                     rs = random.randint(0, 10000)   
-                    ts = msprime.sim_ancestry(samples=2, recombination_rate=1e-8,sequence_length=3000, population_size=10000, record_full_arg=True, random_seed=rs)
+                    ts = msprime.sim_ancestry(samples=random.randint(1,5), recombination_rate=1e-8,sequence_length=3000, population_size=10000, record_full_arg=True, random_seed=rs)
                     d3arg = D3ARG.from_ts(ts=ts)
                     return d3arg.draw()
 
                 js.generate_random_arg = generate_random_arg
             `);
-
+            
+            displayArg();
         </script>
     </body>
 </html>
