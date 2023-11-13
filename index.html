@@ -166,6 +166,29 @@
             .saving .message {
                 display: none;
             }
+
+            .box {
+                width: 550px;
+                height: 575px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .loader {
+                margin: auto;
+                border: 20px solid #053e4e;
+                border-radius: 50%;
+                border-top: 20px solid #1eebb1;
+                width: 100px;
+                height: 100px;
+                animation: spinner 4s linear infinite;
+            }
+
+            @keyframes spinner {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
         </style>
     </head>
     <body>
@@ -375,7 +398,11 @@
         </script>
 
         <button onclick="displayArg();">Generate ARG</button>
-        <div id="output" class="d3arg"></div>
+        <div id="output" class="d3arg">
+            <div class="box">
+                <div class="loader"></div>
+            </div>
+        </div>
         <script type="module">
             // https://gist.github.com/Rokotyan/0556f8facbaf344507cdc45dc3622177
             // Below are the functions that handle actual exporting:
