@@ -21,19 +21,9 @@ The ARG representation used by the D3ARG object hosts some distinct advantages o
 
 The following information is provided to D3.js in the JSON object. This object includes the following:
 
-* nodes
-* links
-* breakpoints
-* width
-* height
-* tree_highlighting
-* y_axis
-* edge_type
-* subset_nodes
+## arg
 
-Each of these is broken down in detail below.
-
-## nodes
+### nodes
 
 This is a list of dictionaries, each corresponding to a given node in the graph. Each dictionary contains the following information about the node:
 
@@ -58,7 +48,7 @@ This is a list of dictionaries, each corresponding to a given node in the graph.
 
 Some of these attributes are calculated in Python whereas others are calculated in JavaScript. This is an exhaustive list. Not all attributes are always completely necessary, so you may find that some nodes in your graph are missing specific attributes and this is okay.
 
-## links
+### links
 
 Links are the edges between the nodes. This is similarly stored as a list of dictionaries. Each dictionary contains the following information about the edge:
 
@@ -68,8 +58,7 @@ Links are the edges between the nodes. This is similarly stored as a list of dic
 * **alt_parent**: if the node has more than one parent, ID of the other parent, used for pathing method
 * **alt_child**: if the node has more than one child, ID of the other child, used for pathing method
 
-
-## breakpoints
+### breakpoints
 
 Breakpoints mark recombination events along the chromosome, where each section is associated with a different tree. This is used for the tree highlighting; rectangles are positioned at the bottom of the figure. Users can then hover over these rectangles to highlight the corresponding tree within the ARG.
 
@@ -79,6 +68,10 @@ Breakpoints mark recombination events along the chromosome, where each section i
 * **x_pos**: x position scaled given the width of the figure
 * **width_01**: width of the rectangle scaled between 0 and 1
 * **width**: width of the rectangle scaled given the width of the figure
+
+### evenly_distributed_positions
+
+List of evenly distributed locations along the x-axis that will be used to position the sample nodes at the start and whenever you click the "Reheat Simulation" or "Space Samples" buttons.
 
 ## width
 
@@ -90,22 +83,57 @@ Integer for the approximate height of the main force layout plot in pixels. Note
 
 ## y_axis
 
-* **include_labels**: boolean for whether to label the y_axis
-* **ticks**: list of y-axis tick locations
-* **text**: list of corresponding labels for the tick locations
-* **max_min**: maximum and minimum tick locations (this could be potentially calculated with JavaScript instead of in Python)
-* **scale**: string for the y-axis scale. Options: "rank", "time", or "log_time"
+### include_labels
 
-## tree_highlighting
+Boolean for whether to label the y_axis
 
-Boolean for whether to include the tree highlighting based on the breakpoints list.
+### ticks
 
-## edge_type
+List of y-axis tick locations
+
+### text
+
+List of corresponding labels for the tick locations
+
+### max_min
+
+Maximum and minimum tick locations (this could be potentially calculated with JavaScript instead of in Python)
+
+### scale
+
+String for the y-axis scale. Options: "rank", "time", or "log_time"
+
+## nodes
+
+Styling for nodes
+
+### size
+
+### symbol
+
+### sample_symbol
+
+### subset_nodes
+
+List of nodes that user wants to stand out within the ARG. These nodes and the edges between them will have full opacity; other nodes will be faint (default=None, parameter is ignored and all nodes will have opacity).
+
+### include_labels
+
+## edges
+
+Styling for edges
+
+### type
 
 Pathing type for edges between nodes. Options:
 * "line" - simple straight lines between the nodes
 * "ortho" - custom pathing (see [pathing.md](pathing.md) for more details, should only be used with full ARGs)
 
-## subset_nodes (EXPERIMENTAL)
+### variable_width
 
-List of nodes that user wants to stand out within the ARG. These nodes and the edges between them will have full opacity; other nodes will be faint (default=None, parameter is ignored and all nodes will have opacity).
+### include_underlink
+
+## tree_highlighting
+
+Boolean for whether to include the tree highlighting based on the breakpoints list.
+

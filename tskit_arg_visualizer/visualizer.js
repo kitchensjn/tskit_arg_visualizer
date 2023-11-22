@@ -72,12 +72,14 @@ function draw_force_diagram() {
     
     var graph = $arg;
     var y_axis = $y_axis;
-    var subset = $subset_nodes;
-    var evenly_distributed_positions = $evenly_distributed_positions;
+    var node_styles = $nodes;
+    var subset = node_styles.subset_nodes;
+    var edge_styles = $edges;
+
+    var evenly_distributed_positions = graph.evenly_distributed_positions;
 
     var dashboard = d3.select("#arg_${divnum}").append("div").attr("class", "dashboard");
     
-
     var saving = dashboard.append("button").attr("class", "dashbutton");
     saving.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
         .attr("xmlns", "http://www.w3.org/2000/svg")
@@ -89,6 +91,9 @@ function draw_force_diagram() {
     
     methods.append("button").text("JSON")
         .on("click", function() {
+            d3.selectAll("#arg_${divnum} .node").classed("fix", function(d) {
+                d.fx = d.x;
+            });
             var textBlob = new Blob(["${source}".replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"')], {type: "text/plain"});
             saveAs(textBlob, "tskit_arg_visualizer.json");
         });
@@ -151,7 +156,7 @@ function draw_force_diagram() {
     });
 
 
-    if (y_axis.include_labels == "true") {
+    if (eval(y_axis.include_labels)) {
         var bottom = $height - 50;
         if ($tree_highlighting) {
             bottom = $height - 125;
@@ -195,9 +200,11 @@ function draw_force_diagram() {
             return d.bounds;
         });
 
-    var underlink = link_container
-        .append("path")
-        .attr("class", "underlink");
+    if (eval(edge_styles.include_underlink)) {
+        var underlink = link_container
+            .append("path")
+            .attr("class", "underlink");
+    }
 
     var link = link_container
         .append("path")
@@ -209,7 +216,7 @@ function draw_force_diagram() {
             }
         });
     
-    if ($variable_edge_width) {
+    if (eval(edge_styles.variable_width)) {
         link
             .style("stroke-width", function(d) {
                 return d.region_fraction * 7 + 1;
@@ -217,7 +224,7 @@ function draw_force_diagram() {
     }
     
     if ($tree_highlighting) {
-        link
+        d3.selectAll(".link")
             .on('mouseover', function (event, d) {
                 d3.select(this)
                     .style('stroke', '#1eebb1')
@@ -247,7 +254,18 @@ function draw_force_diagram() {
         .selectAll("circle")
         .data(graph.nodes)
         .enter()
-        .append("circle")
+        .append("path")
+        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+        .attr("d", d3.symbol()
+            .type(function(d) { 
+                if (d.flag == 1) {
+                    return eval(node_styles.sample_symbol)
+                } else {
+                    return eval(node_styles.symbol)
+                }
+            })
+            .size(node_styles.size)
+        )
         .attr("id", function(d) {
             return String($divnum) + "_node" + d.id
         })
@@ -269,7 +287,6 @@ function draw_force_diagram() {
         .attr("children", function(d) {
             return d.parent_of.toString().replace(",", " ")
         })
-        .attr("r", 7)
         .call(
             d3
                 .drag()
@@ -282,7 +299,7 @@ function draw_force_diagram() {
         });
 
     
-    if ($include_node_labels) {
+    if (eval(node_styles.include_labels)) {
         var label = svg
             .append("g")
             .attr("class", "labels")
@@ -470,8 +487,15 @@ function draw_force_diagram() {
     function ticked() {
 
         node
+            .attr("transform", function(d) {
+                if (eval(y_axis.include_labels)) {
+                    return "translate(" + Math.max(50, Math.min($width-50, d.x)) + "," + d.y + ")";
+                } else {
+                    return "translate(" + Math.max(100, Math.min($width-50, d.x)) + "," + d.y + ")";
+                }
+            })
             .attr("cx", function(d) {
-                if (y_axis.include_labels == "false") {
+                if (eval(y_axis.include_labels)) {
                     return d.x = Math.max(50, Math.min($width-50, d.x));
                 } else {
                     return d.x = Math.max(100, Math.min($width-50, d.x));
@@ -481,41 +505,43 @@ function draw_force_diagram() {
                 return d.y;
             });
 
-        underlink
-            .attr("d", function(d) {
-                if ("$edge_type" == "ortho") {
-                    const output = determine_path_type(d);
-                
-                    const path_type = output[0];
-                    const simple_path_type = Array.from(path_type)[0] + Array.from(path_type)[2];
-                    const start_position_x = output[1];
-                    const start_position_y = output[2];
-                    const stop_position_x = output[3];
-                    const stop_position_y = output[4];
+        if (eval(edge_styles.include_underlink)) {
+            underlink
+                .attr("d", function(d) {
+                    if (edge_styles.type == "ortho") {
+                        const output = determine_path_type(d);
+                    
+                        const path_type = output[0];
+                        const simple_path_type = Array.from(path_type)[0] + Array.from(path_type)[2];
+                        const start_position_x = output[1];
+                        const start_position_y = output[2];
+                        const stop_position_x = output[3];
+                        const stop_position_y = output[4];
 
-                    const after_paths = ["rf", "tb", "tf"];
-                    const before_paths = ["rt", "fb", "ft"];
-                    const step_paths = ["tt"];
-                    const mid_paths = ["rb", "ff"];
+                        const after_paths = ["rf", "tb", "tf"];
+                        const before_paths = ["rt", "fb", "ft"];
+                        const step_paths = ["tt"];
+                        const mid_paths = ["rb", "ff"];
 
-                    if (after_paths.includes(simple_path_type)) {
-                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepAfter([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-                    } else if (before_paths.includes(simple_path_type)) {
-                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepBefore([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-                    } else if (step_paths.includes(simple_path_type)) {
-                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + step([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-                    } else if (mid_paths.includes(simple_path_type)) {
-                        return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                        if (after_paths.includes(simple_path_type)) {
+                            return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepAfter([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                        } else if (before_paths.includes(simple_path_type)) {
+                            return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepBefore([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                        } else if (step_paths.includes(simple_path_type)) {
+                            return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + step([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                        } else if (mid_paths.includes(simple_path_type)) {
+                            return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                        }
                     }
-                }
-            });
+                });
+        }
 
         link
             .attr("path_type", function(d) {
                 return determine_path_type(d)[0];
             })
             .attr("d", function(d) {
-                if ("$edge_type" == "ortho") {
+                if (edge_styles.type == "ortho") {
                     const output = determine_path_type(d);
                 
                     const path_type = output[0];
@@ -539,7 +565,7 @@ function draw_force_diagram() {
                     } else if (mid_paths.includes(simple_path_type)) {
                         return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
                     }
-                } else if ("$edge_type" == "line") {
+                } else if (edge_styles.type == "line") {
                     if (d.source.id == d.alt_parent) {
                         var leftOrRight = 20;
                         if (d.index % 2 == 0) {
@@ -572,7 +598,7 @@ function draw_force_diagram() {
             }
         };
 
-        if ($include_node_labels) {
+        if (eval(node_styles.include_labels)) {
 
             label
                 .attr("x", function(d) {
@@ -655,29 +681,16 @@ function draw_force_diagram() {
                             });
                         });
                 highlight_links.raise();
-                //if ($variable_edge_width) {
-                    highlight_links
-                        .select(".link")
-                        .style("stroke", "#1eebb1");
-                //} else {
-                //    highlight_links
-                //        .select(".link")
-                //        .style("stroke", "#1eebb1")
-                //        .style("stroke-width", 7);
-                //};
+                highlight_links
+                    .select(".link")
+                    .style("stroke", "#1eebb1");
             })
             .on('mouseout', function (d, i) {
                 d3.select(this)
                     .style('fill', '#053e4e')
                     .style("cursor", "default");
-                //if ($variable_edge_width) {
-                    d3.selectAll("#arg_${divnum} .link")
-                        .style("stroke", "#053e4e");
-                //} else {
-                //    d3.selectAll("#arg_${divnum} .link")
-                //        .style("stroke", "#053e4e")
-                //        .style("stroke-width", 3);
-                //};     
+                d3.selectAll("#arg_${divnum} .link")
+                    .style("stroke", "#053e4e");   
             });
         
         var endpoints = th_group.append("g").attr("class", "endpoints");

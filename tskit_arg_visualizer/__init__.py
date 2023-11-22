@@ -459,6 +459,10 @@ class D3ARG:
             y_axis_scale="rank",
             edge_type="line",
             variable_edge_width=False,
+            include_underlink=True,
+            node_size=150,
+            node_symbol="d3.symbolCircle",
+            sample_node_symbol="d3.symbolCircle",
             subset_nodes=None,
             include_node_labels=True,
             sample_order=[]
@@ -488,6 +492,16 @@ class D3ARG:
         variable_edge_width : bool
             Scales the stroke width of edges in the visualization will be proportional to the fraction of
             sequence in which that edge is found. (default=False)
+        include_underlink : bool
+            Includes an "underlink" for each edge gives a gap during edge crosses. This is currently only
+            implemented for `edge_type="ortho"`. (default=True)
+        node_size : int
+            Sets the size of the nodes in the ARG. (default=150)
+        node_symbol : str
+            Calls a d3.symbol that is used for the non-sample nodes in the ARG. (default="d3.symbolCircle")
+        sample_node_symbol : str
+            Calls a d3.symbol that is used to differentiate the sample node. By default it is "d3.symbolCircle"
+            which is the same as the internal nodes of the ARG. (default="d3.symbolCircle")
         subset_nodes : list (EXPERIMENTAL)
             List of nodes that user wants to stand out within the ARG. These nodes and the edges between them
             will have full opacity; other nodes will be faint (default=None, parameter is ignored and all
@@ -547,7 +561,8 @@ class D3ARG:
             "arg":{
                 "nodes":transformed_nodes,
                 "links":self.edges,
-                "breakpoints": transformed_bps
+                "breakpoints": transformed_bps,
+                "evenly_distributed_positions":sample_positions
             },
             "width":width,
             "height":height,
@@ -558,12 +573,19 @@ class D3ARG:
                 "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
                 "scale":y_axis_scale,
             },
-            "tree_highlighting":str(tree_highlighting).lower(),
-            "edge_type": edge_type,
-            "variable_edge_width": str(variable_edge_width).lower(),
-            "subset_nodes": subset_nodes,
-            "include_node_labels": str(include_node_labels).lower(),
-            "evenly_distributed_positions": sample_positions
+            "nodes":{
+                "size":node_size,
+                "symbol":node_symbol,
+                "sample_symbol":sample_node_symbol,
+                "subset_nodes":subset_nodes,
+                "include_labels":str(include_node_labels).lower(),
+            },
+            "edges":{
+                "type":edge_type,
+                "variable_width":str(variable_edge_width).lower(),
+                "include_underlink":str(include_underlink).lower()
+            },
+            "tree_highlighting":str(tree_highlighting).lower()
         }
         draw_D3(arg_json=arg)
     
