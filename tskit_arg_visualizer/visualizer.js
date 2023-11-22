@@ -70,7 +70,7 @@ function svgString2Image( svgString, width, height, format, callback ) {
 
 function draw_force_diagram() {
     
-    var graph = $arg;
+    var graph = $data;
     var y_axis = $y_axis;
     var node_styles = $nodes;
     var subset = node_styles.subset_nodes;

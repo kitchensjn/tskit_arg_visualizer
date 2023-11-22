@@ -21,7 +21,9 @@ The ARG representation used by the D3ARG object hosts some distinct advantages o
 
 The following information is provided to D3.js in the JSON object. This object includes the following:
 
-## arg
+## data
+
+This is a dictionary which includes all of the network data to for the ARG including the nodes, links (edges), and breakpoints. This has been created from the D3ARG tables.
 
 ### nodes
 
@@ -73,45 +75,68 @@ Breakpoints mark recombination events along the chromosome, where each section i
 
 List of evenly distributed locations along the x-axis that will be used to position the sample nodes at the start and whenever you click the "Reheat Simulation" or "Space Samples" buttons.
 
+
+
+
 ## width
 
 Integer for the approximate width of the main force layout plot in pixels. Note: if y_axis.include_labels="true", the width of the whole SVG will be larger.
+
+
+
 
 ## height
 
 Integer for the approximate height of the main force layout plot in pixels. Note: if tree_highlighting="true", the height of the whole SVG will be larger.
 
+
+
+
 ## y_axis
+
+This dictionary contains all things relating to the scale and styling of the y-axis for the figure.
 
 ### include_labels
 
-Boolean for whether to label the y_axis
+Boolean for whether to label the y_axis. If True, the y-axis is added to the left side of the figure. 
 
 ### ticks
 
-List of y-axis tick locations
+A list of y-axis tick locations.
 
 ### text
 
-List of corresponding labels for the tick locations
+A list of corresponding labels for the tick locations.
 
 ### max_min
 
-Maximum and minimum tick locations (this could be potentially calculated with JavaScript instead of in Python)
+The maximum and minimum tick locations stored as a list of length 2.
 
 ### scale
 
-String for the y-axis scale. Options: "rank", "time", or "log_time"
+String for the y-axis scale. Options:
+* "rank" (default) - equal vertical spacing between nodes
+* "time" - vertical spacing is proportional to the time
+* "log_time" - proportional to the log of time
+
+
+
 
 ## nodes
 
-Styling for nodes
+A dictionary for the styling of the nodes within the ARG.
 
 ### size
 
+Sets the size of the node symbols. (defaut=150)
+
 ### symbol
 
+Controls the symbol used for each of the non-sample nodes. Symbol options are from [d3.symbol](https://d3js.org/d3-shape/symbol).
+
 ### sample_symbol
+
+Controls the symbol used for each of the sample nodes. Symbol options are from [d3.symbol](https://d3js.org/d3-shape/symbol). This can be used to differentiate sample nodes from non-sample nodes.
 
 ### subset_nodes
 
@@ -119,9 +144,14 @@ List of nodes that user wants to stand out within the ARG. These nodes and the e
 
 ### include_labels
 
+Boolean for whether to include labels next to each of the nodes. (default=True)
+
+
+
+
 ## edges
 
-Styling for edges
+A dictionary for the styling of the edges within the ARG.
 
 ### type
 
@@ -131,7 +161,14 @@ Pathing type for edges between nodes. Options:
 
 ### variable_width
 
+Boolean for whether to scale the stroke width of the edges on the fraction of sequence that the edge is associated with. This can be useful for understanding the "importance" of edges within the ARG. (default=False)
+
 ### include_underlink
+
+Boolean for whether to include an underlink alongside each edge. Underlinks are used to stylize edge crosses, giving the appearance of a gap. Currently, these are only implemented when `edge_type="ortho"`.
+
+
+
 
 ## tree_highlighting
 

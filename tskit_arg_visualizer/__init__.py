@@ -186,7 +186,7 @@ class D3ARG:
 
         samples = []
         samples_x_pos = []
-        nodes = json["arg"]["nodes"]
+        nodes = json["data"]["nodes"]
         width = json["width"]
         x_shift = 50
         if json["y_axis"]["include_labels"]:
@@ -199,8 +199,8 @@ class D3ARG:
             nodes[i]["x_pos_01"] = (node["x"] - x_shift) / (width-100)
         return cls(
             nodes=nodes,
-            edges=json["arg"]["links"],
-            breakpoints=json["arg"]["breakpoints"],
+            edges=json["data"]["links"],
+            breakpoints=json["data"]["breakpoints"],
             num_samples=len(samples),
             sample_order=[sample for _, sample in sorted(zip(samples_x_pos, samples))]
         )
@@ -558,7 +558,7 @@ class D3ARG:
         if not subset_nodes:
             subset_nodes = [node["id"] for node in self.nodes]
         arg = {
-            "arg":{
+            "data":{
                 "nodes":transformed_nodes,
                 "links":self.edges,
                 "breakpoints": transformed_bps,
