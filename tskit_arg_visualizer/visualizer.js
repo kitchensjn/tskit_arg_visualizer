@@ -116,7 +116,7 @@ function draw_force_diagram() {
     var reheat = dashboard.append("button").attr("class", "dashbutton activecolor")
         .on("click", function(event) {
             if (!event.active) simulation.alphaTarget(0.3).restart();       
-            var order = d3.selectAll("#arg_${divnum} .sample").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
+            var order = d3.selectAll("#arg_${divnum} .flag1").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
             d3.selectAll("#arg_${divnum} .node").classed("unfix", function(d) {
                 if (d.flag != 1) {
                     delete d.fx;
@@ -134,8 +134,8 @@ function draw_force_diagram() {
     
     var evenly_distribute = dashboard.append("button").attr("class", "dashbutton activecolor")
         .on("click", function() {
-            var order = d3.selectAll("#arg_${divnum} .sample").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
-            d3.selectAll("#arg_${divnum} .sample").classed("distribute", function(d) {
+            var order = d3.selectAll("#arg_${divnum} .flag1").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
+            d3.selectAll("#arg_${divnum} .flag1").classed("distribute", function(d) {
                 d.fx = evenly_distributed_positions[order.indexOf(d.id)];
             });
         });
@@ -276,9 +276,7 @@ function draw_force_diagram() {
             } else {
                 classy += "hiddennode";
             }
-            if (d.flag == 1) {
-                classy += " sample";
-            }
+            classy += " flag" + d.flag
             return classy
         })
         .attr("parents", function(d) {
