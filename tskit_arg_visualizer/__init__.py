@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 import random
 import math
@@ -252,7 +253,14 @@ class D3ARG:
                 "logtime_01":1-math.log(node.time+1)/math.log(ts.max_root_time),
                 "rank_01": 1-(unique_times.index(node.time)*h_spacing), #fixed y position, property of force layout
                 "child_of": list(np.unique(child_of)),
-                "parent_of": list(np.unique(parent_of))
+                "parent_of": list(np.unique(parent_of)),
+                "size": 150,
+                "symbol": "d3.symbolCircle",
+                "fill": "#1eebb1",
+                "stroke": "#053e4e",
+                "stroke_width": 4,
+                "hidden": "false",
+                "include_label": "true"
             }
             label = ID
             if node.flags == 131072:
@@ -266,7 +274,7 @@ class D3ARG:
                     info["x_pos_reference"] = parent_of[0]
             info["label"] = str(label) #label which is either the node ID or two node IDs for recombination nodes
             nodes.append(info)
-        return nodes
+        return pd.DataFrame(nodes)
 
     def _convert_edges_table(ts, recombination_nodes_to_merge):
         """Creates edges JSON from the tskit.TreeSequence edges table
@@ -338,9 +346,10 @@ class D3ARG:
                     "bounds": bounds[:-1],
                     "alt_parent": alternative_parent, #recombination nodes have an alternative parent
                     "alt_child": alternative_child,
-                    "region_fraction": region_size / ts.sequence_length
+                    "region_fraction": region_size / ts.sequence_length,
+                    "color": "#053e4e"
                 })
-        return links
+        return pd.DataFrame(links)
     
     def _identify_breakpoints(ts):
         """Creates breakpoints JSON from the tskit.TreeSequence
@@ -368,7 +377,7 @@ class D3ARG:
                     "width_01":((bp - start)/ts.sequence_length)
                 })
                 start = bp
-        return breakpoints
+        return pd.DataFrame(breakpoints)
     
     def set_node_labels(self, labels):
         """Sets custom node labels
@@ -415,11 +424,14 @@ class D3ARG:
             int/None : the ID of the first node that is not a sample
         """
 
-        id_map = {n["id"]: i for i,n in enumerate(self.nodes)}
         for node in nodes:
-            if id_map.get(node,-1) != -1:
-                if self.nodes[id_map[node]]["flag"] != 1:
-                    return False, node
+            found = self.nodes.loc[self.nodes["id"] == int(node)]["flag"]
+            if found.size > 0:
+                if found.size == 1:
+                    if found[0] != 1:
+                        return False, node
+                else:
+                    ValueError(f"Multiple entries for Node '{node}' in the graph.")
             else:
                 raise ValueError(f"Node '{node}' not in the graph.")
         return True, None
@@ -445,9 +457,10 @@ class D3ARG:
         check_samples = self._check_all_nodes_are_samples(nodes=order)
         if not check_samples[0]:
             raise ValueError(f"Node '{check_samples[1]}' not a sample and cannot be included in sample order.")
-        for node in self.nodes:
-            if node["flag"] == 1 and node["id"] not in order:
-                order.append(node["id"])
+        for node in self.sample_order:
+            found = self.nodes.loc[self.nodes["id"] == int(node)].iloc[0]
+            if found["flag"] == 1 and found["id"] not in order:
+                order.append(found["id"])
         return order
 
     def draw(
@@ -460,11 +473,7 @@ class D3ARG:
             edge_type="line",
             variable_edge_width=False,
             include_underlink=True,
-            node_size=150,
-            node_symbol="d3.symbolCircle",
-            sample_node_symbol="d3.symbolCircle",
             subset_nodes=None,
-            include_node_labels=True,
             sample_order=[]
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
@@ -523,8 +532,8 @@ class D3ARG:
         sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
         sample_order = self._calculate_sample_order(order=sample_order)
         
-        for node in self.nodes:
-            if node.get("x_pos_01", -1) != -1:
+        for index, node in self.nodes.iterrows():
+            if "x_pos_01" in node:
                 node["fx"] = node["x_pos_01"] * (width-100) + x_shift
             elif node["flag"] == 1:
                 node["fx"] = sample_positions[sample_order.index(node["id"])]
@@ -541,26 +550,26 @@ class D3ARG:
                 y_axis_ticks.append(node["rank_01"] * (height-100) + 50)
             node["y"] = node["fy"]
             y_axis_text.append(node["time"])
-            transformed_nodes.append(node)
+            transformed_nodes.append(node.dropna().to_dict())
         y_axis_text = [round(t) for t in set(y_axis_text)]
         if tree_highlighting:
             height += 75
         transformed_bps = []
-        for bp in self.breakpoints:
+        for index, bp in self.breakpoints.iterrows():
             if y_axis_labels:
                 bp["x_pos"] = bp["x_pos_01"] * width + 50
             else:
                 bp["x_pos"] = bp["x_pos_01"] * width
             bp["width"] = bp["width_01"] * width
-            transformed_bps.append(bp)
+            transformed_bps.append(bp.to_dict())
         if y_axis_labels:
             width += 50
         if not subset_nodes:
-            subset_nodes = [node["id"] for node in self.nodes]
+            subset_nodes = [node["id"] for index, node in self.nodes.iterrows()]
         arg = {
             "data":{
                 "nodes":transformed_nodes,
-                "links":self.edges,
+                "links":self.edges.to_dict("records"),
                 "breakpoints": transformed_bps,
                 "evenly_distributed_positions":sample_positions
             },
@@ -573,13 +582,6 @@ class D3ARG:
                 "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
                 "scale":y_axis_scale,
             },
-            "nodes":{
-                "size":node_size,
-                "symbol":node_symbol,
-                "sample_symbol":sample_node_symbol,
-                "subset_nodes":subset_nodes,
-                "include_labels":str(include_node_labels).lower(),
-            },
             "edges":{
                 "type":edge_type,
                 "variable_width":str(variable_edge_width).lower(),
@@ -588,4 +590,3 @@ class D3ARG:
             "tree_highlighting":str(tree_highlighting).lower()
         }
         draw_D3(arg_json=arg)
-    

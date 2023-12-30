@@ -93,12 +93,6 @@
     stroke: 1px;
 }
 
-.node {
-    fill: #1eebb1;
-    stroke: #053e4e;
-    stroke-width: 4px;
-}
-
 .hiddennode {
     fill: lightgrey;
     stroke: lightgrey;
@@ -112,7 +106,6 @@
 }
 
 .link {
-    stroke: #053e4e;
     stroke-width: 4px;
     fill: none;
 }
