@@ -207,11 +207,12 @@ function draw_force_diagram() {
     var link = link_container
         .append("path")
         .attr("class", function(d) {
-            if ((eval(d.source.hidden)==false) & (eval(d.target.hidden)==false)) {
-                return "link"
-            } else {
-                return "hiddenlink"
-            }
+            return "link"
+            //if ((eval(d.source.hidden)==false) & (eval(d.target.hidden)==false)) {
+            //    return "link"
+            //} else {
+            //    return "hiddenlink"
+            //}
         })
         .attr("stroke", function(d) {
             return d.color;
@@ -265,14 +266,15 @@ function draw_force_diagram() {
         .attr("stroke-width", function(d) { return d.stroke_width; })
         .attr("id", function(d) { return String($divnum) + "_node" + d.id; })
         .attr("class", function(d) {
-            var classy = ""
-            if (eval(d.hidden)) {
-                classy += "hiddennode";
-            } else {
-                classy += "node";
-            }
-            classy += " flag" + d.flag
-            return classy
+            return "node flag" + d.flag
+            //var classy = ""
+            //if (eval(d.hidden)) {
+            //    classy += "hiddennode";
+            //} else {
+            //    classy += "node";
+            //}
+            //classy += " flag" + d.flag
+            //return classy
         })
         .attr("parents", function(d) { return d.child_of.toString().replace(",", " "); })
         .attr("children", function(d) { return d.parent_of.toString().replace(",", " "); })
@@ -296,11 +298,12 @@ function draw_force_diagram() {
         .filter(function(d) { return eval(d.include_label); })
         .append("text")
             .attr("class", function(d) {
-                if (eval(d.hidden)==false) {
-                    return "label"
-                } else {
-                    return "hiddenlabel"
-                }
+                return "label"
+                //if (eval(d.hidden)==false) {
+                //    return "label"
+                //} else {
+                //    return "hiddenlabel"
+                //}
             })
             .text(function (d) { return d.label; });
     
@@ -537,9 +540,9 @@ function draw_force_diagram() {
             var l = d3.select(this).select(".link");
             l.attr("path_type", path_info[0]);
             l.attr("d", path);  
-            var h = d3.select(this).select(".hiddenlink");
-            h.attr("path_type", path_info[0]);
-            h.attr("d", path);  
+            //var h = d3.select(this).select(".hiddenlink");
+            //h.attr("path_type", path_info[0]);
+            //h.attr("d", path);  
         })
 
         function determine_label_positioning(d) {

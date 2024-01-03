@@ -130,12 +130,12 @@ class D3ARG:
 
         Parameters
         ----------
-        nodes : list
-            List of node dicts that contain info about the nodes
-        edges : list
-            List of edge dicts that contain info about the edges
-        breakpoints : list
-            List of breakpoint dicts that contain info about the breakpoints
+        nodes : pandas.DataFrame
+            Contains info about the nodes
+        edges : pandas.DataFrame
+            Contains info about the edges
+        breakpoints : pandas.DataFrame
+            Contains info about the breakpoints
         num_samples : int
         sample_order : list or np.array
         """
@@ -145,6 +145,10 @@ class D3ARG:
         self.breakpoints = breakpoints
         self.num_samples = num_samples
         self.sample_order = sample_order
+
+    def __str__(self):
+        """Prints attributes of D3ARG object"""
+        return f"Nodes:\n{self.nodes}\n\nEdges:\n{self.edges}\n\nBreakpoints:\n{self.breakpoints}\n\nNumber of Samples: {self.num_samples}\nSample Order: {self.sample_order}"
         
     @classmethod
     def from_ts(cls, ts):
@@ -161,13 +165,18 @@ class D3ARG:
         D3ARG : a corresponding D3ARG object ready to be plotted
         """
 
+        samples = []
+        order = ts.first().nodes(order="minlex_postorder")
+        for n in order:
+            if ts.node(n).is_sample():
+                samples.append(n)
         rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
         return cls(
             nodes=cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm),
             edges=cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm),
             breakpoints=cls._identify_breakpoints(ts=ts),
             num_samples=ts.num_samples,
-            sample_order=ts.first().nodes(order="minlex_postorder")
+            sample_order=samples
         )
     
     @classmethod
@@ -185,25 +194,20 @@ class D3ARG:
         D3ARG : a corresponding D3ARG object ready to be plotted
         """
 
-        samples = []
-        samples_x_pos = []
-        nodes = json["data"]["nodes"]
         width = json["width"]
         x_shift = 50
         if json["y_axis"]["include_labels"]:
             x_shift = 100
             width -= 50
-        for i,node in enumerate(nodes):
-            if node["flag"] == 1:
-                samples.append(node["id"])
-                samples_x_pos.append(node["fx"])
-            nodes[i]["x_pos_01"] = (node["x"] - x_shift) / (width-100)
+        nodes = pd.DataFrame(json["data"]["nodes"])
+        nodes["x_pos_01"] = (nodes["x"] - x_shift) / (width-100)
+        samples = nodes.loc[nodes["flag"]==1,["id", "fx"]]
         return cls(
             nodes=nodes,
-            edges=json["data"]["links"],
-            breakpoints=json["data"]["breakpoints"],
-            num_samples=len(samples),
-            sample_order=[sample for _, sample in sorted(zip(samples_x_pos, samples))]
+            edges=pd.DataFrame(json["data"]["links"]),
+            breakpoints=pd.DataFrame(json["data"]["breakpoints"]),
+            num_samples=samples.shape[0],
+            sample_order=[sample for _, sample in sorted(zip(samples["fx"], samples["id"]))]
         )
 
     def _convert_nodes_table(ts, recombination_nodes_to_merge):
@@ -259,7 +263,6 @@ class D3ARG:
                 "fill": "#1eebb1",
                 "stroke": "#053e4e",
                 "stroke_width": 4,
-                "hidden": "false",
                 "include_label": "true"
             }
             label = ID
@@ -305,7 +308,7 @@ class D3ARG:
 
         uniq_child_parent = np.unique(np.column_stack((ts.edges_child, parents)), axis=0) #Find unique parent-child pairs.
         links = []
-        for combo in uniq_child_parent:
+        for ID, combo in enumerate(uniq_child_parent):
             child = combo[0]
             parent = combo[1]
             equivalent_edges = ts.tables.edges[np.where((ts.edges_child == child) & (parents == parent))[0]]
@@ -341,14 +344,15 @@ class D3ARG:
             if child in recombination_nodes_to_merge:
                 child = child - 1
             links.append({
-                    "source": parent,
-                    "target": child,
-                    "bounds": bounds[:-1],
-                    "alt_parent": alternative_parent, #recombination nodes have an alternative parent
-                    "alt_child": alternative_child,
-                    "region_fraction": region_size / ts.sequence_length,
-                    "color": "#053e4e"
-                })
+                "id": ID,
+                "source": parent,
+                "target": child,
+                "bounds": bounds[:-1],
+                "alt_parent": alternative_parent, #recombination nodes have an alternative parent
+                "alt_child": alternative_child,
+                "region_fraction": region_size / ts.sequence_length,
+                "color": "#053e4e"
+            })
         return pd.DataFrame(links)
     
     def _identify_breakpoints(ts):
@@ -392,11 +396,11 @@ class D3ARG:
             ID of the node and its new label
         """
 
-        id_map = {n["id"]: i for i,n in enumerate(self.nodes)}
-        for label in labels:
-            if label not in id_map:
-                raise ValueError(f"Node '{label}' not in the graph. Cannot update the node label.")
-            self.nodes[id_map[label]]["label"] = str(labels[label])
+        for id in labels:
+            if id in self.nodes["id"]:
+                self.nodes.loc[self.nodes["id"]==id, "label"] = labels[id]
+            else:
+                raise ValueError(f"Node '{id}' not in the graph. Cannot update the node label. Make sure all IDs are integers.")
 
     def reset_node_labels(self):
         """Resets node labels to default (based on msprime IDs)"""
@@ -406,7 +410,90 @@ class D3ARG:
                 node["label"] = str(node["id"]) + "/" + str(node["id"]+1)
             else:
                 node["label"] = str(node["id"])
-    
+
+    def reset_all_node_styles(self):
+        """Resets node styles to default (same as when assigned using D3ARG.from_ts)
+        
+        WARNING: This might not match the initial styles if using D3ARG.from_json
+        """
+
+        self.nodes["size"] = 150
+        self.nodes["symbol"] = "d3.symbolCircle"
+        self.nodes["fill"] = "#1eebb1"
+        self.nodes["stroke"] = "#053e4e"
+        self.nodes["stroke_width"] = 4
+        self.nodes["include_label"] = "true"
+
+    def set_all_node_styles(self, size="", symbol="", fill="", stroke="", stroke_width="", include_label=""):
+        """Sets the styling of all of the nodes at once for a specific option.
+
+        If optional parameter not provided, that styling option will be ignored and unchanged.
+
+        Parameters
+        ----------
+        size : int
+            Size in pixels of the node
+        symbol : string
+            D3 symbol (see https://d3js.org/d3-shape/symbol)
+        fill : string
+            Color of the node, "#XXXXXX" form
+        stroke : string
+            Color of the stroke around the node, "#XXXXXX" form
+        stroke_width : int
+            Pixel width for the stroke around the node
+        include_labels : string
+            "true" or "false" (will need to update this to bool eventually)
+        """
+
+        if size != "":
+            self.nodes["size"] = size
+        if symbol != "":
+            self.nodes["symbol"] = symbol
+        if fill != "":
+            self.nodes["fill"] = fill
+        if stroke != "":
+            self.nodes["stroke"] = stroke
+        if stroke_width != "":
+            self.nodes["stroke_width"] = stroke_width
+        if include_label != "":
+            self.nodes["include_label"] = include_label
+        
+    def set_node_styles(self, styles):
+        """Individually control the styling of each node.
+
+        Parameters
+        ----------
+        styles : list
+            List of dicts, one per node, with the styling keys: id, size, symbol, fill, stroke_width,
+            include_label. "id" is the only mandatory key. Only nodes that need styles updated need to
+            be provided.
+        """
+
+        for node in styles:
+            for key in node.keys():
+                if key in ["size", "symbol", "fill", "stroke", "stroke_width", "include_label"]:
+                    self.nodes.loc[self.nodes["id"]==node["id"], key] = node[key]
+        
+    def set_edge_colors(self, colors):
+        """Set the color of each edge in the ARG
+
+        Parameters
+        ----------
+        colors : dict
+            ID of the edge and its new color
+        """
+
+        for id in colors:
+            if id in self.edges["id"]:
+                self.edges.loc[self.edges["id"]==id, "color"] = colors[id]
+            else:
+                raise ValueError(f"Edge '{id}' not in the graph. Cannot update the edge color. Make sure all IDs are integers.")
+        
+    def reset_edge_colors(self):
+        """Resets the edge colors to the default (#053e4e)"""
+
+        self.edges["color"] = "#053e4e"
+
     def _check_all_nodes_are_samples(self, nodes):
         """Checks whether the list of nodes includes only samples
 
@@ -473,7 +560,7 @@ class D3ARG:
             edge_type="line",
             variable_edge_width=False,
             include_underlink=True,
-            subset_nodes=None,
+            #subset_nodes=None,
             sample_order=[]
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
@@ -504,19 +591,10 @@ class D3ARG:
         include_underlink : bool
             Includes an "underlink" for each edge gives a gap during edge crosses. This is currently only
             implemented for `edge_type="ortho"`. (default=True)
-        node_size : int
-            Sets the size of the nodes in the ARG. (default=150)
-        node_symbol : str
-            Calls a d3.symbol that is used for the non-sample nodes in the ARG. (default="d3.symbolCircle")
-        sample_node_symbol : str
-            Calls a d3.symbol that is used to differentiate the sample node. By default it is "d3.symbolCircle"
-            which is the same as the internal nodes of the ARG. (default="d3.symbolCircle")
-        subset_nodes : list (EXPERIMENTAL)
+        subset_nodes : list (EXPERIMENTAL) *****DEPRECATED Jan 2023 - to be removed ******
             List of nodes that user wants to stand out within the ARG. These nodes and the edges between them
             will have full opacity; other nodes will be faint (default=None, parameter is ignored and all
             nodes will have opacity)
-        include_node_labels : bool
-            Includes the node labels for each node in the ARG (default=True)
         sample_order : list
             Sample nodes IDs in desired order. Must only include sample nodes IDs, but does not
             need to include all sample nodes IDs. (default=[], order is set by first tree in tree sequence)
@@ -564,8 +642,8 @@ class D3ARG:
             transformed_bps.append(bp.to_dict())
         if y_axis_labels:
             width += 50
-        if not subset_nodes:
-            subset_nodes = [node["id"] for index, node in self.nodes.iterrows()]
+        #if not subset_nodes:
+        #    subset_nodes = [node["id"] for index, node in self.nodes.iterrows()]
         arg = {
             "data":{
                 "nodes":transformed_nodes,
