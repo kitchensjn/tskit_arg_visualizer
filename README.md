@@ -80,8 +80,7 @@ def draw(
     y_axis_scale="rank",
     edge_type="line",
     variable_edge_width=False,
-    subset_nodes=None,
-    include_node_labels=True,
+    include_underlink=True,
     sample_order=[]
 ):
 """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
@@ -109,12 +108,9 @@ edge_type : string
 variable_edge_width : bool
     Scales the stroke width of edges in the visualization will be proportional to the fraction of
     sequence in which that edge is found. (default=False)
-subset_nodes : list (EXPERIMENTAL)
-    List of nodes that user wants to stand out within the ARG. These nodes and the edges between them
-    will have full opacity; other nodes will be faint (default=None, parameter is ignored and all
-    nodes will have opacity)
-include_node_labels : bool
-    Includes the node labels for each node in the ARG (default=True)
+include_underlink : bool
+    Includes an "underlink" for each edge gives a gap during edge crosses. This is currently only
+    implemented for `edge_type="ortho"`. (default=True)
 sample_order : list
     Sample nodes IDs in desired order. Must only include sample nodes IDs, but does not
     need to include all sample nodes IDs. (default=[], order is set by first tree in tree sequence)
