@@ -34,14 +34,11 @@ This is a list of dictionaries, each corresponding to a given node in the graph.
 * **label**: string for the node label when plotting (matches the id unless the node is a recombination node when it merges the two tskit node ids together)
 * **flag**: msprime node flag
 * **time**: time of the node, pulled directly from tskit.TreeSequence
-* **time_01**: rescaled node time between 0 and 1
-* **logtime_01**: rescaled log of node time between 0 and 1
-* **rank_01**: rescaled rank of the node between 0 and 1
 * **child_of**: list of parents (recombination node IDs have been merged)
 * **parent_of**: list of children (recombination node IDs have been merged)
 * **fx_01** fixed x position scaled between 0 and 1 (used for sample nodes to specify that they shouldn't move)
 * **fx**: fixed x position after rescaled to the width of the plot (used for nodes that have been dragged), these nodes will have vx=0
-* **fy**: fixed y position after rescaled to the height of the plot, will match ether scaled_rank, scaled_time, scaled_logtime depending on y_axis_scale parameter, these nodes will have vy=0
+* **fy**: fixed y position after rescaled to the height of the plot, will match either rank, time, or log_time depending on the y_axis_scale parameter, these nodes will have vy=0
 * **x**: current x position in plot
 * **y**: current y position in plot
 * **vx**: current velocity along x-axis

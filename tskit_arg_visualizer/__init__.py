@@ -253,9 +253,6 @@ class D3ARG:
                 "id": ID,
                 "flag": node.flags,
                 "time": node.time,
-                "time_01":1-node.time/ts.max_root_time,
-                "logtime_01":1-math.log(node.time+1)/math.log(ts.max_root_time),
-                "rank_01": 1-(unique_times.index(node.time)*h_spacing), #fixed y position, property of force layout
                 "child_of": list(np.unique(child_of)),
                 "parent_of": list(np.unique(parent_of)),
                 "size": 150,
@@ -609,7 +606,11 @@ class D3ARG:
             x_shift = 100
         sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
         sample_order = self._calculate_sample_order(order=sample_order)
+        max_time = max(self.nodes["time"])
+        h_spacing = 1 / (len(np.unique(self.nodes["time"]))-1)
+        unique_times = list(np.unique(self.nodes["time"])) # Determines the rank (y position) of each time point 
         
+        ### GET RID OF THIS LOOP, CAN DO THIS WITH SINGLE CONDITIONAL AND RESULT
         for index, node in self.nodes.iterrows():
             if "x_pos_01" in node:
                 node["fx"] = node["x_pos_01"] * (width-100) + x_shift
@@ -618,14 +619,14 @@ class D3ARG:
             else:
                 node["x"] = 0.5 * (width-100) + x_shift
             if y_axis_scale == "time":
-                node["fy"] = node["time_01"] * (height-100) + 50
-                y_axis_ticks.append(node["time_01"] * (height-100) + 50)
+                fy = (1-node["time"]/max_time) * (height-100) + 50
             elif y_axis_scale == "log_time":
-                node["fy"] = node["logtime_01"] * (height-100) + 50
-                y_axis_ticks.append(node["logtime_01"] * (height-100) + 50)
+                fy = (1-math.log(node["time"]+1)/math.log(max_time)) * (height-100) + 50 #node["logtime_01"] * (height-100) + 50
             else:
-                node["fy"] = node["rank_01"] * (height-100) + 50
-                y_axis_ticks.append(node["rank_01"] * (height-100) + 50)
+                fy = (1-unique_times.index(node["time"])*h_spacing) * (height-100) + 50
+            
+            node["fy"] = fy
+            y_axis_ticks.append(fy)
             node["y"] = node["fy"]
             y_axis_text.append(node["time"])
             transformed_nodes.append(node.dropna().to_dict())
@@ -667,4 +668,5 @@ class D3ARG:
             },
             "tree_highlighting":str(tree_highlighting).lower()
         }
+        print(arg)
         draw_D3(arg_json=arg)

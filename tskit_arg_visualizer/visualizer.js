@@ -464,13 +464,6 @@ function draw_force_diagram() {
                 path_type = "tRfR";
             }
         }
-        if ((d.source.id == 60) & (d.target.id == 35)) {
-            path_type = "r0b0";
-            start_position_x = d.source.x;
-            start_position_y = d.source.y + vnub;
-            stop_position_x = d.target.x;
-            stop_position_y = d.target.y - vnub;
-        }
         return [path_type, start_position_x, start_position_y, stop_position_x, stop_position_y];
     }
 
