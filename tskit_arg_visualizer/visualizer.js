@@ -116,7 +116,7 @@ function draw_force_diagram() {
             if (!event.active) simulation.alphaTarget(0.3).restart();       
             var order = d3.selectAll("#arg_${divnum} .flag1").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
             d3.selectAll("#arg_${divnum} .node").classed("unfix", function(d) {
-                if (d.flag != 1) {
+                if ((d.flag != 1) & (d.x_pos_reference == -1)) {
                     delete d.fx;
                 } else {
                     d.fx = evenly_distributed_positions[order.indexOf(d.id)];
@@ -530,7 +530,7 @@ function draw_force_diagram() {
                 var parent = document.getElementById(String($divnum) + "_node" + d.child_of[0])
                 if (parent != null) {
                     var parent_x = parent.getAttribute("cx");
-                    if (parent_x > d.x) {
+                    if (parent_x > d.x+1) {
                         return "l";
                     } else {
                         return "r";
@@ -571,10 +571,20 @@ function draw_force_diagram() {
     function dragstarted(event, d) {
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
+        d3.selectAll("#arg_${divnum} .node").classed("ref", function(j) {
+            if (j.id == d.x_pos_reference) {
+                j.fx = d.x;
+            }
+        });
     }
 
     function dragged(event, d) {
         d.fx = event.x;
+        d3.selectAll("#arg_${divnum} .node").classed("ref", function(j) {
+            if (j.id == d.x_pos_reference) {
+                j.fx = event.x;
+            }
+        });
     }
 
     if ($tree_highlighting) {

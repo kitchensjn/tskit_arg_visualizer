@@ -244,16 +244,18 @@ class D3ARG:
             for i,child in enumerate(child_of):
                 if child in recombination_nodes_to_merge:
                     child_of[i] -= 1
+            unique_child_of = list(np.unique(child_of))
             parent_of = list(np.unique(ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]].child))
             for i,parent in enumerate(parent_of):
                 if parent in recombination_nodes_to_merge:
                     parent_of[i] -= 1
+            unique_parent_of = list(np.unique(parent_of))
             info = {
                 "id": ID,
                 "flag": node.flags,
                 "time": node.time,
-                "child_of": list(np.unique(child_of)),
-                "parent_of": list(np.unique(parent_of)),
+                "child_of": unique_child_of,
+                "parent_of": unique_parent_of,
                 "size": 150,
                 "symbol": "d3.symbolCircle",
                 "fill": "#1eebb1",
@@ -267,11 +269,13 @@ class D3ARG:
                 if ID in recombination_nodes_to_merge:
                     continue
                 label = str(ID)+"/"+str(ID+1)
-                if (len(parent_of) > 0) and (ts.tables.nodes.flags[parent_of[0]] != 131072):
-                    info["x_pos_reference"] = parent_of[0]
-            elif node.flags == 262144:
-                if len(parent_of) > 0 and (ts.tables.nodes.flags[parent_of[0]] != 131072):
-                    info["x_pos_reference"] = parent_of[0]
+                if (len(unique_parent_of) == 1) and (ts.tables.nodes.flags[unique_parent_of[0]] != 131072):
+                    info["x_pos_reference"] = unique_parent_of[0]
+            elif (len(unique_parent_of) == 1) and (len(unique_child_of) > 0): # this will not work when there are multiple roots
+                info["x_pos_reference"] = unique_parent_of[0]
+            #elif node.flags == 262144:
+            #    if len(parent_of) > 0 and (ts.tables.nodes.flags[parent_of[0]] != 131072):
+            #        info["x_pos_reference"] = parent_of[0]
             info["label"] = str(label) #label which is either the node ID or two node IDs for recombination nodes
             nodes.append(info)
         return pd.DataFrame(nodes)
