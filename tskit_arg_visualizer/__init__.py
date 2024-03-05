@@ -8,7 +8,6 @@ import tempfile
 import os
 from IPython.display import HTML, display
 
-
 def running_in_notebook():
     """Checks whether the code is being executed within a Jupyter Notebook.
     
@@ -263,14 +262,15 @@ class D3ARG:
                 "include_label": "true"
             }
             label = ID
+            info["x_pos_reference"] = -1
             if node.flags == 131072:
                 if ID in recombination_nodes_to_merge:
                     continue
                 label = str(ID)+"/"+str(ID+1)
-                if len(parent_of) > 0:
+                if (len(parent_of) > 0) and (ts.tables.nodes.flags[parent_of[0]] != 131072):
                     info["x_pos_reference"] = parent_of[0]
             elif node.flags == 262144:
-                if len(parent_of) > 0:
+                if len(parent_of) > 0 and (ts.tables.nodes.flags[parent_of[0]] != 131072):
                     info["x_pos_reference"] = parent_of[0]
             info["label"] = str(label) #label which is either the node ID or two node IDs for recombination nodes
             nodes.append(info)
@@ -509,9 +509,9 @@ class D3ARG:
         """
 
         for node in nodes:
-            found = self.nodes.loc[self.nodes["id"] == int(node)]["flag"]
-            if found.size > 0:
-                if found.size == 1:
+            found = list(self.nodes.loc[self.nodes["id"] == int(node)]["flag"])
+            if len(found) > 0:
+                if len(found) == 1:
                     if found[0] != 1:
                         return False, node
                 else:
@@ -557,7 +557,6 @@ class D3ARG:
             edge_type="line",
             variable_edge_width=False,
             include_underlink=True,
-            #subset_nodes=None,
             sample_order=[]
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
@@ -588,10 +587,6 @@ class D3ARG:
         include_underlink : bool
             Includes an "underlink" for each edge gives a gap during edge crosses. This is currently only
             implemented for `edge_type="ortho"`. (default=True)
-        subset_nodes : list (EXPERIMENTAL) *****DEPRECATED Jan 2023 - to be removed ******
-            List of nodes that user wants to stand out within the ARG. These nodes and the edges between them
-            will have full opacity; other nodes will be faint (default=None, parameter is ignored and all
-            nodes will have opacity)
         sample_order : list
             Sample nodes IDs in desired order. Must only include sample nodes IDs, but does not
             need to include all sample nodes IDs. (default=[], order is set by first tree in tree sequence)
@@ -621,7 +616,7 @@ class D3ARG:
             if y_axis_scale == "time":
                 fy = (1-node["time"]/max_time) * (height-100) + 50
             elif y_axis_scale == "log_time":
-                fy = (1-math.log(node["time"]+1)/math.log(max_time)) * (height-100) + 50 #node["logtime_01"] * (height-100) + 50
+                fy = (1-math.log(node["time"]+1)/math.log(max_time)) * (height-100) + 50
             else:
                 fy = (1-unique_times.index(node["time"])*h_spacing) * (height-100) + 50
             
@@ -643,8 +638,6 @@ class D3ARG:
             transformed_bps.append(bp.to_dict())
         if y_axis_labels:
             width += 50
-        #if not subset_nodes:
-        #    subset_nodes = [node["id"] for index, node in self.nodes.iterrows()]
         arg = {
             "data":{
                 "nodes":transformed_nodes,
@@ -668,5 +661,25 @@ class D3ARG:
             },
             "tree_highlighting":str(tree_highlighting).lower()
         }
-        print(arg)
         draw_D3(arg_json=arg)
+
+    def draw_edge_spans(self):
+        edges = []
+        for i,edge in self.edges.iterrows():
+            for bound in edge.bounds.split(" "):
+                bound = bound.split("-")
+                edges.append({"edge":edge.id, "left":float(bound[0]), "right":float(bound[1])})
+        arg = {"data":edges}
+        JS_text = Template("<div id='my_dataviz'></div><script>$main_text</script>")
+        edgespansjs = open(os.path.dirname(__file__) + "/alternative_plots/edge_spans.js", "r")
+        main_text_template = Template(edgespansjs.read())
+        edgespansjs.close()
+        main_text = main_text_template.safe_substitute(arg)
+        html = JS_text.safe_substitute({'main_text': main_text})
+        if running_in_notebook():
+            display(HTML("<script src='https://d3js.org/d3.v7.min.js'></script>" + html))
+        else:
+            with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
+                url = "file://" + f.name
+                f.write("<!DOCTYPE html><html><head><script src='https://d3js.org/d3.v7.min.js'></script></head><body>" + html + "</body></html>")
+            webbrowser.open(url, new=2)

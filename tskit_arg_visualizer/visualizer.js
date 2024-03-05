@@ -198,7 +198,7 @@ function draw_force_diagram() {
             return d.bounds;
         });
 
-    if (eval(edge_styles.include_underlink)) {
+    if ((edge_styles.type == "ortho") & eval(edge_styles.include_underlink)) {
         var underlink = link_container
             .append("path")
             .attr("class", "underlink");
@@ -208,11 +208,6 @@ function draw_force_diagram() {
         .append("path")
         .attr("class", function(d) {
             return "link"
-            //if ((eval(d.source.hidden)==false) & (eval(d.target.hidden)==false)) {
-            //    return "link"
-            //} else {
-            //    return "hiddenlink"
-            //}
         })
         .attr("stroke", function(d) {
             return d.color;
@@ -267,14 +262,6 @@ function draw_force_diagram() {
         .attr("id", function(d) { return String($divnum) + "_node" + d.id; })
         .attr("class", function(d) {
             return "node flag" + d.flag
-            //var classy = ""
-            //if (eval(d.hidden)) {
-            //    classy += "hiddennode";
-            //} else {
-            //    classy += "node";
-            //}
-            //classy += " flag" + d.flag
-            //return classy
         })
         .attr("parents", function(d) { return d.child_of.toString().replace(",", " "); })
         .attr("children", function(d) { return d.parent_of.toString().replace(",", " "); })
@@ -299,11 +286,6 @@ function draw_force_diagram() {
         .append("text")
             .attr("class", function(d) {
                 return "label"
-                //if (eval(d.hidden)==false) {
-                //    return "label"
-                //} else {
-                //    return "hiddenlabel"
-                //}
             })
             .text(function (d) { return d.label; });
     
@@ -502,6 +484,12 @@ function draw_force_diagram() {
                 }
             })
             .attr("cx", function(d) {
+                if ((edge_styles.type == "ortho") & (d.x_pos_reference != -1)) {
+                    var ref = document.getElementById(String($divnum) + "_node" + d.x_pos_reference);
+                    if (ref != null) {
+                        d.fx = ref.getAttribute("cx");
+                    }
+                }
                 if (eval(y_axis.include_labels)) {
                     return d.x = Math.max(50, Math.min($width-50, d.x));
                 } else {
@@ -526,16 +514,13 @@ function draw_force_diagram() {
             } else {
                 path = line([[d.source.x, d.source.y], [d.target.x, d.target.y]]);
             }
-            if (eval(edge_styles.include_underlink)) {
+            if ((edge_styles.type == "ortho") & eval(edge_styles.include_underlink)) {
                 var u = d3.select(this).select(".underlink");
                 u.attr("d", path);
             }
             var l = d3.select(this).select(".link");
             l.attr("path_type", path_info[0]);
-            l.attr("d", path);  
-            //var h = d3.select(this).select(".hiddenlink");
-            //h.attr("path_type", path_info[0]);
-            //h.attr("d", path);  
+            l.attr("d", path);
         })
 
         function determine_label_positioning(d) {
@@ -618,7 +603,7 @@ function draw_force_diagram() {
             })
             .attr("height", 40)
             .attr("stroke", "#FFFFFF")
-            .attr("stroke-width", 5)
+            .attr("stroke-width", 1)
             .attr("fill", "#053e4e")
             .on('mouseover', function (event, d) {
                 d3.select(this)
