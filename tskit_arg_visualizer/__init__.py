@@ -271,11 +271,8 @@ class D3ARG:
                 label = str(ID)+"/"+str(ID+1)
                 if (len(unique_parent_of) == 1) and (ts.tables.nodes.flags[unique_parent_of[0]] != 131072):
                     info["x_pos_reference"] = unique_parent_of[0]
-            elif (len(unique_parent_of) == 1) and (len(unique_child_of) > 0): # this will not work when there are multiple roots
+            elif (len(unique_parent_of) == 1) and (len(unique_child_of) > 0): # ignores roots as that is necessary to avoid stacking
                 info["x_pos_reference"] = unique_parent_of[0]
-            #elif node.flags == 262144:
-            #    if len(parent_of) > 0 and (ts.tables.nodes.flags[parent_of[0]] != 131072):
-            #        info["x_pos_reference"] = parent_of[0]
             info["label"] = str(label) #label which is either the node ID or two node IDs for recombination nodes
             nodes.append(info)
         return pd.DataFrame(nodes)
@@ -625,21 +622,35 @@ class D3ARG:
                 fy = (1-unique_times.index(node["time"])*h_spacing) * (height-100) + 50
             
             node["fy"] = fy
-            y_axis_ticks.append(fy)
             node["y"] = node["fy"]
+            transformed_nodes.append(node.to_dict())
             y_axis_text.append(node["time"])
-            transformed_nodes.append(node.dropna().to_dict())
-        y_axis_text = [round(t) for t in set(y_axis_text)]
+            y_axis_ticks.append(fy)
         if tree_highlighting:
             height += 75
-        transformed_bps = []
-        for index, bp in self.breakpoints.iterrows():
-            if y_axis_labels:
-                bp["x_pos"] = bp["x_pos_01"] * width + 50
-            else:
-                bp["x_pos"] = bp["x_pos_01"] * width
-            bp["width"] = bp["width_01"] * width
-            transformed_bps.append(bp.to_dict())
+
+        if y_axis_scale == "time":
+            y_axis_text = np.array(calculate_evenly_distributed_positions(10, start=0, end=max_time))
+            y_axis_ticks = (1-y_axis_text/max_time) * (height-100) + 50
+        elif y_axis_scale == "log_time":
+            digits = int(math.log10(max_time))+1
+            if (max_time - 10**(digits-1) < 10**(digits-1)): # this just removes the tick mark if its likely there is overlap
+                digits -= 1
+            y_axis_text = [0] + [10**i for i in range(1, digits)] + [max_time]
+            y_axis_ticks = []
+            for time in y_axis_text:
+                y_axis_ticks.append((1-math.log(time+1)/math.log(max_time)) * (height-100) + 50)
+
+        y_axis_text = [round(t) for t in set(y_axis_text)]
+        
+        transformed_bps = self.breakpoints.loc[:,:]
+        if y_axis_labels:
+            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width + 50
+        else:
+            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
+        transformed_bps["width"] = transformed_bps["width_01"] * width
+        transformed_bps = transformed_bps.to_dict("records")
+
         if y_axis_labels:
             width += 50
         arg = {
