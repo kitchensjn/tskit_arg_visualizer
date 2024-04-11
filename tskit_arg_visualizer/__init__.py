@@ -71,7 +71,6 @@ def draw_D3(arg_json):
             f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script></head><body>" + html + "</body></html>")
         webbrowser.open(url, new=2)
 
-
 class D3ARG:
     """Stores the ARG in a D3.js friendly format ready for plotting
 
@@ -606,7 +605,6 @@ class D3ARG:
         h_spacing = 1 / (len(np.unique(self.nodes["time"]))-1)
         unique_times = list(np.unique(self.nodes["time"])) # Determines the rank (y position) of each time point 
         
-        ### GET RID OF THIS LOOP, CAN DO THIS WITH SINGLE CONDITIONAL AND RESULT
         for index, node in self.nodes.iterrows():
             if "x_pos_01" in node:
                 node["fx"] = node["x_pos_01"] * (width-100) + x_shift
@@ -620,12 +618,12 @@ class D3ARG:
                 fy = (1-math.log(node["time"]+1)/math.log(max_time)) * (height-100) + 50
             else:
                 fy = (1-unique_times.index(node["time"])*h_spacing) * (height-100) + 50
+                y_axis_text.append(node["time"])
+                y_axis_ticks.append(fy)
             
             node["fy"] = fy
             node["y"] = node["fy"]
             transformed_nodes.append(node.to_dict())
-            y_axis_text.append(node["time"])
-            y_axis_ticks.append(fy)
         if tree_highlighting:
             height += 75
 
@@ -678,23 +676,128 @@ class D3ARG:
         }
         draw_D3(arg_json=arg)
 
-    def draw_edge_spans(self):
-        edges = []
-        for i,edge in self.edges.iterrows():
-            for bound in edge.bounds.split(" "):
-                bound = bound.split("-")
-                edges.append({"edge":edge.id, "left":float(bound[0]), "right":float(bound[1])})
-        arg = {"data":edges}
-        JS_text = Template("<div id='my_dataviz'></div><script>$main_text</script>")
-        edgespansjs = open(os.path.dirname(__file__) + "/alternative_plots/edge_spans.js", "r")
-        main_text_template = Template(edgespansjs.read())
-        edgespansjs.close()
-        main_text = main_text_template.safe_substitute(arg)
-        html = JS_text.safe_substitute({'main_text': main_text})
-        if running_in_notebook():
-            display(HTML("<script src='https://d3js.org/d3.v7.min.js'></script>" + html))
+    def draw_node(
+            self,
+            node,
+            width=500,
+            height=500,
+            degree=1,
+            y_axis_labels=True
+        ):
+        """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
+
+        Parameters
+        ----------
+        node : int
+            Node ID that will be central to the subgraph
+        width : int
+            Width of the force layout graph plot in pixels (default=500)
+        height : int
+            Height of the force layout graph plot in pixels (default=500)
+        degree : int
+            Number of degrees above and below the central node to include in the subgraph (default=1)
+        y_axis_labels : bool
+            Includes labelled y-axis on the left of the figure (default=True)
+        """
+        
+        nodes = [node]
+        above = [node]
+        below = [node]
+        #included_edges = pd.DataFrame(columns=self.edges.columns)
+        first = True
+        for d in range(degree):
+            new_above = []
+            for n in above:
+                to_add = self.edges.loc[self.edges["target"] == n, :]
+                if first:
+                    included_edges = to_add
+                    first = False
+                else:
+                    included_edges = pd.concat([included_edges, to_add], ignore_index=True)
+                new_above.extend(list(to_add["source"]))
+            above = new_above
+            nodes.extend(new_above)
+            new_below = []
+            for n in below:
+                to_add = self.edges.loc[self.edges["source"] == n, :]
+                if first:
+                    included_edges = to_add
+                    first = False
+                else:
+                    included_edges = pd.concat([included_edges, to_add], ignore_index=True)
+                new_below.extend(list(to_add["target"]))
+            below = new_below
+            nodes.extend(new_below)
+        included_edges = included_edges.drop_duplicates()
+        included_nodes = self.nodes.loc[self.nodes["id"].isin(list(set(nodes))), :]
+
+        ni_child, ni_parent = [], []
+        for n in included_nodes["id"]:
+            all_nodes_parents = self.edges[((self.edges["target"] == n) | (self.edges["source"] == n))]
+            included_nodes_parents = included_edges[((included_edges["target"] == n) | (included_edges["source"] == n))]
+            not_included = pd.merge(all_nodes_parents, included_nodes_parents, indicator=True, how='outer').query('_merge=="left_only"').drop('_merge', axis=1)
+            ni_child.append(sum(not_included["source"] == n))
+            ni_parent.append(sum(not_included["target"] == n))
+        included_nodes = included_nodes.assign(not_included_children=ni_child, not_included_parents=ni_parent)
+
+        y_axis_ticks = []
+        y_axis_text = []
+        transformed_nodes = []
+        
+        x_shift = 50
+        if y_axis_labels:
+            x_shift = 100
+        h_spacing = 1 / (len(np.unique(included_nodes["time"]))-1)
+        unique_times = list(np.unique(included_nodes["time"])) # Determines the rank (y position) of each time point 
+
+        for index, n in included_nodes.iterrows():
+            if "x_pos_01" in n:
+                n["fx"] = n["x_pos_01"] * (width-100) + x_shift
+            elif n["id"] == node:
+                n["fx"] = 0.5 * (width-100) + x_shift
+            else:
+                n["x"] = 0.5 * (width-100) + x_shift
+            fy = (1-unique_times.index(n["time"])*h_spacing) * (height-100) + 50
+            y_axis_text.append(n["time"])
+            y_axis_ticks.append(fy)
+            
+            n["fy"] = fy
+            n["y"] = n["fy"]
+            transformed_nodes.append(n.to_dict())
+
+        y_axis_text = [round(t) for t in set(y_axis_text)]
+        
+        transformed_bps = self.breakpoints.loc[:,:]
+        if y_axis_labels:
+            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width + 50
         else:
-            with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
-                url = "file://" + f.name
-                f.write("<!DOCTYPE html><html><head><script src='https://d3js.org/d3.v7.min.js'></script></head><body>" + html + "</body></html>")
-            webbrowser.open(url, new=2)
+            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
+        transformed_bps["width"] = transformed_bps["width_01"] * width
+        transformed_bps = transformed_bps.to_dict("records")
+
+        if y_axis_labels:
+            width += 50
+        arg = {
+            "data":{
+                "nodes":transformed_nodes,
+                "links":included_edges.to_dict("records"),
+                "breakpoints": transformed_bps,
+                "evenly_distributed_positions":[]
+            },
+            "width":width,
+            "height":height,
+            "y_axis":{
+                "include_labels":str(y_axis_labels).lower(),
+                "ticks":sorted(list(set(y_axis_ticks)), reverse=True),
+                "text":sorted(list(y_axis_text)),
+                "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
+                "scale":"rank",
+            },
+            "edges":{
+                "type":"line",
+                "variable_width":"false",
+                "include_underlink":"false"
+            },
+            "tree_highlighting":"false"
+        }
+        draw_D3(arg_json=arg)

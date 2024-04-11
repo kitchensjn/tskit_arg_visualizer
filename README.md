@@ -119,6 +119,39 @@ sample_order : list
 
 A quick note about line_type="ortho" (more details can be found within [pathing.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/pathing.md)) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags and where nodes have a maximum of two parents or children. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" edge_type.
 
+## Drawing A Subgraph Of A Larger ARG
+
+Often ARGs from real data can be quite large and unwieldy to visualize all at once. In these instances, we may want to look at the local connections around a specific node of interest.
+
+```
+def draw_node(
+    self,
+    node,
+    width=500,
+    height=500,
+    degree=1,
+    y_axis_labels=True
+):
+"""Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
+
+Parameters
+----------
+node : int
+    Node ID that will be central to the subgraph
+width : int
+    Width of the force layout graph plot in pixels (default=500)
+height : int
+    Height of the force layout graph plot in pixels (default=500)
+degree : int
+    Number of degrees above and below the central node to include in the subgraph (default=1)
+y_axis_labels : bool
+    Includes labelled y-axis on the left of the figure (default=True)
+"""
+```
+
+This function is very similar to the standard `draw()`, but you need to provide a node ID which will be the center of the subgraph. At the moment, it also doesn't have quite as many optional styling parameters; graphs are always drawn with tree_highlighting=False, y_axis_scale="rank" and edge_type="line", variable_edge_width=False, and include_underlink=True.
+
+
 ## Saving Figures
 
 The leftmost button in the visualizer's dashboard provides options for downloading the figure in three formats: JSON, SVG, or PNG. Each figure is actually just a JSON object that D3.js interprets and plots to the screen (see [plotting.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/plotting.md) for more information about this object). All files are saved as "tskit_arg_visualizer.*x*", where *x* is the respective file format.
@@ -140,7 +173,7 @@ d3arg = tskit_arg_visualizer.D3ARG.from_json(json=arg_json)
 d3arg.draw()
 ```
 
-Lastly, the PNG and SVG files are static files and directly match the current view of the visualizer but without interactivity. *A small note, opening the SVG in Illustrator does not properly import all styles (only inline styles, which are rarely used in the visualizer). Though all styles can be manually added or changed within Illustrator, this can be tedious. Styles are properly load when opening in a web browser.*
+Lastly, the PNG and SVG files are static files and directly match the current view of the visualizer but without interactivity. *A small note, opening the SVG in Adobe Illustrator does not properly import all styles (only inline styles). Though all styles can be manually added or changed within Illustrator, this can be tedious. Styles are properly load when opening in a web browser.*
 
 
 ## Modifying Node Labels

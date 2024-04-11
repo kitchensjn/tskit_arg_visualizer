@@ -3,3 +3,8 @@
 --------------------
 
 Early Alpha release made available via PyPI for community testing and evaluation.
+
+--------------------
+[0.0.2] - 2024-XX-XX
+--------------------
+

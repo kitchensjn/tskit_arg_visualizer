@@ -184,7 +184,8 @@ function draw_force_diagram() {
             })
             .links(graph.links)
         )
-        .force("charge", d3.forceManyBody().strength(-10))
+        //.force("center", d3.forceCenter(275,250).strength(-10))
+        .force("charge", d3.forceManyBody().strength(-100))
         .on("tick", ticked);
 
     var link_container = svg
@@ -247,12 +248,49 @@ function draw_force_diagram() {
             });
     }
 
-    var node = svg
+    var node_group = svg
         .append("g")
         .attr("class", "nodes")
         .selectAll("circle")
         .data(graph.nodes)
         .enter()
+        .append("g");
+
+    var missing_edges = node_group
+        .filter(function(d) { return (d.not_included_parents>0) | (d.not_included_children>0); })
+        .append("g")
+        .attr("class", "missing");
+
+    var missing_parents = missing_edges
+        .filter(function(d) { return d.not_included_parents>0; })
+        .append("g")
+        .attr("class", "parents")
+        .append("g");
+    var missing_parents_paths = missing_parents.append("path");
+    var missing_parents_texts = missing_parents
+        .append("text")
+            .attr("class", function(d) {
+                return "label"
+            })
+            .style("fill", "gray")
+            .text(function(d) { return d.not_included_parents;});
+
+    var missing_children = missing_edges
+        .filter(function(d) { return d.not_included_children>0; })
+        .append("g")
+        .attr("class", "children")
+        .append("g");
+    var missing_children_paths = missing_children.append("path");
+    var missing_children_texts = missing_children
+        .append("text")
+            .attr("class", function(d) {
+                return "label"
+            })
+            .style("fill", "gray")
+            .text(function(d) { return d.not_included_children;});
+
+
+    var node = node_group
         .append("path")
         .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
         .attr("d", d3.symbol().type(function(d) { return eval(d.symbol); }).size(function(d) { return d.size; }))
@@ -288,7 +326,7 @@ function draw_force_diagram() {
                 return "label"
             })
             .text(function (d) { return d.label; });
-    
+
     function determine_path_type(d) {
         path_type = ""
         var start_position_x = d.source.x;
@@ -566,13 +604,47 @@ function draw_force_diagram() {
                     }
                 });
             });
+
+        missing_parents_paths
+            .each(function(d) {
+                var l = d3.select(this);
+                l.style("stroke-width", "4px");
+                l.style("stroke-dasharray", "5");
+                l.style("stroke", "gray");
+                l.attr("d", line([[d.x, d.y], [d.x, d.y-30]]));
+            });
+        
+        missing_parents_texts
+            .each(function(d) {
+                var l = d3.select(this);
+                l.attr("text-anchor", "middle");
+                l.attr("x", d.x);
+                l.attr("y", d.y-30);
+            });
+
+        missing_children_paths
+            .each(function(d) {
+                var l = d3.select(this);
+                l.style("stroke-width", "4px");
+                l.style("stroke-dasharray", "5");
+                l.style("stroke", "gray");
+                l.attr("d", line([[d.x, d.y], [d.x, d.y+30]]));
+            });
+        
+        missing_children_texts
+            .each(function(d) {
+                var l = d3.select(this);
+                l.attr("text-anchor", "middle");
+                l.attr("x", d.x);
+                l.attr("y", d.y+40);
+            });
     }
 
     function dragstarted(event, d) {
         if (!event.active) simulation.alphaTarget(0.3).restart();
         d.fx = d.x;
         d3.selectAll("#arg_${divnum} .node").classed("ref", function(j) {
-            if (j.id == d.x_pos_reference) {
+            if ((edge_styles.type == "ortho") & (j.id == d.x_pos_reference)) {
                 j.fx = d.x;
             }
         });
@@ -581,7 +653,7 @@ function draw_force_diagram() {
     function dragged(event, d) {
         d.fx = event.x;
         d3.selectAll("#arg_${divnum} .node").classed("ref", function(j) {
-            if (j.id == d.x_pos_reference) {
+            if ((edge_styles.type == "ortho") & (j.id == d.x_pos_reference)) {
                 j.fx = event.x;
             }
         });
