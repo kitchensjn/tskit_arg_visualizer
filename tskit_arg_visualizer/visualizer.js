@@ -67,6 +67,20 @@ function svgString2Image(svgString, width, height, format, callback) {
 }
 
 
+function exportSVG() {
+	// Get SVG content of diagram
+	var body = document.getElementById("main_svg").innerHTML
+	// Get current style
+	var style = document.getElementsByTagName("style")[0].innerText
+
+	var svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg"> \
+    <style>${style}</style> \
+    ${body}</svg>`;
+	// Create blob object and open it in a new tab
+	var svgBlob = new Blob([svg], { type: "image/svg+xml" });
+	var svgUrl = URL.createObjectURL(svgBlob);
+	window.open(svgUrl, "_blank")
+}
 
 function draw_force_diagram() {
 
@@ -144,15 +158,24 @@ function draw_force_diagram() {
 		.attr("d", "M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22l0 56-192 0 0-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22l0-56 192 0 0 56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z")
 	evenly_distribute.append("span").attr("class", "tip desc").text("Space Samples");
 
+	var export_svg_button = dashboard.append("button")
+		.on("click", exportSVG);
+	export_svg_button.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+		.attr("xmlns", "http://www.w3.org/2000/svg")
+		.attr("viewBox", "0 0 512 512")
+		.append("path")
+		.attr("d", "M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V274.7l-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7V32zM64 352c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V416c0-35.3-28.7-64-64-64H346.5l-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352H64zm368 56a24 24 0 1 1 0 48 24 24 0 1 1 0-48z")
+	export_svg_button.append("span").attr("class", "tip desc").text("Export SVG");
+
 	var svg = d3.select("#arg_${divnum}").append("svg")
 		.attr("width", $width)
 		.attr("height", $height)
+		.attr("id", "main_svg")
 		.style("background-color", "white");
 
 	var result = y_axis.ticks.map(function (x) {
 		return parseInt(x, 10);
 	});
-
 
 	if (eval(y_axis.include_labels)) {
 		var bottom = $height - 50;
