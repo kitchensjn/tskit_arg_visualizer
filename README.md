@@ -146,6 +146,11 @@ degree : int
     Number of degrees above and below the central node to include in the subgraph (default=1)
 y_axis_labels : bool
     Includes labelled y-axis on the left of the figure (default=True)
+y_axis_scale : string
+    Scale used for the positioning nodes along the y-axis. Options:
+        "rank" (default) - equal vertical spacing between nodes
+        "time" - vertical spacing is proportional to the time
+        "log_time" - proportional to the log of time
 """
 ```
 
