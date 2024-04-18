@@ -682,7 +682,8 @@ class D3ARG:
             width=500,
             height=500,
             degree=1,
-            y_axis_labels=True
+            y_axis_labels=True,
+            y_axis_scale="rank"
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -747,6 +748,7 @@ class D3ARG:
         x_shift = 50
         if y_axis_labels:
             x_shift = 100
+        max_time = max(included_nodes["time"])
         h_spacing = 1 / (len(np.unique(included_nodes["time"]))-1)
         unique_times = list(np.unique(included_nodes["time"])) # Determines the rank (y position) of each time point 
 
@@ -757,13 +759,30 @@ class D3ARG:
                 n["fx"] = 0.5 * (width-100) + x_shift
             else:
                 n["x"] = 0.5 * (width-100) + x_shift
-            fy = (1-unique_times.index(n["time"])*h_spacing) * (height-100) + 50
-            y_axis_text.append(n["time"])
-            y_axis_ticks.append(fy)
+            if y_axis_scale == "time":
+                fy = (1-n["time"]/max_time) * (height-100) + 50
+            elif y_axis_scale == "log_time":
+                fy = (1-math.log(n["time"]+1)/math.log(max_time)) * (height-100) + 50
+            else:
+                fy = (1-unique_times.index(n["time"])*h_spacing) * (height-100) + 50
+                y_axis_text.append(n["time"])
+                y_axis_ticks.append(fy)
             
             n["fy"] = fy
             n["y"] = n["fy"]
             transformed_nodes.append(n.to_dict())
+
+        if y_axis_scale == "time":
+            y_axis_text = np.array(calculate_evenly_distributed_positions(10, start=0, end=max_time))
+            y_axis_ticks = (1-y_axis_text/max_time) * (height-100) + 50
+        elif y_axis_scale == "log_time":
+            digits = int(math.log10(max_time))+1
+            if (max_time - 10**(digits-1) < 10**(digits-1)): # this just removes the tick mark if its likely there is overlap
+                digits -= 1
+            y_axis_text = [0] + [10**i for i in range(1, digits)] + [max_time]
+            y_axis_ticks = []
+            for time in y_axis_text:
+                y_axis_ticks.append((1-math.log(time+1)/math.log(max_time)) * (height-100) + 50)
 
         y_axis_text = [round(t) for t in set(y_axis_text)]
         
@@ -791,7 +810,7 @@ class D3ARG:
                 "ticks":sorted(list(set(y_axis_ticks)), reverse=True),
                 "text":sorted(list(y_axis_text)),
                 "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
-                "scale":"rank",
+                "scale":y_axis_scale,
             },
             "edges":{
                 "type":"line",
