@@ -10,7 +10,7 @@ from IPython.display import HTML, display
 
 def running_in_notebook():
     """Checks whether the code is being executed within a Jupyter Notebook.
-    
+
     Adapted from https://stackoverflow.com/questions/15411967/how-can-i-check-if-code-is-executed-in-the-ipython-notebook
 
     Returns
@@ -23,6 +23,8 @@ def running_in_notebook():
         shell = get_ipython().__class__.__name__
         if shell == 'ZMQInteractiveShell':
             return True   # Jupyter notebook or qtconsole
+        elif shell == "Shell":
+            return True   # Google Colab
         elif shell == 'TerminalInteractiveShell':
             return False  # Terminal running IPython
         else:
@@ -64,7 +66,7 @@ def draw_D3(arg_json):
     styles = css.read()
     css.close()
     if running_in_notebook():
-        display(HTML("<style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js' charset='utf-8'></script>" + html))
+        display(HTML("<style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script>" + html))
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
