@@ -151,7 +151,7 @@ class D3ARG:
         return f"Nodes:\n{self.nodes}\n\nEdges:\n{self.edges}\n\nBreakpoints:\n{self.breakpoints}\n\nNumber of Samples: {self.num_samples}\nSample Order: {self.sample_order}"
         
     @classmethod
-    def from_ts(cls, ts):
+    def from_ts(cls, ts, ignore_unattached_nodes=False):
         """Converts a tskit tree sequence into a D3ARG object
         
         Parameters
@@ -159,23 +159,29 @@ class D3ARG:
         ts : tskit.TreeSequence
             tree sequence must have marked recombination nodes, such as using
             msprime.sim_ancestry(...,record_full_arg=True)
+        ignore_unattached_nodes : bool
+            Whether to include all nodes or ignore nodes that are completely
+            unattached. Default is False.
         
         Returns
         -------
         D3ARG : a corresponding D3ARG object ready to be plotted
         """
 
+        in_edges = np.unique(np.append(ts.tables.edges.parent, ts.tables.edges.child))
         samples = []
         order = ts.first().nodes(order="minlex_postorder")
         for n in order:
             if ts.node(n).is_sample():
+                if ignore_unattached_nodes and n not in in_edges:
+                    continue
                 samples.append(n)
         rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
         return cls(
-            nodes=cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm),
+            nodes=cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, ignore_unattached_nodes=ignore_unattached_nodes),
             edges=cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm),
             breakpoints=cls._identify_breakpoints(ts=ts),
-            num_samples=ts.num_samples,
+            num_samples=len(samples),
             sample_order=samples
         )
     
@@ -210,7 +216,7 @@ class D3ARG:
             sample_order=[sample for _, sample in sorted(zip(samples["fx"], samples["id"]))]
         )
 
-    def _convert_nodes_table(ts, recombination_nodes_to_merge):
+    def _convert_nodes_table(ts, recombination_nodes_to_merge, ignore_unattached_nodes):
         """Creates nodes JSON from the tskit.TreeSequence nodes table
         
         A "reference" is the id of another node that is used to determine a property in the
@@ -225,6 +231,9 @@ class D3ARG:
             msprime.sim_ancestry(...,record_full_arg=True)
         recombination_nodes_to_merge : list or numpy.Array
             IDs of recombination nodes that need to be converted to their alternate ID
+        ignore_unattached_nodes : bool
+            Whether to include all nodes or ignore nodes that are completely
+            unattached
 
         Returns
         -------
@@ -232,15 +241,11 @@ class D3ARG:
             List of dictionaries containing information about a given node
         """
 
-        # Parameters for the dimensions of the D3 plot. Eventually want to handle this entirely in JS
-        h_spacing = 1 / (len(np.unique(ts.tables.nodes.time))-1) #(ts.num_nodes - ts.num_samples - np.count_nonzero(ts.tables.nodes.flags == 131072)/2)
-        ordered_nodes = [] # Ordering of sample nodes is the same as the first tree in the sequence
-        for node in ts.first().nodes(order="minlex_postorder"):
-            if node < ts.num_samples:
-                ordered_nodes.append(node)
-        unique_times = list(np.unique(ts.tables.nodes.time)) # Determines the rank (y position) of each time point 
+        in_edges = np.unique(np.append(ts.tables.edges.parent, ts.tables.edges.child)) 
         nodes = []
         for ID, node in enumerate(ts.tables.nodes):
+            if ignore_unattached_nodes and ID not in in_edges:
+                continue
             child_of = list(np.unique(ts.tables.edges[np.where(ts.tables.edges.child == ID)[0]].parent))
             for i,child in enumerate(child_of):
                 if child in recombination_nodes_to_merge:
@@ -559,7 +564,8 @@ class D3ARG:
             edge_type="line",
             variable_edge_width=False,
             include_underlink=True,
-            sample_order=[]
+            sample_order=[],
+            hide_unattached_nodes=True
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -593,7 +599,7 @@ class D3ARG:
             Sample nodes IDs in desired order. Must only include sample nodes IDs, but does not
             need to include all sample nodes IDs. (default=[], order is set by first tree in tree sequence)
         """
-        
+
         y_axis_ticks = []
         y_axis_text = []
         transformed_nodes = []
@@ -606,7 +612,7 @@ class D3ARG:
         max_time = max(self.nodes["time"])
         h_spacing = 1 / (len(np.unique(self.nodes["time"]))-1)
         unique_times = list(np.unique(self.nodes["time"])) # Determines the rank (y position) of each time point 
-        
+
         for index, node in self.nodes.iterrows():
             if "x_pos_01" in node:
                 node["fx"] = node["x_pos_01"] * (width-100) + x_shift
