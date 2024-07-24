@@ -527,7 +527,7 @@ class D3ARG:
                 raise ValueError(f"Node '{node}' not in the graph.")
         return True, None
 
-    def _calculate_sample_order(self, order=[]):
+    def _calculate_sample_order(self, order=None):
         """Sets the ordering of the sample nodes (tips) within the ARG
     
         Sample nodes in order list will come first, then any samples nodes not provided will be included
@@ -545,6 +545,8 @@ class D3ARG:
             Sample nodes in desired order, including those not originally provided
         """
 
+        if order == None:
+            order = []
         check_samples = self._check_all_nodes_are_samples(nodes=order)
         if not check_samples[0]:
             raise ValueError(f"Node '{check_samples[1]}' not a sample and cannot be included in sample order.")
@@ -564,7 +566,7 @@ class D3ARG:
             edge_type="line",
             variable_edge_width=False,
             include_underlink=True,
-            sample_order=[],
+            sample_order=None,
             hide_unattached_nodes=True
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
@@ -597,9 +599,9 @@ class D3ARG:
             implemented for `edge_type="ortho"`. (default=True)
         sample_order : list
             Sample nodes IDs in desired order. Must only include sample nodes IDs, but does not
-            need to include all sample nodes IDs. (default=[], order is set by first tree in tree sequence)
+            need to include all sample nodes IDs. (default=None, order is set by first tree in tree sequence)
         """
-
+        
         y_axis_ticks = []
         y_axis_text = []
         transformed_nodes = []
