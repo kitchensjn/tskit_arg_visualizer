@@ -66,8 +66,6 @@ function svgString2Image( svgString, width, height, format, callback ) {
 	image.src = imgsrc;
 }
 
-
-
 function draw_force_diagram() {
     
     var graph = $data;
