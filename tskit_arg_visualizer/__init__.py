@@ -168,7 +168,7 @@ class D3ARG:
         D3ARG : a corresponding D3ARG object ready to be plotted
         """
 
-        in_edges = np.unique(np.append(ts.tables.edges.parent, ts.tables.edges.child))
+        in_edges = np.unique(np.append(ts.edges_parent, ts.edges_child))
         samples = []
         order = ts.first().nodes(order="minlex_postorder")
         for n in order:
@@ -176,7 +176,7 @@ class D3ARG:
                 if ignore_unattached_nodes and n not in in_edges:
                     continue
                 samples.append(n)
-        rcnm = np.where(ts.tables.nodes.flags == 131072)[0][1::2]
+        rcnm = np.where(ts.nodes_flags == 131072)[0][1::2]  # NB should probably be (ts.nodes_flags & msprime.NODE_IS_RE_EVENT) != 0
         return cls(
             nodes=cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, ignore_unattached_nodes=ignore_unattached_nodes),
             edges=cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm),
