@@ -283,7 +283,7 @@ class D3ARG:
 
             if info["flag"] == 131072:
                 info["label"] = str(u)+"/"+str(u+1)
-                if (len(unique_parent_of) == 1) and (ts.nodes_flags[unique_parent_of[0]] & msprime.NODE_IS_RE_EVENT != 0):
+                if (len(unique_parent_of) == 1) and not (ts.nodes_flags[unique_parent_of[0]] & msprime.NODE_IS_RE_EVENT != 0):
                     info["x_pos_reference"] = unique_parent_of[0]
             else:
                 info["label"] = str(u)
