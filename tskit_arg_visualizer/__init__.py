@@ -1,11 +1,13 @@
-import pandas as pd
-import numpy as np
 import random
 import math
 from string import Template
 import webbrowser
 import tempfile
 import os
+
+import msprime
+import numpy as np
+import pandas as pd
 from IPython.display import HTML, display
 
 def running_in_notebook():
@@ -240,48 +242,55 @@ class D3ARG:
         nodes : list
             List of dictionaries containing information about a given node
         """
+        node_lookup = np.arange(ts.num_nodes)  # maps original node IDs to the plotted node ID
+        merge_with_prev_node = np.zeros(ts.num_nodes, dtype=bool)
+        merge_with_prev_node[recombination_nodes_to_merge] = True
+        merge_with_prev_node = np.logical_and(merge_with_prev_node, ts.nodes_flags & msprime.NODE_IS_RE_EVENT != 0)
+        node_lookup[merge_with_prev_node] = node_lookup[merge_with_prev_node] - 1  # plotted ID is ID of prev node
 
-        in_edges = np.unique(np.append(ts.tables.edges.parent, ts.tables.edges.child)) 
-        nodes = []
-        for ID, node in enumerate(ts.tables.nodes):
-            if ignore_unattached_nodes and ID not in in_edges:
-                continue
-            child_of = list(np.unique(ts.tables.edges[np.where(ts.tables.edges.child == ID)[0]].parent))
-            for i,child in enumerate(child_of):
-                if child in recombination_nodes_to_merge:
-                    child_of[i] -= 1
-            unique_child_of = list(np.unique(child_of))
-            parent_of = list(np.unique(ts.tables.edges[np.where(ts.tables.edges.parent == ID)[0]].child))
-            for i,parent in enumerate(parent_of):
-                if parent in recombination_nodes_to_merge:
-                    parent_of[i] -= 1
-            unique_parent_of = list(np.unique(parent_of))
-            info = {
-                "id": ID,
-                "flag": node.flags,
-                "time": node.time,
-                "child_of": unique_child_of,
-                "parent_of": unique_parent_of,
+        if ignore_unattached_nodes:
+            omit_nodes = np.ones(ts.num_nodes, dtype=bool)
+            omit_nodes[ts.edges_parent] = False
+            omit_nodes[ts.edges_child] = False
+
+        nodes = {
+            u: {
+                "id": u,
+                "flag": flags,
+                "time": time,
+                "child_of": set(),  # will later convert to list
+                "parent_of": set(),  # will later convert to list
                 "size": 150,
                 "symbol": "d3.symbolCircle",
                 "fill": "#1eebb1",
                 "stroke": "#053e4e",
                 "stroke_width": 4,
-                "include_label": "true"
+                "include_label": "true",
+                "x_pos_reference": -1,
             }
-            label = ID
-            info["x_pos_reference"] = -1
-            if node.flags == 131072:
-                if ID in recombination_nodes_to_merge:
-                    continue
-                label = str(ID)+"/"+str(ID+1)
-                if (len(unique_parent_of) == 1) and (ts.tables.nodes.flags[unique_parent_of[0]] != 131072):
+            for u, (flags, time) in enumerate(zip(ts.nodes_flags, ts.nodes_time))
+            if not (ignore_unattached_nodes and omit_nodes[u]) and not merge_with_prev_node[u]
+        }
+        
+        for edge in ts.edges():
+            nodes[node_lookup[edge.child]]['child_of'].add(node_lookup[edge.parent])
+            nodes[node_lookup[edge.parent]]['parent_of'].add(node_lookup[edge.child])
+
+        for u in nodes.keys():
+            info = nodes[u]
+            info['child_of'] = sorted(info['child_of'])
+            info['parent_of'] = unique_parent_of = sorted(info['parent_of'])
+
+            if info["flag"] == 131072:
+                info["label"] = str(u)+"/"+str(u+1)
+                if (len(unique_parent_of) == 1) and not (ts.nodes_flags[unique_parent_of[0]] & msprime.NODE_IS_RE_EVENT != 0):
                     info["x_pos_reference"] = unique_parent_of[0]
-            elif (len(unique_parent_of) == 1) and (len(unique_child_of) > 0): # ignores roots as that is necessary to avoid stacking
-                info["x_pos_reference"] = unique_parent_of[0]
-            info["label"] = str(label) #label which is either the node ID or two node IDs for recombination nodes
-            nodes.append(info)
-        return pd.DataFrame(nodes)
+            else:
+                info["label"] = str(u)
+                if (len(unique_parent_of) == 1) and (len(info['child_of']) > 0):
+                    # ignores roots as that is necessary to avoid stacking
+                    info["x_pos_reference"] = unique_parent_of[0]
+        return pd.DataFrame(nodes.values())
 
     def _convert_edges_table(ts, recombination_nodes_to_merge):
         """Creates edges JSON from the tskit.TreeSequence edges table
