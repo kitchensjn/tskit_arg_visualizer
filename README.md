@@ -81,7 +81,8 @@ def draw(
     edge_type="line",
     variable_edge_width=False,
     include_underlink=True,
-    sample_order=[]
+    sample_order=None,
+    title=None
 ):
 """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -113,7 +114,9 @@ include_underlink : bool
     implemented for `edge_type="ortho"`. (default=True)
 sample_order : list
     Sample nodes IDs in desired order. Must only include sample nodes IDs, but does not
-    need to include all sample nodes IDs. (default=[], order is set by first tree in tree sequence)
+    need to include all sample nodes IDs. (default=None, order is set by first tree in tree sequence)
+title : str
+    Title to be put at the top of the figure. (default=None, ignored)
 """
 ```
 
@@ -130,7 +133,10 @@ def draw_node(
     width=500,
     height=500,
     degree=1,
-    y_axis_labels=True
+    y_axis_labels=True,
+    y_axis_scale="rank",
+    tree_highlighting=True,
+    title=None
 ):
 """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -142,8 +148,11 @@ width : int
     Width of the force layout graph plot in pixels (default=500)
 height : int
     Height of the force layout graph plot in pixels (default=500)
-degree : int
-    Number of degrees above and below the central node to include in the subgraph (default=1)
+degree : int or list(int, int)
+    Number of degrees above (older than) and below (younger than) the central
+    node to include in the subgraph (default=1). If this is a list, the
+    number of degrees above is taken from the first element and
+    the number of degrees below from the last element.
 y_axis_labels : bool
     Includes labelled y-axis on the left of the figure (default=True)
 y_axis_scale : string
@@ -151,6 +160,11 @@ y_axis_scale : string
         "rank" (default) - equal vertical spacing between nodes
         "time" - vertical spacing is proportional to the time
         "log_time" - proportional to the log of time
+tree_highlighting : bool
+    Include the interactive chromosome at the bottom of the figure to
+    to let users highlight trees in the ARG (default=True)
+title : str
+    Title to be put at the top of the figure. (default=None, ignored)
 """
 ```
 

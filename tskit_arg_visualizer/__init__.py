@@ -593,7 +593,8 @@ class D3ARG:
             edge_type="line",
             variable_edge_width=False,
             include_underlink=True,
-            sample_order=None
+            sample_order=None,
+            title=None
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -626,6 +627,8 @@ class D3ARG:
         sample_order : list
             Sample nodes IDs in desired order. Must only include sample nodes IDs, but does not
             need to include all sample nodes IDs. (default=None, order is set by first tree in tree sequence)
+        title : str
+            Title to be put at the top of the figure. (default=None, ignored)
         """
         
         y_axis_ticks = []
@@ -635,6 +638,11 @@ class D3ARG:
         x_shift = 50
         if y_axis_labels:
             x_shift = 100
+
+        y_shift = 50
+        if title:
+            y_shift = 100
+        
         sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
         sample_order = self._calculate_sample_order(order=sample_order)
         max_time = max(self.nodes["time"])
@@ -649,11 +657,11 @@ class D3ARG:
             else:
                 node["x"] = 0.5 * (width-100) + x_shift
             if y_axis_scale == "time":
-                fy = (1-node["time"]/max_time) * (height-100) + 50
+                fy = (1-node["time"]/max_time) * (height-100) + y_shift
             elif y_axis_scale == "log_time":
-                fy = (1-math.log(node["time"]+1)/math.log(max_time)) * (height-100) + 50
+                fy = (1-math.log(node["time"]+1)/math.log(max_time)) * (height-100) + y_shift
             else:
-                fy = (1-unique_times.index(node["time"])*h_spacing) * (height-100) + 50
+                fy = (1-unique_times.index(node["time"])*h_spacing) * (height-100) + y_shift
                 y_axis_text.append(node["time"])
                 y_axis_ticks.append(fy)
             
@@ -665,7 +673,7 @@ class D3ARG:
 
         if y_axis_scale == "time":
             y_axis_text = np.array(calculate_evenly_distributed_positions(10, start=0, end=max_time))
-            y_axis_ticks = (1-y_axis_text/max_time) * (height-100) + 50
+            y_axis_ticks = (1-y_axis_text/max_time) * (height-100) + y_shift
         elif y_axis_scale == "log_time":
             digits = int(math.log10(max_time))+1
             if (max_time - 10**(digits-1) < 10**(digits-1)): # this just removes the tick mark if its likely there is overlap
@@ -673,7 +681,7 @@ class D3ARG:
             y_axis_text = [0] + [10**i for i in range(1, digits)] + [max_time]
             y_axis_ticks = []
             for time in y_axis_text:
-                y_axis_ticks.append((1-math.log(time+1)/math.log(max_time)) * (height-100) + 50)
+                y_axis_ticks.append((1-math.log(time+1)/math.log(max_time)) * (height-100) + y_shift)
 
         y_axis_text = [round(t) for t in set(y_axis_text)]
         
@@ -683,10 +691,15 @@ class D3ARG:
         else:
             transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
         transformed_bps["width"] = transformed_bps["width_01"] * width
+        transformed_bps["included"] = "true"
         transformed_bps = transformed_bps.to_dict("records")
 
         if y_axis_labels:
             width += 50
+
+        if title:
+            height += 50
+
         arg = {
             "data":{
                 "nodes":transformed_nodes,
@@ -708,7 +721,8 @@ class D3ARG:
                 "variable_width":str(variable_edge_width).lower(),
                 "include_underlink":str(include_underlink).lower()
             },
-            "tree_highlighting":str(tree_highlighting).lower()
+            "tree_highlighting":str(tree_highlighting).lower(),
+            "title":title
         }
         draw_D3(arg_json=arg)
 
@@ -719,7 +733,9 @@ class D3ARG:
             height=500,
             degree=1,
             y_axis_labels=True,
-            y_axis_scale="rank"
+            y_axis_scale="rank",
+            tree_highlighting=True,
+            title=None
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -743,8 +759,16 @@ class D3ARG:
                 "rank" (default) - equal vertical spacing between nodes
                 "time" - vertical spacing is proportional to the time
                 "log_time" - proportional to the log of time
+        tree_highlighting : bool
+            Include the interactive chromosome at the bottom of the figure to
+            to let users highlight trees in the ARG (default=True)
+        title : str
+            Title to be put at the top of the figure. (default=None, ignored)
         """
         
+        if node not in self.nodes.id.values:
+            raise ValueError(f"Node '{node}' not in the graph.")
+    
         nodes = [node]
         above = [node]
         below = [node]
@@ -798,6 +822,11 @@ class D3ARG:
         x_shift = 50
         if y_axis_labels:
             x_shift = 100
+
+        y_shift = 50
+        if title:
+            y_shift = 100
+
         max_time = max(included_nodes["time"])
         h_spacing = 1 / (len(np.unique(included_nodes["time"]))-1)
         unique_times = list(np.unique(included_nodes["time"])) # Determines the rank (y position) of each time point 
@@ -810,11 +839,11 @@ class D3ARG:
             else:
                 n["x"] = 0.5 * (width-100) + x_shift
             if y_axis_scale == "time":
-                fy = (1-n["time"]/max_time) * (height-100) + 50
+                fy = (1-n["time"]/max_time) * (height-100) + y_shift
             elif y_axis_scale == "log_time":
-                fy = (1-math.log(n["time"]+1)/math.log(max_time)) * (height-100) + 50
+                fy = (1-math.log(n["time"]+1)/math.log(max_time)) * (height-100) + y_shift
             else:
-                fy = (1-unique_times.index(n["time"])*h_spacing) * (height-100) + 50
+                fy = (1-unique_times.index(n["time"])*h_spacing) * (height-100) + y_shift
                 y_axis_text.append(n["time"])
                 y_axis_ticks.append(fy)
             
@@ -822,9 +851,12 @@ class D3ARG:
             n["y"] = n["fy"]
             transformed_nodes.append(n.to_dict())
 
+        if tree_highlighting:
+            height += 75
+
         if y_axis_scale == "time":
             y_axis_text = np.array(calculate_evenly_distributed_positions(10, start=0, end=max_time))
-            y_axis_ticks = (1-y_axis_text/max_time) * (height-100) + 50
+            y_axis_ticks = (1-y_axis_text/max_time) * (height-100) + y_shift
         elif y_axis_scale == "log_time":
             digits = int(math.log10(max_time))+1
             if (max_time - 10**(digits-1) < 10**(digits-1)): # this just removes the tick mark if its likely there is overlap
@@ -832,7 +864,7 @@ class D3ARG:
             y_axis_text = [0] + [10**i for i in range(1, digits)] + [max_time]
             y_axis_ticks = []
             for time in y_axis_text:
-                y_axis_ticks.append((1-math.log(time+1)/math.log(max_time)) * (height-100) + 50)
+                y_axis_ticks.append((1-math.log(time+1)/math.log(max_time)) * (height-100) + y_shift)
 
         y_axis_text = [round(t) for t in set(y_axis_text)]
         
@@ -844,8 +876,23 @@ class D3ARG:
         transformed_bps["width"] = transformed_bps["width_01"] * width
         transformed_bps = transformed_bps.to_dict("records")
 
+        for bp in transformed_bps:
+            bp["included"] = "false"
+            for i,edge in included_edges.iterrows():
+                bounds = edge["bounds"].split("-")
+                start = float(bounds[0])
+                stop = float(bounds[1])
+                # assumes edge lengths are always larger the breakpoints which should be true here
+                if (start <= bp["start"]) and (stop >= bp["stop"]):
+                    bp["included"] = "true"
+                    break
+
         if y_axis_labels:
             width += 50
+
+        if title:
+            height += 50
+
         arg = {
             "data":{
                 "nodes":transformed_nodes,
@@ -867,6 +914,7 @@ class D3ARG:
                 "variable_width":"false",
                 "include_underlink":"false"
             },
-            "tree_highlighting":"false"
+            "tree_highlighting":str(tree_highlighting).lower(),
+            "title":title
         }
         draw_D3(arg_json=arg)

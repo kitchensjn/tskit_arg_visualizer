@@ -71,6 +71,7 @@ function draw_force_diagram() {
     var graph = $data;
     var y_axis = $y_axis;
     var edge_styles = $edges;
+    var title = "$title";
 
     var evenly_distributed_positions = graph.evenly_distributed_positions;
 
@@ -151,15 +152,18 @@ function draw_force_diagram() {
         return parseInt(x, 10); 
     });
 
-
     if (eval(y_axis.include_labels)) {
         var bottom = $height - 50;
         if ($tree_highlighting) {
             bottom = $height - 125;
         }
+        var top = 50;
+        if (title != "None") {
+            top = 100
+        }
         var yscale = d3.scaleLinear() 
             .domain([y_axis.max_min[0], y_axis.max_min[1]]) 
-            .range([bottom, 50]); 
+            .range([bottom, top]); 
 
         var y_axis_text = y_axis.text;
 
@@ -226,7 +230,7 @@ function draw_force_diagram() {
                     .style('stroke', '#1eebb1')
                     .style("cursor", "pointer");
                 d3.select("#arg_${divnum} .breakpoints")
-                    .selectAll("rect")
+                    .selectAll(".included")
                         .filter(function(j) {
                             return d.bounds.split(" ").some(function(region) {
                                 region = region.split("-");
@@ -241,7 +245,7 @@ function draw_force_diagram() {
                         return d.color;
                     })
                     .style("cursor", "default")
-                d3.select("#arg_${divnum} .breakpoints").selectAll("rect")
+                d3.select("#arg_${divnum} .breakpoints").selectAll(".included")
                     .style("fill", "#053e4e")
             });
     }
@@ -668,6 +672,11 @@ function draw_force_diagram() {
             .data(graph.breakpoints)
             .enter()
             .append("rect")
+            .attr("class", function(d) {
+                if (eval(d.included)) {
+                    return "included";
+                }
+            })
             .attr("start", function(d) {
                 return d.start;
             })
@@ -684,32 +693,42 @@ function draw_force_diagram() {
             .attr("height", 40)
             .attr("stroke", "#FFFFFF")
             .attr("stroke-width", 1)
-            .attr("fill", "#053e4e")
-            .on('mouseover', function (event, d) {
-                d3.select(this)
-                    .style('fill', '#1eebb1')
-                    .style("cursor", "pointer");
-                var highlight_links = d3.select("#arg_${divnum} .links")
-                    .selectAll("g")
-                        .filter(function(j) {
-                            return j.bounds.split(" ").some(function(region) {
-                                region = region.split("-");
-                                return (parseFloat(region[1]) > d.start) & (parseFloat(region[0]) < d.stop)
-                            });
-                        });
-                highlight_links.raise();
-                highlight_links
-                    .select(".link")
-                    .style("stroke", "#1eebb1");
+            .attr("fill", function(d) {
+                if (eval(d.included)) {
+                    return "#053e4e";
+                } else {
+                    return "gray";
+                }
             })
-            .on('mouseout', function (d, i) {
-                d3.select(this)
-                    .style('fill', '#053e4e')
-                    .style("cursor", "default");
-                d3.selectAll("#arg_${divnum} .link")
-                    .style("stroke", function(d) {
-                        return d.color;
-                    });   
+            .on('mouseover', function (event, d) {
+                if (eval(d.included)) {
+                    d3.select(this)
+                        .style('fill', '#1eebb1')
+                        .style("cursor", "pointer");
+                    var highlight_links = d3.select("#arg_${divnum} .links")
+                        .selectAll("g")
+                            .filter(function(j) {
+                                return j.bounds.split(" ").some(function(region) {
+                                    region = region.split("-");
+                                    return (parseFloat(region[1]) > d.start) & (parseFloat(region[0]) < d.stop)
+                                });
+                            });
+                    highlight_links.raise();
+                    highlight_links
+                        .select(".link")
+                        .style("stroke", "#1eebb1");
+                }
+            })
+            .on('mouseout', function (event, d) {
+                if (eval(d.included)) {
+                    d3.select(this)
+                        .style('fill', '#053e4e')
+                        .style("cursor", "default");
+                    d3.selectAll("#arg_${divnum} .link")
+                        .style("stroke", function(d) {
+                            return d.color;
+                        });
+                }
             });
         
         var endpoints = th_group.append("g").attr("class", "endpoints");
@@ -729,6 +748,16 @@ function draw_force_diagram() {
                 .text(graph.breakpoints[graph.breakpoints.length-1].stop)
                 .attr("x", $width)
                 .attr("y", $height-5);
+    }
+
+    if (title != "None") {
+        svg.append("text")
+            .attr("class", "label")
+            .text(title)
+            .style("font-size", "20px")
+            .attr("x", $width / 2)
+            .style("transform", "translate(-50%, 50%)")
+            .attr("y", 30);
     }
 }
 
