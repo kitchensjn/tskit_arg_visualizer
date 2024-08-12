@@ -420,12 +420,16 @@ class D3ARG:
         labels : dict
             ID of the node and its new label
         """
-
-        for id in labels:
-            if id in self.nodes["id"]:
-                self.nodes.loc[self.nodes["id"]==id, "label"] = labels[id]
-            else:
-                raise ValueError(f"Node '{id}' not in the graph. Cannot update the node label. Make sure all IDs are integers.")
+        df_id_index = self.nodes.set_index("id")
+        try:
+            keys = np.fromiter(labels.keys(), dtype=int)
+        except ValueError as e:
+            raise ValueError("Keys in labels must be integers.") from e
+        try:
+            df_id_index.loc[keys, 'label'] = [str(v) for v in labels.values()]
+        except KeyError as e:
+            raise ValueError("Node IDs in labels must be IDs of nodes in the graph.") from e
+        self.nodes['label'] = df_id_index['label'].values
 
     def reset_node_labels(self):
         """Resets node labels to default (based on msprime IDs)"""
