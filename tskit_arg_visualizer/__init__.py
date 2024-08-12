@@ -1,5 +1,7 @@
 import random
 import math
+import itertools
+import operator
 from string import Template
 import webbrowser
 import tempfile
@@ -313,61 +315,71 @@ class D3ARG:
         links : list
             List of dictionaries containing information about a given link
         """
-
-        parents = list(ts.edges_parent)
-        for i,parent in enumerate(parents):
+        ID = 0
+        links = []  # a list of parent_links (will be flattened and returned as a pandas array)
+        # iterate over unique parent/child combos. Take advantage of the fact that edges
+        # in a tree sequence are always ordered by parent ID.
+        for parent, edges in itertools.groupby(ts.edges(), operator.attrgetter("parent")):
+            parent_links = []  # all links for this parent
             if parent in recombination_nodes_to_merge:
-                parents[i] -= 1
-
-        uniq_child_parent = np.unique(np.column_stack((ts.edges_child, parents)), axis=0) #Find unique parent-child pairs.
-        links = []
-        for ID, combo in enumerate(uniq_child_parent):
-            child = combo[0]
-            parent = combo[1]
-            equivalent_edges = ts.tables.edges[np.where((ts.edges_child == child) & (parents == parent))[0]]
-            region_size = 0
-            bounds = ""
-            for edge in equivalent_edges:
-                bounds += f"{edge.left}-{edge.right} "
-                region_size += edge.right - edge.left
-            alternative_child = ""
-            alternative_parent = ""
-            if ts.tables.nodes.flags[parent] != 131072:
-                children = np.unique(ts.tables.edges[np.where(parents == parent)[0]].child)
-                if len(children) > 2:
-                    alternative_child = children[np.where(children != child)][0]
-                elif len(children) > 1:
-                    alternative_child = children[np.where(children != child)][0]
+                parent -= 1
+                ID = links[-1][0]["id"]  # to account for prev parent_links being overwritten
+            else:
+                edges_for_child = {}  # This is a new parent: make a new array
+            for edge in edges:
+                if edge.child not in edges_for_child:
+                    edges_for_child[edge.child] = [edge]
                 else:
-                    alternative_child = -1 # this occurs when converting from SLiM simulations, needs to have better handling
-                if alternative_child in recombination_nodes_to_merge:
-                    alternative_child -= 1
-            elif parent in recombination_nodes_to_merge:
-                parent = edge.parent - 1
-            if ts.tables.nodes.flags[child] == 131072:
+                    edges_for_child[edge.child].append(edge)
+            for child, equivalent_edges in edges_for_child.items():
+                region_size = 0
+                bounds = ""
+                for edge in equivalent_edges:
+                    bounds += f"{edge.left}-{edge.right} "
+                    region_size += edge.right - edge.left
+                alternative_child = ""
+                alternative_parent = ""
+                if (ts.nodes_flags[parent] & msprime.NODE_IS_RE_EVENT) == 0:
+                    children = np.array(list(edges_for_child.keys()))
+                    if len(children) > 2:
+                        alternative_child = children[np.where(children != child)][0]
+                    elif len(children) > 1:
+                        alternative_child = children[np.where(children != child)][0]
+                    else:
+                        alternative_child = -1 # this occurs when converting from SLiM simulations, needs to have better handling
+                    if alternative_child in recombination_nodes_to_merge:
+                        alternative_child -= 1
+                if (ts.nodes_flags[child] & msprime.NODE_IS_RE_EVENT) != 0:
+                    if child in recombination_nodes_to_merge:
+                        alt_id = child - 1
+                    else:
+                        alt_id = child + 1
+                    alt_id_parents = ts.edges_parent[ts.edges_child == alt_id]
+                    if len(alt_id_parents):
+                        alternative_parent = alt_id_parents[0]
+                    else:
+                        alternative_parent = ""
                 if child in recombination_nodes_to_merge:
-                    alt_id = child - 1
-                else:
-                    alt_id = child + 1
-                alt_id_parents = ts.tables.edges[np.where(ts.tables.edges.child == alt_id)[0]].parent
-                if len(alt_id_parents):
-                    alternative_parent = alt_id_parents[0]
-                else:
-                    alternative_parent = ""
-            if child in recombination_nodes_to_merge:
-                child = child - 1
-            links.append({
-                "id": ID,
-                "source": parent,
-                "target": child,
-                "bounds": bounds[:-1],
-                "alt_parent": alternative_parent, #recombination nodes have an alternative parent
-                "alt_child": alternative_child,
-                "region_fraction": region_size / ts.sequence_length,
-                "color": "#053e4e"
-            })
-        return pd.DataFrame(links)
-    
+                    child = child - 1
+                parent_links.append({
+                    "id": ID,
+                    "source": parent,
+                    "target": child,
+                    "bounds": bounds[:-1],
+                    "alt_parent": alternative_parent, #recombination nodes have an alternative parent
+                    "alt_child": alternative_child,
+                    "region_fraction": region_size / ts.sequence_length,
+                    "color": "#053e4e"
+                })
+                ID += 1
+            if edge.parent in recombination_nodes_to_merge:
+                # We must replace the previous parent_links array with all the details from this one,
+                # which will contain all edges for both recombination parents
+                links[-1] = parent_links
+            else:
+                links.append(parent_links)
+        return pd.DataFrame(l for parent_links in links for l in parent_links) 
+   
     def _identify_breakpoints(ts):
         """Creates breakpoints JSON from the tskit.TreeSequence
 
