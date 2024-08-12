@@ -726,8 +726,11 @@ class D3ARG:
             Width of the force layout graph plot in pixels (default=500)
         height : int
             Height of the force layout graph plot in pixels (default=500)
-        degree : int
-            Number of degrees above and below the central node to include in the subgraph (default=1)
+        degree : int or list(int, int)
+            Number of degrees above (older than) and below (younger than) the central
+            node to include in the subgraph (default=1). If this is a list, the
+            number of degrees above is taken from the first element and
+            the number of degrees below from the last element.
         y_axis_labels : bool
             Includes labelled y-axis on the left of the figure (default=True)
         y_axis_scale : string
@@ -742,7 +745,12 @@ class D3ARG:
         below = [node]
         #included_edges = pd.DataFrame(columns=self.edges.columns)
         first = True
-        for d in range(degree):
+        try:
+            older_degree = degree[0]
+            younger_degree = degree[-1]
+        except TypeError:
+            older_degree = younger_degree = degree
+        for _ in range(older_degree):
             new_above = []
             for n in above:
                 to_add = self.edges.loc[self.edges["target"] == n, :]
@@ -754,6 +762,7 @@ class D3ARG:
                 new_above.extend(list(to_add["source"]))
             above = new_above
             nodes.extend(new_above)
+        for _ in range(younger_degree):
             new_below = []
             for n in below:
                 to_add = self.edges.loc[self.edges["source"] == n, :]
