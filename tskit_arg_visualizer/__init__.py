@@ -6,11 +6,11 @@ from string import Template
 import webbrowser
 import tempfile
 import os
-
 import msprime
 import numpy as np
 import pandas as pd
 from IPython.display import HTML, display
+
 
 def running_in_notebook():
     """Checks whether the code is being executed within a Jupyter Notebook.
@@ -141,7 +141,9 @@ class D3ARG:
         breakpoints : pandas.DataFrame
             Contains info about the breakpoints
         num_samples : int
+            Number of samples in the ARG. Useful for various calculations when plotting
         sample_order : list or np.array
+            Order of the sample ID from left to right when plotting
         """
 
         self.nodes = nodes
@@ -161,8 +163,8 @@ class D3ARG:
         Parameters
         ----------
         ts : tskit.TreeSequence
-            tree sequence must have marked recombination nodes, such as using
-            msprime.sim_ancestry(...,record_full_arg=True)
+            Note: if tree sequence marks recombination nodes, it must use 2-RE format similar to that
+            used by msprime.sim_ancestry(...,record_full_arg=True).
         ignore_unattached_nodes : bool
             Whether to include all nodes or ignore nodes that are completely
             unattached. Default is False.
@@ -587,8 +589,7 @@ class D3ARG:
             edge_type="line",
             variable_edge_width=False,
             include_underlink=True,
-            sample_order=None,
-            hide_unattached_nodes=True
+            sample_order=None
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 

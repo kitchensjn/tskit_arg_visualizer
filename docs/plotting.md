@@ -73,21 +73,13 @@ Breakpoints mark recombination events along the chromosome, where each section i
 List of evenly distributed locations along the x-axis that will be used to position the sample nodes at the start and whenever you click the "Reheat Simulation" or "Space Samples" buttons.
 
 
-
-
 ## width
 
 Integer for the approximate width of the main force layout plot in pixels. Note: if y_axis.include_labels="true", the width of the whole SVG will be larger.
 
-
-
-
 ## height
 
 Integer for the approximate height of the main force layout plot in pixels. Note: if tree_highlighting="true", the height of the whole SVG will be larger.
-
-
-
 
 ## y_axis
 
@@ -115,8 +107,6 @@ String for the y-axis scale. Options:
 * "rank" (default) - equal vertical spacing between nodes
 * "time" - vertical spacing is proportional to the time
 * "log_time" - proportional to the log of time
-
-
 
 
 ## nodes
@@ -171,3 +161,6 @@ Boolean for whether to include an underlink alongside each edge. Underlinks are 
 
 Boolean for whether to include the tree highlighting based on the breakpoints list.
 
+# Assisted Node Positioning
+
+Assisted node positioning refers to blending the force simulation with specific node positioning rules when optimal node positions are unlikely to arise from the force simulation alone. Currently, the most apparent implementation of this is with recombination nodes when `edge_type="ortho"`, which in the classic depiction of ARGs sit directly above their child node. This isn't a likely positioning to occur with the force simulation as the nodes want to repel one another to either side. Instead, with assisted node positioning, we can lock the positions of the recombination node and their child node together so that they move as one within the force simulation. Dragging either node affects the other. In the scenario that the child of a recombination node is also a recombination node, the nodes' positions are not locked together. Additional rules could be added within assisted node positioning in the future to address the styling of specific topological scenarios.
