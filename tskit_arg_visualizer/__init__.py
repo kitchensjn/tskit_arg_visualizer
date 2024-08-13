@@ -29,6 +29,8 @@ def running_in_notebook():
             return True   # Jupyter notebook or qtconsole
         elif shell == "Shell":
             return True   # Google Colab
+        elif shell == "Interpreter":
+            return True   # JupyterLite
         elif shell == 'TerminalInteractiveShell':
             return False  # Terminal running IPython
         else:
