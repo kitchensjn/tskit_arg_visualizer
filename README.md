@@ -207,6 +207,11 @@ Node labels can be changed using the `set_node_labels()` function. The example a
 d3arg.reset_node_labels()
 ```
 
-## Reheating A Figure (EXPERIMENTAL)
+## Reheating A Figure
 
-The energy of the force layout simulation reduces overtime, causing the nodes to lose speed and settle into positions. Additionally, anytime the user moves a node by dragging, its new position becomes fixed and there on out unchanged by the simulation. The "Reheat Simulation" button in the top left of each figure unfixes the positions of all nodes except for the sample nodes at the tips, and gives a burst of energy to the simulation to allow the nodes to find new optimal positions. This feature is most useful when the starting sample node positions are not optimal; the user can rearrange them and then reheat the simulation to see if that helps with untangling.
+The energy of the force layout simulation reduces overtime, causing the nodes to lose speed and settle into positions. Additionally, anytime the user moves a node by dragging, its new position becomes fixed and there on out unchanged by the simulation. The "Reheat Simulation" button at the top of each figure unfixes the positions of all nodes except for the sample nodes at the tips, and gives a burst of energy to the simulation to allow the nodes to find new optimal positions. This feature is most useful when the starting sample node positions are not optimal; the user can rearrange them and then reheat the simulation to see if that helps with untangling.
+
+
+## Space Samples
+
+The "Space Samples" button at the top of each figure evenly spaces the samples apart from one another at the base of the figure. This can help quickly clean up graphs if the sample ordering needed to be rearranged.
