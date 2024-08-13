@@ -198,7 +198,7 @@ class D3ARG:
         Parameters
         ----------
         json : list of dictionaries
-            the custom output of that is copied to clipboard within the visualizer.
+            the custom output of that is downloaded from the visualizer.
             See plotting.md for more details on the format of the json structure
 
         Returns
@@ -877,15 +877,22 @@ class D3ARG:
         transformed_bps = transformed_bps.to_dict("records")
 
         for bp in transformed_bps:
+            found = False
             bp["included"] = "false"
             for i,edge in included_edges.iterrows():
-                bounds = edge["bounds"].split("-")
-                start = float(bounds[0])
-                stop = float(bounds[1])
-                # assumes edge lengths are always larger the breakpoints which should be true here
-                if (start <= bp["start"]) and (stop >= bp["stop"]):
-                    bp["included"] = "true"
+                bounds = edge["bounds"].split(" ")
+                for b in bounds:
+                    b = b.split("-")
+                    start = float(b[0])
+                    stop = float(b[1])
+                    # assumes edge lengths are always larger the breakpoints which should be true here
+                    if (start <= bp["start"]) and (stop >= bp["stop"]):
+                        bp["included"] = "true"
+                        found = True
+                        break
+                if found:
                     break
+                
 
         if y_axis_labels:
             width += 50
