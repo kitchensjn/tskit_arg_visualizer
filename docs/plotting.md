@@ -30,20 +30,25 @@ This is a dictionary which includes all of the network data to for the ARG inclu
 This is a list of dictionaries, each corresponding to a given node in the graph. Each dictionary contains the following information about the node:
 
 * **id**: unique identifier of each node
-* **index**: unique identifier of each node, same as id (one of these should be removed in future update)
+* **index**: unique identifier of each node (will match id in future update)
 * **label**: string for the node label when plotting (matches the id unless the node is a recombination node when it merges the two tskit node ids together)
 * **flag**: msprime node flag
 * **time**: time of the node, pulled directly from tskit.TreeSequence
 * **child_of**: list of parents (recombination node IDs have been merged)
 * **parent_of**: list of children (recombination node IDs have been merged)
-* **fx_01** fixed x position scaled between 0 and 1 (used for sample nodes to specify that they shouldn't move)
+* **size**: size of node symbol
+* **symbol**: shape of node symbol (default is d3.symbolCircle)
+* **fill**: fill color of symbol
+* **stroke**: stroke color of symbol
+* **stroke_width**: stroke width of symbol
+* **include_label**: whether to display the node label next to the symbol
 * **fx**: fixed x position after rescaled to the width of the plot (used for nodes that have been dragged), these nodes will have vx=0
 * **fy**: fixed y position after rescaled to the height of the plot, will match either rank, time, or log_time depending on the y_axis_scale parameter, these nodes will have vy=0
 * **x**: current x position in plot
 * **y**: current y position in plot
 * **vx**: current velocity along x-axis
 * **vy**: current velocity along y-axis
-* **x_pos_reference**: the id of another node that should be used to determine the x position of this node (not yet implemented as it breaks the force simulation)
+* **x_pos_reference**: the id of another node that should be used to determine the x position of this node
 
 Some of these attributes are calculated in Python whereas others are calculated in JavaScript. This is an exhaustive list. Not all attributes are always completely necessary, so you may find that some nodes in your graph are missing specific attributes and this is okay.
 
@@ -51,11 +56,14 @@ Some of these attributes are calculated in Python whereas others are calculated 
 
 Links are the edges between the nodes. This is similarly stored as a list of dictionaries. Each dictionary contains the following information about the edge:
 
+* **id**: unique identifier for each edge
 * **source**: ancestor node
 * **target**: descendent node
 * **bounds**: a string with the boundaries of any region that contains this edge (ex. "0-1 5-8 9-10") NOTE: this differs from how edges are stored in the tskit.TreeSequence edge table
 * **alt_parent**: if the node has more than one parent, ID of the other parent, used for pathing method
 * **alt_child**: if the node has more than one child, ID of the other child, used for pathing method
+* **region_fraction**: the fraction of the chromosome that is cover by that edges spans. Used for `draw(variable_edge_width=True)`.
+* **color**: color of the edge
 
 ### breakpoints
 
@@ -67,6 +75,7 @@ Breakpoints mark recombination events along the chromosome, where each section i
 * **x_pos**: x position scaled given the width of the figure
 * **width_01**: width of the rectangle scaled between 0 and 1
 * **width**: width of the rectangle scaled given the width of the figure
+* **included**: whether that region is covered by the edges in the graph/subgraph
 
 ### evenly_distributed_positions
 
@@ -160,6 +169,10 @@ Boolean for whether to include an underlink alongside each edge. Underlinks are 
 ## tree_highlighting
 
 Boolean for whether to include the tree highlighting based on the breakpoints list.
+
+## title
+
+Title of the figure, if provided, otherwise None.
 
 # Assisted Node Positioning
 
