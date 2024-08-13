@@ -876,8 +876,11 @@ class D3ARG:
         transformed_bps["width"] = transformed_bps["width_01"] * width
         transformed_bps = transformed_bps.to_dict("records")
 
-        for bp in transformed_bps:
-            found = False
+        merged_bps = []
+        for j,bp in enumerate(transformed_bps):
+            if j == 0:
+                current_region = bp
+            important_bp = False
             bp["included"] = "false"
             for i,edge in included_edges.iterrows():
                 bounds = edge["bounds"].split(" ")
@@ -888,11 +891,17 @@ class D3ARG:
                     # assumes edge lengths are always larger the breakpoints which should be true here
                     if (start <= bp["start"]) and (stop >= bp["stop"]):
                         bp["included"] = "true"
-                        found = True
-                        break
-                if found:
-                    break
-                
+                    if start == bp["start"]:
+                        important_bp = True
+            if j > 0:
+                if important_bp:
+                    merged_bps.append(current_region)
+                    current_region = bp
+                else:
+                    current_region["stop"] = bp["stop"]
+                    current_region["width_01"] += bp["width_01"]
+                    current_region["width"] += bp["width"]
+        merged_bps.append(current_region) # make sure to append the last region
 
         if y_axis_labels:
             width += 50
@@ -904,7 +913,7 @@ class D3ARG:
             "data":{
                 "nodes":transformed_nodes,
                 "links":included_edges.to_dict("records"),
-                "breakpoints": transformed_bps,
+                "breakpoints": merged_bps,
                 "evenly_distributed_positions":[]
             },
             "width":width,
