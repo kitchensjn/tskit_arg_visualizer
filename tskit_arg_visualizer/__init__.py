@@ -893,6 +893,8 @@ class D3ARG:
                         bp["included"] = "true"
                     if start == bp["start"]:
                         important_bp = True
+            if (bp["included"] == "false") and (current_region["included"] == "true"):
+                important_bp = True
             if j > 0:
                 if important_bp:
                     merged_bps.append(current_region)
