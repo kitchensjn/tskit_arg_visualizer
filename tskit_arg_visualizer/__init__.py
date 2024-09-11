@@ -7,6 +7,7 @@ import webbrowser
 import tempfile
 import os
 import msprime
+import tskit
 import numpy as np
 import pandas as pd
 from IPython.display import HTML, display
@@ -127,7 +128,7 @@ class D3ARG:
 
     """
 
-    def __init__(self, nodes, edges, breakpoints, num_samples, sample_order):
+    def __init__(self, nodes, edges, mutations, breakpoints, num_samples, sample_order):
         """Initializes a D3ARG object
 
         This is the generalized function for initializing a D3ARG object. It is most
@@ -150,13 +151,14 @@ class D3ARG:
 
         self.nodes = nodes
         self.edges = edges
+        self.mutations = mutations
         self.breakpoints = breakpoints
         self.num_samples = num_samples
         self.sample_order = sample_order
 
     def __str__(self):
         """Prints attributes of D3ARG object"""
-        return f"Nodes:\n{self.nodes}\n\nEdges:\n{self.edges}\n\nBreakpoints:\n{self.breakpoints}\n\nNumber of Samples: {self.num_samples}\nSample Order: {self.sample_order}"
+        return f"Nodes:\n{self.nodes}\n\nEdges:\n{self.edges}\n\nMutations:\n{self.mutations}\n\nBreakpoints:\n{self.breakpoints}\n\nNumber of Samples: {self.num_samples}\nSample Order: {self.sample_order}"
         
     @classmethod
     def from_ts(cls, ts, ignore_unattached_nodes=False):
@@ -185,9 +187,11 @@ class D3ARG:
                     continue
                 samples.append(n)
         rcnm = np.where(ts.nodes_flags == 131072)[0][1::2]  # NB should probably be (ts.nodes_flags & msprime.NODE_IS_RE_EVENT) != 0
+        edges, mutations = cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm)
         return cls(
             nodes=cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, ignore_unattached_nodes=ignore_unattached_nodes),
-            edges=cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm),
+            edges=edges,
+            mutations=mutations,
             breakpoints=cls._identify_breakpoints(ts=ts),
             num_samples=len(samples),
             sample_order=samples
@@ -279,8 +283,8 @@ class D3ARG:
         }
         
         for edge in ts.edges():
-            nodes[node_lookup[edge.child]]['child_of'].add(node_lookup[edge.parent])
-            nodes[node_lookup[edge.parent]]['parent_of'].add(node_lookup[edge.child])
+            nodes[node_lookup[edge.child]]['child_of'].add(int(node_lookup[edge.parent]))
+            nodes[node_lookup[edge.parent]]['parent_of'].add(int(node_lookup[edge.child]))
 
         for u in nodes.keys():
             info = nodes[u]
@@ -320,10 +324,12 @@ class D3ARG:
             List of dictionaries containing information about a given link
         """
         ID = 0
+        edge_id_reference = {}
         links = []  # a list of parent_links (will be flattened and returned as a pandas array)
         # iterate over unique parent/child combos. Take advantage of the fact that edges
         # in a tree sequence are always ordered by parent ID.
         for parent, edges in itertools.groupby(ts.edges(), operator.attrgetter("parent")):
+            parent_time = ts.node(parent).time
             parent_links = []  # all links for this parent
             if parent in recombination_nodes_to_merge:
                 parent -= 1
@@ -336,9 +342,11 @@ class D3ARG:
                 else:
                     edges_for_child[edge.child].append(edge)
             for child, equivalent_edges in edges_for_child.items():
+                child_time = ts.node(child).time
                 region_size = 0
                 bounds = ""
                 for edge in equivalent_edges:
+                    edge_id_reference[edge.id] = ID
                     bounds += f"{edge.left}-{edge.right} "
                     region_size += edge.right - edge.left
                 alternative_child = ""
@@ -368,12 +376,16 @@ class D3ARG:
                 parent_links.append({
                     "id": ID,
                     "source": parent,
+                    "source_time": parent_time,
                     "target": child,
+                    "target_time": child_time,
                     "bounds": bounds[:-1],
                     "alt_parent": alternative_parent, #recombination nodes have an alternative parent
                     "alt_child": alternative_child,
                     "region_fraction": region_size / ts.sequence_length,
-                    "color": "#053e4e"
+                    "color": "#053e4e",
+                    "mutation_count": 0,
+                    "mutation_info": ""
                 })
                 ID += 1
             if edge.parent in recombination_nodes_to_merge:
@@ -382,7 +394,34 @@ class D3ARG:
                 links[-1] = parent_links
             else:
                 links.append(parent_links)
-        return pd.DataFrame(l for parent_links in links for l in parent_links) 
+        edges_output = pd.DataFrame(l for parent_links in links for l in parent_links)
+        mutations = []
+        for site in ts.sites():
+            for mut in site.mutations:
+                edges_output.loc[edges_output["id"] == edge_id_reference[mut.edge], "mutation_count"] += 1
+                #edges_output.loc[edges_output["id"] == edge_id_reference[mut.edge], "mutation_info"] += f"{round(mut.time)}:{site.position}:{site.ancestral_state}->{mut.derived_state}\n"
+                e = edges_output.loc[edges_output["id"] == edge_id_reference[mut.edge]].iloc[0, :]
+                if (mut.time == tskit.UNKNOWN_TIME):
+                    plot_time = (e["source_time"] + e["target_time"]) / 2 + random.uniform(0,1)
+                    fill = "orange"
+                else:
+                    plot_time = mut.time
+                    fill = "gold"
+                mutations.append({
+                    "edge": edge_id_reference[mut.edge],
+                    "source": e["source"],
+                    "target": e["target"],
+                    "time": mut.time,
+                    "plot_time": plot_time,
+                    "site_id": site.id,
+                    "position": site.position,
+                    "position_01": site.position/ts.sequence_length,
+                    "ancestral": site.ancestral_state,
+                    "derived": mut.derived_state,
+                    "fill": fill
+                })
+        mutations_output = pd.DataFrame(mutations)
+        return edges_output, mutations_output
    
     def _identify_breakpoints(ts):
         """Creates breakpoints JSON from the tskit.TreeSequence
@@ -584,6 +623,225 @@ class D3ARG:
             if found["flag"] == 1 and found["id"] not in order:
                 order.append(found["id"])
         return order
+    
+    def _prepare_json(
+            self,
+            nodes,
+            edges,
+            mutations,
+            breakpoints,
+            width=500,
+            height=500,
+            tree_highlighting=True,
+            y_axis_labels=True,
+            y_axis_scale="rank",
+            edge_type="line",
+            variable_edge_width=False,
+            include_underlink=True,
+            sample_order=None,
+            title=None,
+            ignore_mutation_times=True
+        ):
+        """Creates the required JSON for both draw() and draw_node()
+
+        Parameters
+        ----------
+        nodes : pd.DataFrame
+            The nodes to be plotted, potentially subset of original graph
+        edges : pd.DataFrame
+            The edges to be plotted, potentially subset of original graph
+        mutations : pd.DataFrame
+            The mutations to be plotted, potentially subset of original graph
+        breakpoints : pd.DataFrame
+            The breakpoints to be plotted, potentially subset of original graph
+        width : int
+            Width of the force layout graph plot in pixels (default=500)
+        height : int
+            Height of the force layout graph plot in pixels (default=500)
+        tree_highlighting : bool
+            Include the interactive chromosome at the bottom of the figure to
+            to let users highlight trees in the ARG (default=True)
+        y_axis_labels : bool
+            Includes labelled y-axis on the left of the figure (default=True)
+        y_axis_scale : string
+            Scale used for the positioning nodes along the y-axis. Options:
+                "rank" (default) - equal vertical spacing between nodes
+                "time" - vertical spacing is proportional to the time
+                "log_time" - proportional to the log of time
+        edge_type : string
+            Pathing type for edges between nodes. Options:
+                "line" (default) - simple straight lines between the nodes
+                "ortho" - custom pathing (see pathing.md for more details, should only be used with full ARGs)
+        variable_edge_width : bool
+            Scales the stroke width of edges in the visualization will be proportional to the fraction of
+            sequence in which that edge is found. (default=False)
+        include_underlink : bool
+            Includes an "underlink" for each edge gives a gap during edge crosses. This is currently only
+            implemented for `edge_type="ortho"`. (default=True)
+        sample_order : list
+            Sample nodes IDs in desired order. Must only include sample nodes IDs, but does not
+            need to include all sample nodes IDs. (default=None, order is set by first tree in tree sequence)
+        title : str
+            Title to be put at the top of the figure. (default=None, ignored)
+        ignore_mutation_times : bool
+            Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
+
+        Returns
+        -------
+        arg : list
+            List of dictionaries (JSON) with all of the data need to plot in D3.js
+        """
+
+        y_axis_ticks = []
+        y_axis_text = []
+        transformed_nodes = []
+        transformed_muts = []
+        
+        x_shift = 50
+        if y_axis_labels:
+            x_shift = 100
+
+        y_shift = 50
+        if title:
+            y_shift = 100
+        
+        if ignore_mutation_times:
+            tick_times = nodes["time"]
+        else:
+            tick_times = pd.concat([nodes["time"],mutations["plot_time"]], axis=0).sort_values(ignore_index=True)
+        sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
+        sample_order = self._calculate_sample_order(order=sample_order)
+        max_time = max(tick_times)
+        h_spacing = 1 / (len(np.unique(tick_times))-1)
+        unique_times = list(np.unique(tick_times)) # Determines the rank (y position) of each time point 
+
+        node_y_pos = {}
+
+        for index, node in nodes.iterrows():
+            if "x_pos_01" in node:
+                node["fx"] = node["x_pos_01"] * (width-100) + x_shift
+            elif node["flag"] == 1:
+                node["fx"] = sample_positions[sample_order.index(node["id"])]
+            else:
+                node["x"] = 0.5 * (width-100) + x_shift
+            if y_axis_scale == "time":
+                fy = (1-node["time"]/max_time) * (height-100) + y_shift
+            elif y_axis_scale == "log_time":
+                fy = (1-math.log(node["time"]+1)/math.log(max_time)) * (height-100) + y_shift
+            else:
+                fy = (1-unique_times.index(node["time"])*h_spacing) * (height-100) + y_shift
+                y_axis_text.append(node["time"])
+                y_axis_ticks.append(fy)
+            node["fy"] = fy
+            node["y"] = node["fy"]
+            node_y_pos[node["id"]] = node["fy"] 
+            transformed_nodes.append(node.to_dict())
+
+        transformed_muts = []
+        if (edge_type == "line") and (len(mutations.index) > 0):
+            if ignore_mutation_times:
+                for index, edge in edges.iterrows():
+                    source_y = node_y_pos[edge["source"]]
+                    target_y = node_y_pos[edge["target"]]
+                    muts = mutations.loc[mutations["edge"] == edge["id"]].reset_index()
+                    for m, mut in muts.iterrows():
+                        fy = source_y - (source_y - target_y)/(edge["mutation_count"]+1)*(m+1)# - 10*(m-((edge["mutation_count"]-1)/2))
+                        if y_axis_labels:
+                            x_pos = mut["position_01"] * width + 50
+                        else:
+                            x_pos = mut["position_01"] * width
+                        transformed_muts.append({
+                            "edge": edge["id"],
+                            "source": edge["source"],
+                            "target": edge["target"],
+                            "time": mut.time,
+                            "y": fy,
+                            "fy": fy,
+                            "site_id": mut.site_id,
+                            "position": mut.position,
+                            "x_pos": x_pos,
+                            "ancestral": mut.ancestral,
+                            "derived": mut.derived,
+                            "fill": "orange"
+                        })
+            else:
+                for index, mut in mutations.iterrows():
+                    if y_axis_scale == "time":
+                        fy = (1-mut["plot_time"]/max_time) * (height-100) + y_shift
+                    elif y_axis_scale == "log_time":
+                        fy = (1-math.log(mut["plot_time"]+1)/math.log(max_time)) * (height-100) + y_shift
+                    else:
+                        fy = (1-unique_times.index(mut["plot_time"])*h_spacing) * (height-100) + y_shift
+                        if mut["plot_time"] in mutations["time"].values:
+                            y_axis_text.append(mut["plot_time"])
+                            y_axis_ticks.append(fy)
+                    if y_axis_labels:
+                        mut["x_pos"] = mut["position_01"] * width + 50
+                    else:
+                        mut["x_pos"] = mut["position_01"] * width
+                    mut["fy"] = fy
+                    mut["y"] = mut["fy"]
+                    mut["position_index"] = mut.site_id
+                    transformed_muts.append(mut.to_dict())
+
+        if tree_highlighting:
+            height += 75
+
+        if y_axis_scale == "time":
+            y_axis_text = np.array(calculate_evenly_distributed_positions(10, start=0, end=max_time))
+            y_axis_ticks = (1-y_axis_text/max_time) * (height-100) + y_shift
+        elif y_axis_scale == "log_time":
+            digits = int(math.log10(max_time))+1
+            if (max_time - 10**(digits-1) < 10**(digits-1)): # this just removes the tick mark if its likely there is overlap
+                digits -= 1
+            y_axis_text = [0] + [10**i for i in range(1, digits)] + [max_time]
+            y_axis_ticks = []
+            for time in y_axis_text:
+                y_axis_ticks.append((1-math.log(time+1)/math.log(max_time)) * (height-100) + y_shift)
+
+        y_axis_text = [round(t) for t in set(y_axis_text)]
+        
+        transformed_bps = breakpoints.loc[:,:]
+        if y_axis_labels:
+            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width + 50
+        else:
+            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
+        transformed_bps["width"] = transformed_bps["width_01"] * width
+        transformed_bps["included"] = "true"
+        transformed_bps = transformed_bps.to_dict("records")
+
+        if y_axis_labels:
+            width += 50
+
+        if title:
+            height += 50
+
+        arg = {
+            "data":{
+                "nodes":transformed_nodes,
+                "links":edges.to_dict("records"),
+                "mutations":transformed_muts,
+                "breakpoints":transformed_bps,
+                "evenly_distributed_positions":sample_positions
+            },
+            "width":width,
+            "height":height,
+            "y_axis":{
+                "include_labels":str(y_axis_labels).lower(),
+                "ticks":sorted(list(set(y_axis_ticks)), reverse=True),
+                "text":sorted(list(y_axis_text)),
+                "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
+                "scale":y_axis_scale,
+            },
+            "edges":{
+                "type":edge_type,
+                "variable_width":str(variable_edge_width).lower(),
+                "include_underlink":str(include_underlink).lower()
+            },
+            "tree_highlighting":str(tree_highlighting).lower(),
+            "title":str(title)
+        }
+        return arg
 
     def draw(
             self,
@@ -596,7 +854,8 @@ class D3ARG:
             variable_edge_width=False,
             include_underlink=True,
             sample_order=None,
-            title=None
+            title=None,
+            ignore_mutation_times=True
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -631,150 +890,60 @@ class D3ARG:
             need to include all sample nodes IDs. (default=None, order is set by first tree in tree sequence)
         title : str
             Title to be put at the top of the figure. (default=None, ignored)
+        ignore_mutation_times : bool
+            Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
         """
         
-        y_axis_ticks = []
-        y_axis_text = []
-        transformed_nodes = []
-        
-        x_shift = 50
-        if y_axis_labels:
-            x_shift = 100
-
-        y_shift = 50
-        if title:
-            y_shift = 100
-        
-        sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
-        sample_order = self._calculate_sample_order(order=sample_order)
-        max_time = max(self.nodes["time"])
-        h_spacing = 1 / (len(np.unique(self.nodes["time"]))-1)
-        unique_times = list(np.unique(self.nodes["time"])) # Determines the rank (y position) of each time point 
-
-        for index, node in self.nodes.iterrows():
-            if "x_pos_01" in node:
-                node["fx"] = node["x_pos_01"] * (width-100) + x_shift
-            elif node["flag"] == 1:
-                node["fx"] = sample_positions[sample_order.index(node["id"])]
-            else:
-                node["x"] = 0.5 * (width-100) + x_shift
-            if y_axis_scale == "time":
-                fy = (1-node["time"]/max_time) * (height-100) + y_shift
-            elif y_axis_scale == "log_time":
-                fy = (1-math.log(node["time"]+1)/math.log(max_time)) * (height-100) + y_shift
-            else:
-                fy = (1-unique_times.index(node["time"])*h_spacing) * (height-100) + y_shift
-                y_axis_text.append(node["time"])
-                y_axis_ticks.append(fy)
-            
-            node["fy"] = fy
-            node["y"] = node["fy"]
-            transformed_nodes.append(node.to_dict())
-        if tree_highlighting:
-            height += 75
-
-        if y_axis_scale == "time":
-            y_axis_text = np.array(calculate_evenly_distributed_positions(10, start=0, end=max_time))
-            y_axis_ticks = (1-y_axis_text/max_time) * (height-100) + y_shift
-        elif y_axis_scale == "log_time":
-            digits = int(math.log10(max_time))+1
-            if (max_time - 10**(digits-1) < 10**(digits-1)): # this just removes the tick mark if its likely there is overlap
-                digits -= 1
-            y_axis_text = [0] + [10**i for i in range(1, digits)] + [max_time]
-            y_axis_ticks = []
-            for time in y_axis_text:
-                y_axis_ticks.append((1-math.log(time+1)/math.log(max_time)) * (height-100) + y_shift)
-
-        y_axis_text = [round(t) for t in set(y_axis_text)]
-        
-        transformed_bps = self.breakpoints.loc[:,:]
-        if y_axis_labels:
-            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width + 50
-        else:
-            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
-        transformed_bps["width"] = transformed_bps["width_01"] * width
-        transformed_bps["included"] = "true"
-        transformed_bps = transformed_bps.to_dict("records")
-
-        if y_axis_labels:
-            width += 50
-
-        if title:
-            height += 50
-
-        arg = {
-            "data":{
-                "nodes":transformed_nodes,
-                "links":self.edges.to_dict("records"),
-                "breakpoints": transformed_bps,
-                "evenly_distributed_positions":sample_positions
-            },
-            "width":width,
-            "height":height,
-            "y_axis":{
-                "include_labels":str(y_axis_labels).lower(),
-                "ticks":sorted(list(set(y_axis_ticks)), reverse=True),
-                "text":sorted(list(y_axis_text)),
-                "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
-                "scale":y_axis_scale,
-            },
-            "edges":{
-                "type":edge_type,
-                "variable_width":str(variable_edge_width).lower(),
-                "include_underlink":str(include_underlink).lower()
-            },
-            "tree_highlighting":str(tree_highlighting).lower(),
-            "title":title
-        }
+        arg = self._prepare_json(
+            nodes=self.nodes,
+            edges=self.edges,
+            mutations=self.mutations,
+            breakpoints=self.breakpoints,
+            width=width,
+            height=height,
+            tree_highlighting=tree_highlighting,
+            y_axis_labels=y_axis_labels,
+            y_axis_scale=y_axis_scale,
+            edge_type=edge_type,
+            variable_edge_width=variable_edge_width,
+            include_underlink=include_underlink,
+            sample_order=sample_order,
+            title=title,
+            ignore_mutation_times=ignore_mutation_times
+        )
         draw_D3(arg_json=arg)
 
-    def draw_node(
-            self,
-            node,
-            width=500,
-            height=500,
-            degree=1,
-            y_axis_labels=True,
-            y_axis_scale="rank",
-            tree_highlighting=True,
-            title=None
-        ):
-        """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
+    def _subset_graph(self, node, degree):
+        """Subsets the graph to focus around a specific node
 
         Parameters
         ----------
         node : int
             Node ID that will be central to the subgraph
-        width : int
-            Width of the force layout graph plot in pixels (default=500)
-        height : int
-            Height of the force layout graph plot in pixels (default=500)
         degree : int or list(int, int)
             Number of degrees above (older than) and below (younger than) the central
             node to include in the subgraph (default=1). If this is a list, the
             number of degrees above is taken from the first element and
             the number of degrees below from the last element.
-        y_axis_labels : bool
-            Includes labelled y-axis on the left of the figure (default=True)
-        y_axis_scale : string
-            Scale used for the positioning nodes along the y-axis. Options:
-                "rank" (default) - equal vertical spacing between nodes
-                "time" - vertical spacing is proportional to the time
-                "log_time" - proportional to the log of time
-        tree_highlighting : bool
-            Include the interactive chromosome at the bottom of the figure to
-            to let users highlight trees in the ARG (default=True)
-        title : str
-            Title to be put at the top of the figure. (default=None, ignored)
+
+        Returns
+        -------
+        included_nodes : pd.DataFrame
+            The nodes to be plotted, potentially subset of original graph
+        included_edges : pd.DataFrame
+            The edges to be plotted, potentially subset of original graph
+        included_mutations : pd.DataFrame
+            The mutations to be plotted, potentially subset of original graph
+        included_breakpoints : pd.DataFrame
+            The breakpoints to be plotted, potentially subset of original graph
         """
-        
+
         if node not in self.nodes.id.values:
             raise ValueError(f"Node '{node}' not in the graph.")
     
         nodes = [node]
         above = [node]
         below = [node]
-        #included_edges = pd.DataFrame(columns=self.edges.columns)
         first = True
         try:
             older_degree = degree[0]
@@ -817,69 +986,11 @@ class D3ARG:
             ni_parent.append(sum(not_included["target"] == n))
         included_nodes = included_nodes.assign(not_included_children=ni_child, not_included_parents=ni_parent)
 
-        y_axis_ticks = []
-        y_axis_text = []
-        transformed_nodes = []
-        
-        x_shift = 50
-        if y_axis_labels:
-            x_shift = 100
+        included_mutations = self.mutations.loc[self.mutations["edge"].isin(included_edges["id"]),:]
 
-        y_shift = 50
-        if title:
-            y_shift = 100
-
-        max_time = max(included_nodes["time"])
-        h_spacing = 1 / (len(np.unique(included_nodes["time"]))-1)
-        unique_times = list(np.unique(included_nodes["time"])) # Determines the rank (y position) of each time point 
-
-        for index, n in included_nodes.iterrows():
-            if "x_pos_01" in n:
-                n["fx"] = n["x_pos_01"] * (width-100) + x_shift
-            elif n["id"] == node:
-                n["fx"] = 0.5 * (width-100) + x_shift
-            else:
-                n["x"] = 0.5 * (width-100) + x_shift
-            if y_axis_scale == "time":
-                fy = (1-n["time"]/max_time) * (height-100) + y_shift
-            elif y_axis_scale == "log_time":
-                fy = (1-math.log(n["time"]+1)/math.log(max_time)) * (height-100) + y_shift
-            else:
-                fy = (1-unique_times.index(n["time"])*h_spacing) * (height-100) + y_shift
-                y_axis_text.append(n["time"])
-                y_axis_ticks.append(fy)
-            
-            n["fy"] = fy
-            n["y"] = n["fy"]
-            transformed_nodes.append(n.to_dict())
-
-        if tree_highlighting:
-            height += 75
-
-        if y_axis_scale == "time":
-            y_axis_text = np.array(calculate_evenly_distributed_positions(10, start=0, end=max_time))
-            y_axis_ticks = (1-y_axis_text/max_time) * (height-100) + y_shift
-        elif y_axis_scale == "log_time":
-            digits = int(math.log10(max_time))+1
-            if (max_time - 10**(digits-1) < 10**(digits-1)): # this just removes the tick mark if its likely there is overlap
-                digits -= 1
-            y_axis_text = [0] + [10**i for i in range(1, digits)] + [max_time]
-            y_axis_ticks = []
-            for time in y_axis_text:
-                y_axis_ticks.append((1-math.log(time+1)/math.log(max_time)) * (height-100) + y_shift)
-
-        y_axis_text = [round(t) for t in set(y_axis_text)]
-        
-        transformed_bps = self.breakpoints.loc[:,:]
-        if y_axis_labels:
-            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width + 50
-        else:
-            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
-        transformed_bps["width"] = transformed_bps["width_01"] * width
-        transformed_bps = transformed_bps.to_dict("records")
-
-        merged_bps = []
-        for j,bp in enumerate(transformed_bps):
+        # need to add a check that confirms the ordering of breakpoints is always increasing in position
+        included_breakpoints = []
+        for j,bp in self.breakpoints.iterrows():
             if j == 0:
                 current_region = bp
             important_bp = False
@@ -899,42 +1010,69 @@ class D3ARG:
                 important_bp = True
             if j > 0:
                 if important_bp:
-                    merged_bps.append(current_region)
+                    included_breakpoints.append(current_region)
                     current_region = bp
                 else:
                     current_region["stop"] = bp["stop"]
                     current_region["width_01"] += bp["width_01"]
-                    current_region["width"] += bp["width"]
-        merged_bps.append(current_region) # make sure to append the last region
+        included_breakpoints.append(current_region) # make sure to append the last region
+        included_breakpoints = pd.DataFrame(included_breakpoints)
 
-        if y_axis_labels:
-            width += 50
+        return included_nodes, included_edges, included_mutations, included_breakpoints
 
-        if title:
-            height += 50
+    def draw_node(
+            self,
+            node,
+            width=500,
+            height=500,
+            degree=1,
+            y_axis_labels=True,
+            y_axis_scale="rank",
+            tree_highlighting=True,
+            title=None,
+            ignore_mutation_times=True
+        ):
+        """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
-        arg = {
-            "data":{
-                "nodes":transformed_nodes,
-                "links":included_edges.to_dict("records"),
-                "breakpoints": merged_bps,
-                "evenly_distributed_positions":[]
-            },
-            "width":width,
-            "height":height,
-            "y_axis":{
-                "include_labels":str(y_axis_labels).lower(),
-                "ticks":sorted(list(set(y_axis_ticks)), reverse=True),
-                "text":sorted(list(y_axis_text)),
-                "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
-                "scale":y_axis_scale,
-            },
-            "edges":{
-                "type":"line",
-                "variable_width":"false",
-                "include_underlink":"false"
-            },
-            "tree_highlighting":str(tree_highlighting).lower(),
-            "title":title
-        }
+        Parameters
+        ----------
+        node : int
+            Node ID that will be central to the subgraph
+        width : int
+            Width of the force layout graph plot in pixels (default=500)
+        height : int
+            Height of the force layout graph plot in pixels (default=500)
+        degree : int or list(int, int)
+            Number of degrees above (older than) and below (younger than) the central
+            node to include in the subgraph (default=1). If this is a list, the
+            number of degrees above is taken from the first element and
+            the number of degrees below from the last element.
+        y_axis_labels : bool
+            Includes labelled y-axis on the left of the figure (default=True)
+        y_axis_scale : string
+            Scale used for the positioning nodes along the y-axis. Options:
+                "rank" (default) - equal vertical spacing between nodes
+                "time" - vertical spacing is proportional to the time
+                "log_time" - proportional to the log of time
+        tree_highlighting : bool
+            Include the interactive chromosome at the bottom of the figure to
+            to let users highlight trees in the ARG (default=True)
+        title : str
+            Title to be put at the top of the figure. (default=None, ignored)
+        """
+        
+        included_nodes, included_edges, included_mutations, included_breakpoints = self._subset_graph(node=node, degree=degree)
+        arg = self._prepare_json(
+            nodes=included_nodes,
+            edges=included_edges,
+            mutations=included_mutations,
+            breakpoints=included_breakpoints,
+            width=width,
+            height=height,
+            tree_highlighting=tree_highlighting,
+            y_axis_labels=y_axis_labels,
+            y_axis_scale=y_axis_scale,
+            title=title,
+            ignore_mutation_times=ignore_mutation_times
+        )
         draw_D3(arg_json=arg)

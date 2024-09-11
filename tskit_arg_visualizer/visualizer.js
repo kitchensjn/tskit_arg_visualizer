@@ -209,9 +209,7 @@ function draw_force_diagram() {
 
     var link = link_container
         .append("path")
-        .attr("class", function(d) {
-            return "link"
-        })
+        .attr("class", "link")
         .attr("stroke", function(d) {
             return d.color;
         });
@@ -222,7 +220,7 @@ function draw_force_diagram() {
                 return d.region_fraction * 7 + 1;
             });
     }
-    
+
     if ($tree_highlighting) {
         d3.selectAll(".link")
             .on('mouseover', function (event, d) {
@@ -315,6 +313,32 @@ function draw_force_diagram() {
             d3.select(this)
                 .style("cursor", "pointer")
         });
+
+    var mut_symbol = svg
+        .append("g")
+        .attr("class", "mutations")
+        .selectAll("rect")
+        .data(graph.mutations)
+        .enter()
+        .append("g")
+        .style("transform-box", "fill-box")
+        .style("transform-origin", "center");
+    
+    var mut_symbol_rect = mut_symbol
+        .append("rect")
+            .attr("class", "symbol")
+            .attr("width", 40)
+            .attr("height", 15)
+            .attr("fill", function(d) { return d.fill; })
+            .attr("stroke", "#053e4e")
+            .attr("stroke-width", 4);
+
+    var mut_symbol_label = mut_symbol
+        .append("text")
+            .attr("class", "label")
+            .style("font-size", "10px")
+            .attr("text-anchor", "middle")
+            .text(function(d) { return d.site_id + ":" + d.ancestral + ":" + d.derived; });    
 
     var label = svg
         .append("g")
@@ -563,6 +587,81 @@ function draw_force_diagram() {
             l.attr("d", path);
         })
 
+        mut_symbol
+            .attr("transform", function(d) {
+                var parent = document.getElementById(String($divnum) + "_node" + d.source);
+                if (parent != null) {
+                    var parent_x = parseFloat(parent.getAttribute("cx"));
+                    var parent_y = parseFloat(parent.getAttribute("cy"));
+                    var child = document.getElementById(String($divnum) + "_node" + d.target);
+                    if (child != null) {
+                        var child_x = parseFloat(child.getAttribute("cx"));
+                        var child_y = parseFloat(child.getAttribute("cy"));
+                        var slope = (parent_y - child_y) / (parent_x - child_x);
+                        var intercept = parent_y - slope * parent_x;
+                        return "rotate(" + String(-Math.atan((child_x-parent_x)/(child_y-parent_y))*180/Math.PI) + ")";
+                    } else {
+                        return "rotate(0)";
+                    }
+                } else {
+                    return "rotate(0)";
+                }
+            })
+
+        mut_symbol_rect
+            .attr("x", function(d) {
+                var parent = document.getElementById(String($divnum) + "_node" + d.source);
+                if (parent != null) {
+                    var parent_x = parseFloat(parent.getAttribute("cx"));
+                    var parent_y = parseFloat(parent.getAttribute("cy"));
+                    var child = document.getElementById(String($divnum) + "_node" + d.target);
+                    if (child != null) {
+                        var child_x = parseFloat(child.getAttribute("cx"));
+                        var child_y = parseFloat(child.getAttribute("cy"));
+                        if (parent_x - child_x == 0) {
+                            return parent_x - 20;
+                        } else {
+                            var slope = (parent_y - child_y) / (parent_x - child_x);
+                            var intercept = parent_y - slope * parent_x;
+                            return ((d.y - intercept) / slope) - 20;
+                        }
+                    } else {
+                        return 0;
+                    }
+                } else {
+                    return 0;
+                }
+            })
+            .attr("y", function(d) { return d.y - 7.5; });
+
+        mut_symbol_label
+            .attr("transform", function(d) {
+                var y = d.y+3.5;
+                var x = 0;
+                var parent = document.getElementById(String($divnum) + "_node" + d.source);
+                if (parent != null) {
+                    var parent_x = parseFloat(parent.getAttribute("cx"));
+                    var parent_y = parseFloat(parent.getAttribute("cy"));
+                    var child = document.getElementById(String($divnum) + "_node" + d.target);
+                    if (child != null) {
+                        var child_x = parseFloat(child.getAttribute("cx"));
+                        var child_y = parseFloat(child.getAttribute("cy"));
+                        if (parent_x - child_x == 0) {
+                            x = parent_x;
+                        } else {
+                            var slope = (parent_y - child_y) / (parent_x - child_x);
+                            var intercept = parent_y - slope * parent_x;
+                            x = ((d.y - intercept) / slope);
+                        }
+                    } else {
+                        x = 0;
+                    }
+                } else {
+                    x = 0;
+                }
+                return "translate(" + String(x) + "," + String(y) + ")";
+            });
+
         function determine_label_positioning(d) {
             if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
                 return "c";
@@ -748,6 +847,39 @@ function draw_force_diagram() {
                 .text(graph.breakpoints[graph.breakpoints.length-1].stop)
                 .attr("x", $width)
                 .attr("y", $height-5);
+
+        var mut_pos = th_group
+            .append("g")
+            .attr("class", "mutations")
+            .selectAll("line")
+            .data(graph.mutations)
+            .enter()
+            .append("g");
+    
+        mut_pos
+            .append("line")
+            .attr("x1", function(d) { return d.x_pos; })
+            .attr("y1", $height-60-5)
+            .attr("x2", function(d) { return d.x_pos; })
+            .attr("y2", $height-60+40+5)
+            .style("stroke-width", 3)
+            .style("stroke", function(d) { return d.fill; })
+            .style("fill", "none");
+        
+        mut_pos
+            .append("text")
+            .attr("text-anchor", "middle")
+            .style("font-size", "10px")
+            .style("font-family", "Arial")
+            .attr("fill", function(d) { return d.fill; })
+            .attr("transform", function(d) {
+                if (d.site_id % 2 == 0) {
+                    return "translate(" + String(d.x_pos) + "," + String($height-60-10) + ")";
+                } else {
+                    return "translate(" + String(d.x_pos) + "," + String($height-60+40+17) + ")";
+                }
+            })
+            .text(function(d) { return d.site_id; });
     }
 
     if (title != "None") {

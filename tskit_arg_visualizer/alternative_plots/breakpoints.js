@@ -37,31 +37,11 @@ function draw_breakpoints_on_chromosome() {
             d3.select(this)
                 .style('fill', '#1eebb1')
                 .style("cursor", "pointer");
-            /*
-            var highlight_links = d3.select("#arg_${divnum} .links")
-                .selectAll("g")
-                    .filter(function(j) {
-                        return j.bounds.split(" ").some(function(region) {
-                            region = region.split("-");
-                            return (parseFloat(region[1]) > d.start) & (parseFloat(region[0]) < d.stop)
-                        });
-                    });
-            highlight_links.raise();
-            highlight_links
-                .select(".link")
-                .style("stroke", "#1eebb1");
-            */
         })
         .on('mouseout', function (d, i) {
             d3.select(this)
                 .style('fill', '#053e4e')
                 .style("cursor", "default");
-            /*
-            d3.selectAll("#arg_${divnum} .link")
-                .style("stroke", function(d) {
-                    return d.color;
-                });   
-            */
         });
 
     th_group
