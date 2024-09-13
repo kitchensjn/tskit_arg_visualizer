@@ -21,12 +21,19 @@ ts = msprime.sim_mutations(ts, rate=1e-7, random_seed=4321)
 
 d3arg = tskit_arg_visualizer.D3ARG.from_ts(ts=ts)
 
+d3arg.set_breakpoint_fill(colors={1:"red"})
+
+d3arg.draw_genome_bar(
+    width=1000,
+    windows=[[1000,20000]]
+)
+
 #d3arg.draw(
 #    width=1000,
 #    height=1000,
 #    edge_type="line"
 #)
 
-d3arg.draw_node(
-    node=40
-)
+#d3arg.draw_node(
+#    node=30
+#)

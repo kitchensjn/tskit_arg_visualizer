@@ -19,3 +19,13 @@ Option to ignore unattached nodes when building the D3ARG
 Major efficiency improvements necessary for large ARGs
 
 Added titles to plots
+
+--------------------
+[0.0.3] - XXXX-XX-XX
+--------------------
+
+edge "color" changed to edge "stroke" for consistency across tables
+
+Mutations
+
+Genome bar standalone

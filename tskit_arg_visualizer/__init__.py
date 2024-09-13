@@ -59,6 +59,24 @@ def calculate_evenly_distributed_positions(num_elements, start=0, end=1):
         return [i * w_spacing + start for i in range(num_elements)]
     else:
         return [0.5 * (end-start) + start]
+    
+def map_value(n, start1, stop1, start2, stop2):
+    """Map a value to a new range
+    From SO: https://stackoverflow.com/questions/44338698/p5-js-map-function-in-python
+
+    Parameters
+    ----------
+    n : int or float
+    start1 : int or float
+    stop1 : int or float
+    start2 : int or float
+    stop2 : int or float
+
+    Returns
+    -------
+    mapped
+    """
+    return (n - start1) / (stop1 - start1) * (stop2 - start2) + start2
 
 def draw_D3(arg_json):
     arg_json["source"] = arg_json.copy()
@@ -383,7 +401,7 @@ class D3ARG:
                     "alt_parent": alternative_parent, #recombination nodes have an alternative parent
                     "alt_child": alternative_child,
                     "region_fraction": region_size / ts.sequence_length,
-                    "color": "#053e4e",
+                    "stroke": "#053e4e",
                     "mutation_count": 0,
                     "mutation_info": ""
                 })
@@ -403,10 +421,10 @@ class D3ARG:
                 e = edges_output.loc[edges_output["id"] == edge_id_reference[mut.edge]].iloc[0, :]
                 if (mut.time == tskit.UNKNOWN_TIME):
                     plot_time = (e["source_time"] + e["target_time"]) / 2 + random.uniform(0,1)
-                    fill = "orange"
+                    fill = "gold"
                 else:
                     plot_time = mut.time
-                    fill = "gold"
+                    fill = "orange"
                 mutations.append({
                     "edge": edge_id_reference[mut.edge],
                     "source": e["source"],
@@ -420,7 +438,7 @@ class D3ARG:
                     "derived": mut.derived_state,
                     "fill": fill
                 })
-        mutations_output = pd.DataFrame(mutations)
+        mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","derived","fill"])
         return edges_output, mutations_output
    
     def _identify_breakpoints(ts):
@@ -440,15 +458,20 @@ class D3ARG:
         
         breakpoints = []
         start = 0
+        id = 0
         for bp in ts.breakpoints():
+            bp = float(bp)
             if bp != 0:
                 breakpoints.append({
+                    "id": id,
                     "start": start,
                     "stop": bp,
                     "x_pos_01":(start/ts.sequence_length),
-                    "width_01":((bp - start)/ts.sequence_length)
+                    "width_01":((bp - start)/ts.sequence_length),
+                    "fill":"#053e4e"
                 })
                 start = bp
+                id += 1
         return pd.DataFrame(breakpoints)
     
     def set_node_labels(self, labels):
@@ -546,7 +569,7 @@ class D3ARG:
                 if key in ["size", "symbol", "fill", "stroke", "stroke_width", "include_label"]:
                     self.nodes.loc[self.nodes["id"]==node["id"], key] = node[key]
         
-    def set_edge_colors(self, colors):
+    def set_edge_strokes(self, colors):
         """Set the color of each edge in the ARG
 
         Parameters
@@ -557,14 +580,29 @@ class D3ARG:
 
         for id in colors:
             if id in self.edges["id"]:
-                self.edges.loc[self.edges["id"]==id, "color"] = colors[id]
+                self.edges.loc[self.edges["id"]==id, "stroke"] = colors[id]
             else:
-                raise ValueError(f"Edge '{id}' not in the graph. Cannot update the edge color. Make sure all IDs are integers.")
+                raise ValueError(f"Edge '{id}' not in the graph. Cannot update the edge stroke. Make sure all IDs are integers.")
         
     def reset_edge_colors(self):
         """Resets the edge colors to the default (#053e4e)"""
 
-        self.edges["color"] = "#053e4e"
+        self.edges["stroke"] = "#053e4e"
+
+    def set_breakpoint_fill(self, colors):
+        """Set the fill of each breakpoint block in the ARG
+
+        Parameters
+        ----------
+        colors : dict
+            ID of the edge and its new color
+        """
+
+        for id in colors:
+            if id in self.breakpoints["id"]:
+                self.breakpoints.loc[self.breakpoints["id"]==id, "fill"] = colors[id]
+            else:
+                raise ValueError(f"Breakpoint '{id}' not in the graph. Cannot update the breakpoint fill. Make sure all IDs are integers.")
 
     def _check_all_nodes_are_samples(self, nodes):
         """Checks whether the list of nodes includes only samples
@@ -626,6 +664,7 @@ class D3ARG:
     
     def _prepare_json(
             self,
+            plot_type,
             nodes,
             edges,
             mutations,
@@ -646,6 +685,10 @@ class D3ARG:
 
         Parameters
         ----------
+        plot_type :
+            Options:
+                "full"
+                "node"
         nodes : pd.DataFrame
             The nodes to be plotted, potentially subset of original graph
         edges : pd.DataFrame
@@ -720,7 +763,7 @@ class D3ARG:
         for index, node in nodes.iterrows():
             if "x_pos_01" in node:
                 node["fx"] = node["x_pos_01"] * (width-100) + x_shift
-            elif node["flag"] == 1:
+            elif (node["flag"] == 1) and (plot_type == "full"):
                 node["fx"] = sample_positions[sample_order.index(node["id"])]
             else:
                 node["x"] = 0.5 * (width-100) + x_shift
@@ -895,6 +938,7 @@ class D3ARG:
         """
         
         arg = self._prepare_json(
+            plot_type="full",
             nodes=self.nodes,
             edges=self.edges,
             mutations=self.mutations,
@@ -1063,6 +1107,7 @@ class D3ARG:
         
         included_nodes, included_edges, included_mutations, included_breakpoints = self._subset_graph(node=node, degree=degree)
         arg = self._prepare_json(
+            plot_type="node",
             nodes=included_nodes,
             edges=included_edges,
             mutations=included_mutations,
@@ -1076,3 +1121,76 @@ class D3ARG:
             ignore_mutation_times=ignore_mutation_times
         )
         draw_D3(arg_json=arg)
+
+    def draw_genome_bar(
+            self,
+            width=500,
+            windows=None,
+            include_mutations=False
+        ):
+        """Draws a genome bar for the D3ARG using D3.js
+
+        Parameters
+        ----------
+        width : int
+            Width of the force layout graph plot in pixels (default=500)
+        windows : list of lists
+            Each list is are the start and end positions of the windows. Multiple windows can be included.
+            (Default is None, ignored)
+        include_mutations : bool
+            Whether to add ticks for mutations along the genome bar
+        """
+
+        transformed_bps = self.breakpoints.loc[:,:]
+        transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
+        transformed_bps["width"] = transformed_bps["width_01"] * width
+        transformed_bps["included"] = "true"
+        transformed_bps = transformed_bps.to_dict("records")
+
+        start = float(self.breakpoints["start"].min())
+        stop = float(self.breakpoints["stop"].max())
+
+        transformed_windows = []
+        if windows != None:
+            for window in windows:
+                x_pos_01 = map_value(window[0], start, stop, 0, 1)
+                width_01 = map_value(window[1], start, stop, 0, 1) - x_pos_01
+                transformed_windows.append({
+                    "x_pos": x_pos_01 * width,
+                    "width": width_01 * width
+                })
+
+        if include_mutations:
+            transformed_mutations = self.mutations.loc[:,:]
+            transformed_mutations["x_pos"] = transformed_mutations["position_01"] * width
+            transformed_mutations = transformed_mutations.to_dict("records")
+        else:
+            transformed_mutations = []
+
+        genome_bar_json = {
+            "data":{
+                "breakpoints":transformed_bps,
+                "windows":transformed_windows,
+                "mutations":transformed_mutations
+            },
+            "width":width
+        }
+        
+        genome_bar_json["source"] = genome_bar_json.copy()
+        genome_bar_json["divnum"] = str(random.randint(0,9999999999))
+        JS_text = Template("<div id='genome_bar_" + genome_bar_json['divnum'] + "'class='d3arg' style='min-width:" + str(genome_bar_json["width"]+40) + "px; min-height:180px;'></div><script>$main_text</script>")
+        breakpointsjs = open(os.path.dirname(__file__) + "/alternative_plots/genome_bar.js", "r")
+        main_text_template = Template(breakpointsjs.read())
+        breakpointsjs.close()
+        main_text = main_text_template.safe_substitute(genome_bar_json)
+        html = JS_text.safe_substitute({'main_text': main_text})
+        css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
+        styles = css.read()
+        css.close()
+        if running_in_notebook():
+            display(HTML("<style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script>" + html))
+        else:
+            with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
+                url = "file://" + f.name
+                f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script></head><body>" + html + "</body></html>")
+            webbrowser.open(url, new=2)

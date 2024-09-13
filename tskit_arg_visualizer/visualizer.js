@@ -211,7 +211,7 @@ function draw_force_diagram() {
         .append("path")
         .attr("class", "link")
         .attr("stroke", function(d) {
-            return d.color;
+            return d.stroke;
         });
     
     if (eval(edge_styles.variable_width)) {
@@ -240,7 +240,7 @@ function draw_force_diagram() {
             .on('mouseout', function (d, i) {
                 d3.select(this)
                     .style('stroke', function(d) {
-                        return d.color;
+                        return d.stroke;
                     })
                     .style("cursor", "default")
                 d3.select("#arg_${divnum} .breakpoints").selectAll(".included")
@@ -825,7 +825,7 @@ function draw_force_diagram() {
                         .style("cursor", "default");
                     d3.selectAll("#arg_${divnum} .link")
                         .style("stroke", function(d) {
-                            return d.color;
+                            return d.stroke;
                         });
                 }
             });
