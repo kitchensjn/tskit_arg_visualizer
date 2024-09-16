@@ -11,6 +11,7 @@ import tskit
 import numpy as np
 import pandas as pd
 from IPython.display import HTML, display
+from tqdm.auto import tqdm
 
 
 def running_in_notebook():
@@ -179,7 +180,7 @@ class D3ARG:
         return f"Nodes:\n{self.nodes}\n\nEdges:\n{self.edges}\n\nMutations:\n{self.mutations}\n\nBreakpoints:\n{self.breakpoints}\n\nNumber of Samples: {self.num_samples}\nSample Order: {self.sample_order}"
         
     @classmethod
-    def from_ts(cls, ts, ignore_unattached_nodes=False):
+    def from_ts(cls, ts, ignore_unattached_nodes=False, progress=None):
         """Converts a tskit tree sequence into a D3ARG object
         
         Parameters
@@ -205,9 +206,10 @@ class D3ARG:
                     continue
                 samples.append(n)
         rcnm = np.where(ts.nodes_flags == 131072)[0][1::2]  # NB should probably be (ts.nodes_flags & msprime.NODE_IS_RE_EVENT) != 0
-        edges, mutations = cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm)
+        edges, mutations = cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm, progress=progress)
+        nodes = cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, ignore_unattached_nodes=ignore_unattached_nodes, progress=progress)
         return cls(
-            nodes=cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, ignore_unattached_nodes=ignore_unattached_nodes),
+            nodes=nodes,
             edges=edges,
             mutations=mutations,
             breakpoints=cls._identify_breakpoints(ts=ts),
@@ -246,7 +248,7 @@ class D3ARG:
             sample_order=[sample for _, sample in sorted(zip(samples["fx"], samples["id"]))]
         )
 
-    def _convert_nodes_table(ts, recombination_nodes_to_merge, ignore_unattached_nodes):
+    def _convert_nodes_table(ts, recombination_nodes_to_merge, ignore_unattached_nodes, progress=None):
         """Creates nodes JSON from the tskit.TreeSequence nodes table
         
         A "reference" is the id of another node that is used to determine a property in the
@@ -304,7 +306,7 @@ class D3ARG:
             nodes[node_lookup[edge.child]]['child_of'].add(int(node_lookup[edge.parent]))
             nodes[node_lookup[edge.parent]]['parent_of'].add(int(node_lookup[edge.child]))
 
-        for u in nodes.keys():
+        for u in tqdm(nodes.keys(), desc="Nodes", disable=not progress):
             info = nodes[u]
             info['child_of'] = sorted(info['child_of'])
             info['parent_of'] = unique_parent_of = sorted(info['parent_of'])
@@ -320,7 +322,7 @@ class D3ARG:
                     info["x_pos_reference"] = unique_parent_of[0]
         return pd.DataFrame(nodes.values())
 
-    def _convert_edges_table(ts, recombination_nodes_to_merge):
+    def _convert_edges_table(ts, recombination_nodes_to_merge, progress=None):
         """Creates edges JSON from the tskit.TreeSequence edges table
 
         Merges the recombination nodes, identified by the smaller of the two IDs. The direction
@@ -346,6 +348,7 @@ class D3ARG:
         links = []  # a list of parent_links (will be flattened and returned as a pandas array)
         # iterate over unique parent/child combos. Take advantage of the fact that edges
         # in a tree sequence are always ordered by parent ID.
+        t = tqdm(total=ts.num_edges, desc="Edges", disable=not progress)
         for parent, edges in itertools.groupby(ts.edges(), operator.attrgetter("parent")):
             parent_time = ts.node(parent).time
             parent_links = []  # all links for this parent
@@ -355,6 +358,7 @@ class D3ARG:
             else:
                 edges_for_child = {}  # This is a new parent: make a new array
             for edge in edges:
+                t.update(1)
                 if edge.child not in edges_for_child:
                     edges_for_child[edge.child] = [edge]
                 else:
@@ -412,9 +416,15 @@ class D3ARG:
                 links[-1] = parent_links
             else:
                 links.append(parent_links)
+        t.close()
         edges_output = pd.DataFrame(l for parent_links in links for l in parent_links)
         mutations = []
-        for site in ts.sites():
+        for site in tqdm(
+            ts.sites(),
+            total=ts.num_sites,
+            desc="Sites",
+            disable=(not progress) or (ts.num_sites == 0)
+        ):
             for mut in site.mutations:
                 edges_output.loc[edges_output["id"] == edge_id_reference[mut.edge], "mutation_count"] += 1
                 #edges_output.loc[edges_output["id"] == edge_id_reference[mut.edge], "mutation_info"] += f"{round(mut.time)}:{site.position}:{site.ancestral_state}->{mut.derived_state}\n"
