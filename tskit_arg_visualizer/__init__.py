@@ -367,10 +367,6 @@ class D3ARG:
                 child_time = ts.node(child).time
                 region_size = 0
                 bounds = ""
-                for edge in equivalent_edges:
-                    edge_id_reference[edge.id] = ID
-                    bounds += f"{edge.left}-{edge.right} "
-                    region_size += edge.right - edge.left
                 alternative_child = ""
                 alternative_parent = ""
                 if (ts.nodes_flags[parent] & msprime.NODE_IS_RE_EVENT) == 0:
@@ -395,6 +391,10 @@ class D3ARG:
                         alternative_parent = ""
                 if child in recombination_nodes_to_merge:
                     child = child - 1
+                for edge in equivalent_edges:
+                    edge_id_reference[edge.id] = (ID, parent, child, parent_time, child_time)
+                    bounds += f"{edge.left}-{edge.right} "
+                    region_size += edge.right - edge.left
                 parent_links.append({
                     "id": ID,
                     "source": parent,
@@ -419,6 +419,7 @@ class D3ARG:
         t.close()
         edges_output = pd.DataFrame(l for parent_links in links for l in parent_links)
         mutations = []
+        mutation_counts = {}
         for site in tqdm(
             ts.sites(),
             total=ts.num_sites,
@@ -426,19 +427,18 @@ class D3ARG:
             disable=(not progress) or (ts.num_sites == 0)
         ):
             for mut in site.mutations:
-                edges_output.loc[edges_output["id"] == edge_id_reference[mut.edge], "mutation_count"] += 1
-                #edges_output.loc[edges_output["id"] == edge_id_reference[mut.edge], "mutation_info"] += f"{round(mut.time)}:{site.position}:{site.ancestral_state}->{mut.derived_state}\n"
-                e = edges_output.loc[edges_output["id"] == edge_id_reference[mut.edge]].iloc[0, :]
+                new_edge = edge_id_reference[mut.edge]
+                mutation_counts[new_edge[0]] = mutation_counts.get(new_edge[0], 0) + 1
                 if (mut.time == tskit.UNKNOWN_TIME):
-                    plot_time = (e["source_time"] + e["target_time"]) / 2 + random.uniform(0,1)
+                    plot_time = (new_edge[3] + new_edge[4]) / 2 + random.uniform(0,1)
                     fill = "gold"
                 else:
                     plot_time = mut.time
                     fill = "orange"
                 mutations.append({
-                    "edge": edge_id_reference[mut.edge],
-                    "source": e["source"],
-                    "target": e["target"],
+                    "edge": new_edge[0],
+                    "source": new_edge[1],
+                    "target": new_edge[2],
                     "time": mut.time,
                     "plot_time": plot_time,
                     "site_id": site.id,
@@ -448,6 +448,8 @@ class D3ARG:
                     "derived": mut.derived_state,
                     "fill": fill
                 })
+        for edge in mutation_counts:
+            edges_output.loc[edges_output["id"] == edge, "mutation_count"] = mutation_counts[edge]
         mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","derived","fill"])
         return edges_output, mutations_output
    
@@ -762,8 +764,11 @@ class D3ARG:
             tick_times = nodes["time"]
         else:
             tick_times = pd.concat([nodes["time"],mutations["plot_time"]], axis=0).sort_values(ignore_index=True)
+        
         sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
-        sample_order = self._calculate_sample_order(order=sample_order)
+        if plot_type == "full":
+            sample_order = self._calculate_sample_order(order=sample_order)
+
         max_time = max(tick_times)
         h_spacing = 1 / (len(np.unique(tick_times))-1)
         unique_times = list(np.unique(tick_times)) # Determines the rank (y position) of each time point 
