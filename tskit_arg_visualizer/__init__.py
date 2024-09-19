@@ -405,9 +405,9 @@ class D3ARG:
                     "alt_parent": alternative_parent, #recombination nodes have an alternative parent
                     "alt_child": alternative_child,
                     "region_fraction": region_size / ts.sequence_length,
-                    "stroke": "#053e4e",
-                    "mutation_count": 0,
-                    "mutation_info": ""
+                    "stroke": "#053e4e"#,
+                    #"mutation_count": 0,
+                    #"mutation_info": ""
                 })
                 ID += 1
             if edge.parent in recombination_nodes_to_merge:
@@ -419,7 +419,7 @@ class D3ARG:
         t.close()
         edges_output = pd.DataFrame(l for parent_links in links for l in parent_links)
         mutations = []
-        mutation_counts = {}
+        #mutation_counts = {}
         for site in tqdm(
             ts.sites(),
             total=ts.num_sites,
@@ -428,7 +428,7 @@ class D3ARG:
         ):
             for mut in site.mutations:
                 new_edge = edge_id_reference[mut.edge]
-                mutation_counts[new_edge[0]] = mutation_counts.get(new_edge[0], 0) + 1
+                #mutation_counts[new_edge[0]] = mutation_counts.get(new_edge[0], 0) + 1
                 if (mut.time == tskit.UNKNOWN_TIME):
                     plot_time = (new_edge[3] + new_edge[4]) / 2 + random.uniform(0,1)
                     fill = "gold"
@@ -448,8 +448,8 @@ class D3ARG:
                     "derived": mut.derived_state,
                     "fill": fill
                 })
-        for edge in mutation_counts:
-            edges_output.loc[edges_output["id"] == edge, "mutation_count"] = mutation_counts[edge]
+        #for edge in mutation_counts:
+        #    edges_output.loc[edges_output["id"] == edge, "mutation_count"] = mutation_counts[edge]
         mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","derived","fill"])
         return edges_output, mutations_output
    
@@ -802,8 +802,9 @@ class D3ARG:
                     source_y = node_y_pos[edge["source"]]
                     target_y = node_y_pos[edge["target"]]
                     muts = mutations.loc[mutations["edge"] == edge["id"]].reset_index()
+                    mutation_count = len(muts.index)
                     for m, mut in muts.iterrows():
-                        fy = source_y - (source_y - target_y)/(edge["mutation_count"]+1)*(m+1)# - 10*(m-((edge["mutation_count"]-1)/2))
+                        fy = source_y - (source_y - target_y)/(mutation_count+1)*(m+1)# - 10*(m-((mutation_count-1)/2))
                         if y_axis_labels:
                             x_pos = mut["position_01"] * width + 50
                         else:
