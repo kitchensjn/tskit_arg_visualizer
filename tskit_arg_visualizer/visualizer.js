@@ -48,7 +48,7 @@ function getSVGString( svgNode ) {
 
 
 function svgString2Image( svgString, width, height, format, callback ) {
-	var format = format ? format : 'png';
+    var format = format ? format : 'png';
 	var imgsrc = 'data:image/svg+xml;base64,'+ btoa( unescape( encodeURIComponent( svgString ) ) ); // Convert SVG string to data URL
 	var canvas = document.createElement("canvas");
 	var context = canvas.getContext("2d");
@@ -314,6 +314,7 @@ function draw_force_diagram() {
                 .style("cursor", "pointer")
         });
 
+    
     var mut_symbol = svg
         .append("g")
         .attr("class", "mutations")
@@ -322,23 +323,68 @@ function draw_force_diagram() {
         .enter()
         .append("g")
         .style("transform-box", "fill-box")
-        .style("transform-origin", "center");
+        .style("transform-origin", "center")
+        .on("mouseover", function(d, i) {
+            d3.select(this)
+                .style("cursor", "pointer")
+                .selectAll("rect")
+                    .style("stroke", i.fill);
+            d3.select("#arg${divnum}_mut" + i.site_id).style("display", "block");
+        })
+        .on("mouseout", function(d, i) {
+            if (!eval(i.active)) {
+                d3.select(this)
+                    .style("cursor", "default")
+                    .selectAll("rect")
+                        .style("stroke", "#053e4e")
+                        .style("fill", i.fill);
+                d3.select("#arg${divnum}_mut" + i.site_id).style("display", "none");
+            }
+        })
+        .on("click", function(d, i) {
+            if (eval(i.active)) {
+                i.active = "false";
+                d3.select(this)
+                    .style("cursor", "pointer")
+                    .selectAll("rect")
+                        .style("fill", i.fill);
+                d3.select("#arg${divnum}_mut" + i.site_id).select("text").style("fill", i.fill);
+                d3.select("#arg${divnum}_mut" + i.site_id).select("line").style("stroke", i.fill);
+            } else {
+                i.active = "true";
+                d3.select(this)
+                    .style("cursor", "pointer")
+                    .selectAll("rect")
+                        .style("fill", "red");
+                d3.select("#arg${divnum}_mut" + i.site_id).select("text").style("fill", "red");
+                d3.select("#arg${divnum}_mut" + i.site_id).select("line").style("stroke", "red");
+            }
+        });
     
+    var mutation_rect_height = 5;
+    var mutation_rect_width = 15;
+    if ($include_mutation_labels) {
+        mutation_rect_height = 15;
+        mutation_rect_width = 40;
+    }
+
     var mut_symbol_rect = mut_symbol
         .append("rect")
             .attr("class", "symbol")
-            .attr("width", 40)
-            .attr("height", 15)
+            .attr("width", mutation_rect_width)
+            .attr("height", mutation_rect_height)
             .attr("fill", function(d) { return d.fill; })
             .attr("stroke", "#053e4e")
-            .attr("stroke-width", 4);
+            .attr("stroke-width", 2);
 
-    var mut_symbol_label = mut_symbol
-        .append("text")
-            .attr("class", "label")
-            .style("font-size", "10px")
-            .attr("text-anchor", "middle")
-            .text(function(d) { return d.site_id + ":" + d.ancestral + ":" + d.derived; });    
+    if ($include_mutation_labels) {
+        var mut_symbol_label = mut_symbol
+            .append("text")
+                .attr("class", "label")
+                .style("font-size", "10px")
+                .attr("text-anchor", "middle")
+                .text(function(d) { return d.site_id + ":" + d.ancestral + ":" + d.derived; });
+    }    
 
     var label = svg
         .append("g")
@@ -619,11 +665,11 @@ function draw_force_diagram() {
                         var child_x = parseFloat(child.getAttribute("cx"));
                         var child_y = parseFloat(child.getAttribute("cy"));
                         if (parent_x - child_x == 0) {
-                            return parent_x - 20;
+                            return parent_x - mutation_rect_width/2;
                         } else {
                             var slope = (parent_y - child_y) / (parent_x - child_x);
                             var intercept = parent_y - slope * parent_x;
-                            return ((d.y - intercept) / slope) - 20;
+                            return ((d.y - intercept) / slope) - mutation_rect_width/2;
                         }
                     } else {
                         return 0;
@@ -632,35 +678,37 @@ function draw_force_diagram() {
                     return 0;
                 }
             })
-            .attr("y", function(d) { return d.y - 7.5; });
+            .attr("y", function(d) { return d.y - mutation_rect_height/2; });
 
-        mut_symbol_label
-            .attr("transform", function(d) {
-                var y = d.y+3.5;
-                var x = 0;
-                var parent = document.getElementById(String($divnum) + "_node" + d.source);
-                if (parent != null) {
-                    var parent_x = parseFloat(parent.getAttribute("cx"));
-                    var parent_y = parseFloat(parent.getAttribute("cy"));
-                    var child = document.getElementById(String($divnum) + "_node" + d.target);
-                    if (child != null) {
-                        var child_x = parseFloat(child.getAttribute("cx"));
-                        var child_y = parseFloat(child.getAttribute("cy"));
-                        if (parent_x - child_x == 0) {
-                            x = parent_x;
+        if ($include_mutation_labels) {
+            mut_symbol_label
+                .attr("transform", function(d) {
+                    var y = d.y+3.5;
+                    var x = 0;
+                    var parent = document.getElementById(String($divnum) + "_node" + d.source);
+                    if (parent != null) {
+                        var parent_x = parseFloat(parent.getAttribute("cx"));
+                        var parent_y = parseFloat(parent.getAttribute("cy"));
+                        var child = document.getElementById(String($divnum) + "_node" + d.target);
+                        if (child != null) {
+                            var child_x = parseFloat(child.getAttribute("cx"));
+                            var child_y = parseFloat(child.getAttribute("cy"));
+                            if (parent_x - child_x == 0) {
+                                x = parent_x;
+                            } else {
+                                var slope = (parent_y - child_y) / (parent_x - child_x);
+                                var intercept = parent_y - slope * parent_x;
+                                x = ((d.y - intercept) / slope);
+                            }
                         } else {
-                            var slope = (parent_y - child_y) / (parent_x - child_x);
-                            var intercept = parent_y - slope * parent_x;
-                            x = ((d.y - intercept) / slope);
+                            x = 0;
                         }
                     } else {
                         x = 0;
                     }
-                } else {
-                    x = 0;
-                }
-                return "translate(" + String(x) + "," + String(y) + ")";
-            });
+                    return "translate(" + String(x) + "," + String(y) + ")";
+                });
+        }
 
         function determine_label_positioning(d) {
             if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
@@ -695,15 +743,14 @@ function draw_force_diagram() {
                     x = d.x + 15;
                     anchor = "start";
                 }
-                l.attr("x", x);
                 l.attr("text-anchor", anchor);
-                l.attr("y", function(d) {
+                l.attr("transform", function(d) {
+                    var y = d.y - 15;
                     if (d.parent_of.length == 0) {
-                        return d.y + 25;
-                    } else {
-                        return d.y - 15;
+                        y = d.y + 25;
                     }
-                });
+                    return "translate(" + String(x) + "," + String(y) + ")";
+                })
             });
 
         missing_parents_paths
@@ -854,7 +901,9 @@ function draw_force_diagram() {
             .selectAll("line")
             .data(graph.mutations)
             .enter()
-            .append("g");
+            .append("g")
+            .attr("id", function(d) { return "arg" + String($divnum) + "_mut" + d.site_id; })
+            .style("display", "none");
     
         mut_pos
             .append("line")
@@ -868,18 +917,33 @@ function draw_force_diagram() {
         
         mut_pos
             .append("text")
-            .attr("text-anchor", "middle")
+            .attr("text-anchor", function(d) {
+                if (d.x_pos > ($width*9/10)) {
+                    return "end";
+                } else if (d.x_pos < $width*1/10) {
+                    return "start";
+                } else {
+                    return "middle";
+                }
+            })
             .style("font-size", "10px")
             .style("font-family", "Arial")
             .attr("fill", function(d) { return d.fill; })
             .attr("transform", function(d) {
-                if (d.site_id % 2 == 0) {
-                    return "translate(" + String(d.x_pos) + "," + String($height-60-10) + ")";
-                } else {
-                    return "translate(" + String(d.x_pos) + "," + String($height-60+40+17) + ")";
-                }
+                return "translate(" + String(d.x_pos) + "," + String($height-60-10) + ")";
+                //if (d.site_id % 2 == 0) {
+                //    return "translate(" + String(d.x_pos) + "," + String($height-60-10) + ")";
+                //} else {
+                //    return "translate(" + String(d.x_pos) + "," + String($height-60+40+17) + ")";
+                //}
             })
-            .text(function(d) { return d.site_id; });
+            .text(function(d) {
+                if ($include_mutation_labels) {
+                    return String(d.site_id) + ":" + String(d.position);
+                } else {
+                    return String(d.position) + ":" + d.ancestral + ":" + d.derived;
+                }
+            });
     }
 
     if (title != "None") {

@@ -117,10 +117,16 @@ sample_order : list
     need to include all sample nodes IDs. (default=None, order is set by first tree in tree sequence)
 title : str
     Title to be put at the top of the figure. (default=None, ignored)
+show_mutations : bool
+    Whether to add mutations to the graph. Only available when `edge_type="line"`. (default=False)
+ignore_mutation_times : bool
+    Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
+include_mutation_labels : bool
+    Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
 """
 ```
 
-A quick note about line_type="ortho" (more details can be found within [pathing.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/pathing.md)) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags and where nodes have a maximum of two parents or children. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" edge_type.
+A quick note about line_type="ortho" (more details can be found within [pathing.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/pathing.md)) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags and where nodes have a maximum of two parents or children. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" edge_type. Note - mutation labels will be incorrectly placed when there is a "diamond".
 
 ## Drawing A Subgraph Of A Larger ARG
 
@@ -165,6 +171,12 @@ tree_highlighting : bool
     to let users highlight trees in the ARG (default=True)
 title : str
     Title to be put at the top of the figure. (default=None, ignored)
+show_mutations : bool
+    Whether to add mutations to the graph. (default=False)
+ignore_mutation_times : bool
+    Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
+include_mutation_labels : bool
+    Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
 """
 ```
 

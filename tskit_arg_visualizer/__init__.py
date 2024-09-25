@@ -405,9 +405,7 @@ class D3ARG:
                     "alt_parent": alternative_parent, #recombination nodes have an alternative parent
                     "alt_child": alternative_child,
                     "region_fraction": region_size / ts.sequence_length,
-                    "stroke": "#053e4e"#,
-                    #"mutation_count": 0,
-                    #"mutation_info": ""
+                    "stroke": "#053e4e"
                 })
                 ID += 1
             if edge.parent in recombination_nodes_to_merge:
@@ -419,7 +417,6 @@ class D3ARG:
         t.close()
         edges_output = pd.DataFrame(l for parent_links in links for l in parent_links)
         mutations = []
-        #mutation_counts = {}
         for site in tqdm(
             ts.sites(),
             total=ts.num_sites,
@@ -428,7 +425,6 @@ class D3ARG:
         ):
             for mut in site.mutations:
                 new_edge = edge_id_reference[mut.edge]
-                #mutation_counts[new_edge[0]] = mutation_counts.get(new_edge[0], 0) + 1
                 if (mut.time == tskit.UNKNOWN_TIME):
                     plot_time = (new_edge[3] + new_edge[4]) / 2 + random.uniform(0,1)
                     fill = "gold"
@@ -448,8 +444,6 @@ class D3ARG:
                     "derived": mut.derived_state,
                     "fill": fill
                 })
-        #for edge in mutation_counts:
-        #    edges_output.loc[edges_output["id"] == edge, "mutation_count"] = mutation_counts[edge]
         mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","derived","fill"])
         return edges_output, mutations_output
    
@@ -691,7 +685,9 @@ class D3ARG:
             include_underlink=True,
             sample_order=None,
             title=None,
-            ignore_mutation_times=True
+            show_mutations=False,
+            ignore_mutation_times=True,
+            include_mutation_labels=False
         ):
         """Creates the required JSON for both draw() and draw_node()
 
@@ -738,9 +734,13 @@ class D3ARG:
             need to include all sample nodes IDs. (default=None, order is set by first tree in tree sequence)
         title : str
             Title to be put at the top of the figure. (default=None, ignored)
+        show_mutations : bool
+            Whether to add mutations to the graph. (default=False)
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-
+        include_mutation_labels : bool
+            Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+            
         Returns
         -------
         arg : list
@@ -760,7 +760,9 @@ class D3ARG:
         if title:
             y_shift = 100
         
-        if ignore_mutation_times:
+        if not show_mutations:
+            tick_times = nodes["time"]
+        elif ignore_mutation_times:
             tick_times = nodes["time"]
         else:
             tick_times = pd.concat([nodes["time"],mutations["plot_time"]], axis=0).sort_values(ignore_index=True)
@@ -796,52 +798,54 @@ class D3ARG:
             transformed_nodes.append(node.to_dict())
 
         transformed_muts = []
-        if (edge_type == "line") and (len(mutations.index) > 0):
-            if ignore_mutation_times:
-                for index, edge in edges.iterrows():
-                    source_y = node_y_pos[edge["source"]]
-                    target_y = node_y_pos[edge["target"]]
-                    muts = mutations.loc[mutations["edge"] == edge["id"]].reset_index()
-                    mutation_count = len(muts.index)
-                    for m, mut in muts.iterrows():
-                        fy = source_y - (source_y - target_y)/(mutation_count+1)*(m+1)# - 10*(m-((mutation_count-1)/2))
-                        if y_axis_labels:
-                            x_pos = mut["position_01"] * width + 50
+        if show_mutations:
+            if (edge_type == "line") and (len(mutations.index) > 0):
+                if ignore_mutation_times:
+                    for index, edge in edges.iterrows():
+                        source_y = node_y_pos[edge["source"]]
+                        target_y = node_y_pos[edge["target"]]
+                        muts = mutations.loc[mutations["edge"] == edge["id"]].reset_index()
+                        mutation_count = len(muts.index)
+                        for m, mut in muts.iterrows():
+                            fy = source_y - (source_y - target_y)/(mutation_count+1)*(m+1)# - 10*(m-((mutation_count-1)/2))
+                            if y_axis_labels:
+                                x_pos = mut["position_01"] * width + 50
+                            else:
+                                x_pos = mut["position_01"] * width
+                            transformed_muts.append({
+                                "edge": edge["id"],
+                                "source": edge["source"],
+                                "target": edge["target"],
+                                "time": mut.time,
+                                "y": fy,
+                                "fy": fy,
+                                "site_id": mut.site_id,
+                                "position": mut.position,
+                                "x_pos": x_pos,
+                                "ancestral": mut.ancestral,
+                                "derived": mut.derived,
+                                "fill": "orange",
+                                "active": "false"
+                            })
+                else:
+                    for index, mut in mutations.iterrows():
+                        if y_axis_scale == "time":
+                            fy = (1-mut["plot_time"]/max_time) * (height-100) + y_shift
+                        elif y_axis_scale == "log_time":
+                            fy = (1-math.log(mut["plot_time"]+1)/math.log(max_time)) * (height-100) + y_shift
                         else:
-                            x_pos = mut["position_01"] * width
-                        transformed_muts.append({
-                            "edge": edge["id"],
-                            "source": edge["source"],
-                            "target": edge["target"],
-                            "time": mut.time,
-                            "y": fy,
-                            "fy": fy,
-                            "site_id": mut.site_id,
-                            "position": mut.position,
-                            "x_pos": x_pos,
-                            "ancestral": mut.ancestral,
-                            "derived": mut.derived,
-                            "fill": "orange"
-                        })
-            else:
-                for index, mut in mutations.iterrows():
-                    if y_axis_scale == "time":
-                        fy = (1-mut["plot_time"]/max_time) * (height-100) + y_shift
-                    elif y_axis_scale == "log_time":
-                        fy = (1-math.log(mut["plot_time"]+1)/math.log(max_time)) * (height-100) + y_shift
-                    else:
-                        fy = (1-unique_times.index(mut["plot_time"])*h_spacing) * (height-100) + y_shift
-                        if mut["plot_time"] in mutations["time"].values:
-                            y_axis_text.append(mut["plot_time"])
-                            y_axis_ticks.append(fy)
-                    if y_axis_labels:
-                        mut["x_pos"] = mut["position_01"] * width + 50
-                    else:
-                        mut["x_pos"] = mut["position_01"] * width
-                    mut["fy"] = fy
-                    mut["y"] = mut["fy"]
-                    mut["position_index"] = mut.site_id
-                    transformed_muts.append(mut.to_dict())
+                            fy = (1-unique_times.index(mut["plot_time"])*h_spacing) * (height-100) + y_shift
+                            if mut["plot_time"] in mutations["time"].values:
+                                y_axis_text.append(mut["plot_time"])
+                                y_axis_ticks.append(fy)
+                        if y_axis_labels:
+                            mut["x_pos"] = mut["position_01"] * width + 50
+                        else:
+                            mut["x_pos"] = mut["position_01"] * width
+                        mut["fy"] = fy
+                        mut["y"] = mut["fy"]
+                        mut["position_index"] = mut.site_id
+                        transformed_muts.append(mut.to_dict())
 
         if tree_highlighting:
             height += 75
@@ -897,6 +901,7 @@ class D3ARG:
                 "variable_width":str(variable_edge_width).lower(),
                 "include_underlink":str(include_underlink).lower()
             },
+            "include_mutation_labels":str(include_mutation_labels).lower(),
             "tree_highlighting":str(tree_highlighting).lower(),
             "title":str(title)
         }
@@ -914,7 +919,9 @@ class D3ARG:
             include_underlink=True,
             sample_order=None,
             title=None,
-            ignore_mutation_times=True
+            show_mutations=False,
+            ignore_mutation_times=True,
+            include_mutation_labels=False
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -949,8 +956,12 @@ class D3ARG:
             need to include all sample nodes IDs. (default=None, order is set by first tree in tree sequence)
         title : str
             Title to be put at the top of the figure. (default=None, ignored)
+        show_mutations : bool
+            Whether to add mutations to the graph. Only available when `edge_type="line"`. (default=False)
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
+        include_mutation_labels : bool
+            Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
         """
         
         arg = self._prepare_json(
@@ -969,7 +980,9 @@ class D3ARG:
             include_underlink=include_underlink,
             sample_order=sample_order,
             title=title,
-            ignore_mutation_times=ignore_mutation_times
+            show_mutations=show_mutations,
+            ignore_mutation_times=ignore_mutation_times,
+            include_mutation_labels=include_mutation_labels
         )
         draw_D3(arg_json=arg)
 
@@ -1090,7 +1103,9 @@ class D3ARG:
             y_axis_scale="rank",
             tree_highlighting=True,
             title=None,
-            ignore_mutation_times=True
+            show_mutations=False,
+            ignore_mutation_times=True,
+            include_mutation_labels=False
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -1119,6 +1134,12 @@ class D3ARG:
             to let users highlight trees in the ARG (default=True)
         title : str
             Title to be put at the top of the figure. (default=None, ignored)
+        show_mutations : bool
+            Whether to add mutations to the graph. (default=False)
+        ignore_mutation_times : bool
+            Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
+        include_mutation_labels : bool
+            Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
         """
         
         included_nodes, included_edges, included_mutations, included_breakpoints = self._subset_graph(node=node, degree=degree)
@@ -1134,7 +1155,9 @@ class D3ARG:
             y_axis_labels=y_axis_labels,
             y_axis_scale=y_axis_scale,
             title=title,
-            ignore_mutation_times=ignore_mutation_times
+            show_mutations=show_mutations,
+            ignore_mutation_times=ignore_mutation_times,
+            include_mutation_labels=include_mutation_labels
         )
         draw_D3(arg_json=arg)
 
