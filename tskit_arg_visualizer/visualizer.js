@@ -98,7 +98,7 @@ function draw_force_diagram() {
         .on('click', function(){
             var svgString = getSVGString(svg.node());
             var svgBlob = new Blob([svgString], {type:"image/svg+xml;charset=utf-8"});
-            saveAs( svgBlob, "tskit_arg_visualizer");
+            saveAs(svgBlob, "tskit_arg_visualizer");
         });
     methods.append("button").text("PNG")
         .on('click', function(){
@@ -109,6 +109,17 @@ function draw_force_diagram() {
                 saveAs(dataBlob, "tskit_arg_visualizer"); // FileSaver.js function
             }
         });
+    methods.append("button").text("HTML")
+        .on("click", function(){
+            d3.selectAll("#arg_${divnum} .node").classed("fix", function(d) {
+                d.fx = d.x;
+            });
+            var html = document.querySelector("html").outerHTML;
+            var arg_div = document.getElementById("arg_${divnum}").innerHTML;
+            html = html.replace(arg_div, "");
+            html = html.replace("${source}".match(/'nodes': .*'links'/), "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'")
+            saveAs(new Blob([html], {type:"text/plain;charset=utf-8"}), "tskit_arg_visualizer.html");
+        })
 
     var reheat = dashboard.append("button").attr("class", "dashbutton activecolor")
         .on("click", function(event) {
