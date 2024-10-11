@@ -29,3 +29,7 @@ edge "color" changed to edge "stroke" for consistency across tables
 Mutations
 
 Genome bar standalone
+
+Option to download the HTML of the visualizer
+
+Loading JSON fixed (#90)

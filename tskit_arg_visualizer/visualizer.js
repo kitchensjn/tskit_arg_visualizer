@@ -75,6 +75,10 @@ function draw_force_diagram() {
 
     var evenly_distributed_positions = graph.evenly_distributed_positions;
 
+    var tip = d3.select("#arg_${divnum}").append("div")
+        .attr("class", "tooltip")
+        .style("display", "none");
+
     var dashboard = d3.select("#arg_${divnum}").append("div").attr("class", "dashboard");
     
     var saving = dashboard.append("button").attr("class", "dashbutton");
@@ -325,7 +329,6 @@ function draw_force_diagram() {
                 .style("cursor", "pointer")
         });
 
-    
     var mut_symbol = svg
         .append("g")
         .attr("class", "mutations")
@@ -341,6 +344,14 @@ function draw_force_diagram() {
                 .selectAll("rect")
                     .style("stroke", i.fill);
             d3.select("#arg${divnum}_mut" + i.site_id).style("display", "block");
+            var rect = d3.select("#arg_${divnum}").node().getBoundingClientRect();
+            tip
+                .style("display", "block")
+                .html("<p style='margin: 0px;'>" + i.ancestral + i.position + i.derived + "</p>")
+                .style("border", i.fill + " solid 2px")
+                .style("left", (d.pageX - rect.x) + "px")
+                .style("top", (d.pageY - rect.y + 25) + "px")
+                .style("transform", "translateX(-50%)");
         })
         .on("mouseout", function(d, i) {
             if (!eval(i.active)) {
@@ -350,35 +361,12 @@ function draw_force_diagram() {
                         .style("stroke", "#053e4e")
                         .style("fill", i.fill);
                 d3.select("#arg${divnum}_mut" + i.site_id).style("display", "none");
-            }
-        })
-        .on("click", function(d, i) {
-            if (eval(i.active)) {
-                i.active = "false";
-                d3.select(this)
-                    .style("cursor", "pointer")
-                    .selectAll("rect")
-                        .style("fill", i.fill);
-                d3.select("#arg${divnum}_mut" + i.site_id).select("text").style("fill", i.fill);
-                d3.select("#arg${divnum}_mut" + i.site_id).select("line").style("stroke", i.fill);
-            } else {
-                i.active = "true";
-                var color = '#'+Math.floor(Math.random() * Math.pow(2,32) ^ 0xffffff).toString(16).substr(-6);
-                d3.select(this)
-                    .style("cursor", "pointer")
-                    .selectAll("rect")
-                        .style("fill", color);
-                d3.select("#arg${divnum}_mut" + i.site_id).select("text").style("fill", color);
-                d3.select("#arg${divnum}_mut" + i.site_id).select("line").style("stroke", color);
+                tip.style("display", "none");
             }
         });
-    
+        
     var mutation_rect_height = 5;
     var mutation_rect_width = 15;
-    if ($include_mutation_labels) {
-        mutation_rect_height = 15;
-        mutation_rect_width = 40;
-    }
 
     var mut_symbol_rect = mut_symbol
         .append("rect")
@@ -388,15 +376,6 @@ function draw_force_diagram() {
             .attr("fill", function(d) { return d.fill; })
             .attr("stroke", "#053e4e")
             .attr("stroke-width", 2);
-
-    if ($include_mutation_labels) {
-        var mut_symbol_label = mut_symbol
-            .append("text")
-                .attr("class", "label")
-                .style("font-size", "10px")
-                .attr("text-anchor", "middle")
-                .text(function(d) { return d.site_id + ":" + d.ancestral + ":" + d.derived; });
-    }    
 
     var label = svg
         .append("g")
@@ -664,7 +643,7 @@ function draw_force_diagram() {
                 } else {
                     return "rotate(0)";
                 }
-            })
+            });
 
         mut_symbol_rect
             .attr("x", function(d) {
@@ -691,36 +670,6 @@ function draw_force_diagram() {
                 }
             })
             .attr("y", function(d) { return d.y - mutation_rect_height/2; });
-
-        if ($include_mutation_labels) {
-            mut_symbol_label
-                .attr("transform", function(d) {
-                    var y = d.y+3.5;
-                    var x = 0;
-                    var parent = document.getElementById(String($divnum) + "_node" + d.source);
-                    if (parent != null) {
-                        var parent_x = parseFloat(parent.getAttribute("cx"));
-                        var parent_y = parseFloat(parent.getAttribute("cy"));
-                        var child = document.getElementById(String($divnum) + "_node" + d.target);
-                        if (child != null) {
-                            var child_x = parseFloat(child.getAttribute("cx"));
-                            var child_y = parseFloat(child.getAttribute("cy"));
-                            if (parent_x - child_x == 0) {
-                                x = parent_x;
-                            } else {
-                                var slope = (parent_y - child_y) / (parent_x - child_x);
-                                var intercept = parent_y - slope * parent_x;
-                                x = ((d.y - intercept) / slope);
-                            }
-                        } else {
-                            x = 0;
-                        }
-                    } else {
-                        x = 0;
-                    }
-                    return "translate(" + String(x) + "," + String(y) + ")";
-                });
-        }
 
         function determine_label_positioning(d) {
             if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
@@ -927,7 +876,7 @@ function draw_force_diagram() {
             .style("stroke", function(d) { return d.fill; })
             .style("fill", "none");
         
-        mut_pos
+        var mut_text = mut_pos
             .append("text")
             .attr("text-anchor", function(d) {
                 if (d.x_pos > ($width*9/10)) {
@@ -943,19 +892,18 @@ function draw_force_diagram() {
             .attr("fill", function(d) { return d.fill; })
             .attr("transform", function(d) {
                 return "translate(" + String(d.x_pos) + "," + String($height-60-10) + ")";
-                //if (d.site_id % 2 == 0) {
-                //    return "translate(" + String(d.x_pos) + "," + String($height-60-10) + ")";
-                //} else {
-                //    return "translate(" + String(d.x_pos) + "," + String($height-60+40+17) + ")";
-                //}
-            })
+            });
+    
+        /*
+        mut_text
             .text(function(d) {
                 if ($include_mutation_labels) {
                     return String(d.site_id) + ":" + String(d.position);
                 } else {
-                    return String(d.position) + ":" + d.ancestral + ":" + d.derived;
+                    return d.ancestral + String(d.position) + d.derived;
                 }
             });
+        */
     }
 
     if (title != "None") {

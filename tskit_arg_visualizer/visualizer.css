@@ -149,3 +149,13 @@ button {
 .saving .message {
     display: none;
 }
+
+.tooltip {
+    position: absolute;
+    max-width: 500px;
+    padding: 10px;
+    background-color: white;
+    color: black;
+    text-align: left;
+    z-index: 9999;
+}
