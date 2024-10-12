@@ -367,6 +367,10 @@ function draw_force_diagram() {
         
     var mutation_rect_height = 5;
     var mutation_rect_width = 15;
+    if ($include_mutation_labels) {
+        mutation_rect_height = 15;
+        mutation_rect_width = 40;
+    }
 
     var mut_symbol_rect = mut_symbol
         .append("rect")
