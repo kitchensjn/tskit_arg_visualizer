@@ -381,6 +381,13 @@ function draw_force_diagram() {
             .attr("stroke", "#053e4e")
             .attr("stroke-width", 2);
 
+    var mut_symbol_label = mut_symbol
+        .append("text")
+            .attr("class", "label")
+            .style("font-size", "10px")
+            .attr("text-anchor", "middle")
+            .text(function(d) { return d.ancestral + d.position + d.derived; });
+
     var label = svg
         .append("g")
         .attr("class", "labels")
@@ -674,6 +681,34 @@ function draw_force_diagram() {
                 }
             })
             .attr("y", function(d) { return d.y - mutation_rect_height/2; });
+        
+        mut_symbol_label
+            .attr("transform", function(d) {
+                var y = d.y+3.5;
+                var x = 0;
+                var parent = document.getElementById(String($divnum) + "_node" + d.source);
+                if (parent != null) {
+                    var parent_x = parseFloat(parent.getAttribute("cx"));
+                    var parent_y = parseFloat(parent.getAttribute("cy"));
+                    var child = document.getElementById(String($divnum) + "_node" + d.target);
+                    if (child != null) {
+                        var child_x = parseFloat(child.getAttribute("cx"));
+                        var child_y = parseFloat(child.getAttribute("cy"));
+                        if (parent_x - child_x == 0) {
+                            x = parent_x;
+                        } else {
+                            var slope = (parent_y - child_y) / (parent_x - child_x);
+                            var intercept = parent_y - slope * parent_x;
+                            x = ((d.y - intercept) / slope);
+                        }
+                    } else {
+                        x = 0;
+                    }
+                } else {
+                    x = 0;
+                }
+                return "translate(" + String(x) + "," + String(y) + ")";
+            });
 
         function determine_label_positioning(d) {
             if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
@@ -880,6 +915,7 @@ function draw_force_diagram() {
             .style("stroke", function(d) { return d.fill; })
             .style("fill", "none");
         
+        /*
         var mut_text = mut_pos
             .append("text")
             .attr("text-anchor", function(d) {
@@ -898,7 +934,6 @@ function draw_force_diagram() {
                 return "translate(" + String(d.x_pos) + "," + String($height-60-10) + ")";
             });
     
-        /*
         mut_text
             .text(function(d) {
                 if ($include_mutation_labels) {
