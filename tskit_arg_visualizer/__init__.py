@@ -687,7 +687,8 @@ class D3ARG:
             title=None,
             show_mutations=False,
             ignore_mutation_times=True,
-            include_mutation_labels=False
+            include_mutation_labels=False,
+            condense_mutations=True
         ):
         """Creates the required JSON for both draw() and draw_node()
 
@@ -800,7 +801,31 @@ class D3ARG:
         transformed_muts = []
         if show_mutations:
             if (edge_type == "line") and (len(mutations.index) > 0):
-                if ignore_mutation_times:
+                if condense_mutations:
+                    for edge, muts in mutations.sort_values(["time"],ascending=False).groupby("edge"):
+                        muts["label"] = muts["ancestral"] + muts["position"].astype(int).astype(str) + muts["derived"] + ":" + muts["time"].astype(int).astype(str)            
+                        if y_axis_labels:
+                            x_pos = muts["position_01"] * width + 50
+                        else:
+                            x_pos = muts["position_01"] * width
+                        source = muts.iloc[0]["source"]
+                        target = muts.iloc[0]["target"]
+                        source_y = node_y_pos[source]
+                        target_y = node_y_pos[target]
+                        fy = (source_y + target_y) / 2
+                        transformed_muts.append({
+                            "edge": edge,
+                            "source": source,
+                            "target": target,
+                            "y": fy,
+                            "fy": fy,
+                            "site_id": edge,
+                            "x_pos": list(x_pos),
+                            "fill": "red",
+                            "active": "false",
+                            "label": "<br>".join(muts.label)
+                        })
+                elif ignore_mutation_times:
                     for index, edge in edges.iterrows():
                         source_y = node_y_pos[edge["source"]]
                         target_y = node_y_pos[edge["target"]]
@@ -812,6 +837,7 @@ class D3ARG:
                                 x_pos = mut["position_01"] * width + 50
                             else:
                                 x_pos = mut["position_01"] * width
+                            label = mut["ancestral"] + str(int(mut["position"])) + mut["derived"]
                             transformed_muts.append({
                                 "edge": edge["id"],
                                 "source": edge["source"],
@@ -824,8 +850,9 @@ class D3ARG:
                                 "x_pos": x_pos,
                                 "ancestral": mut.ancestral,
                                 "derived": mut.derived,
-                                "fill": "orange",
-                                "active": "false"
+                                "fill": mut.fill,
+                                "active": "false",
+                                "label": label
                             })
                 else:
                     for index, mut in mutations.iterrows():
@@ -845,8 +872,8 @@ class D3ARG:
                         mut["fy"] = fy
                         mut["y"] = mut["fy"]
                         mut["position_index"] = mut.site_id
+                        mut["label"] = mut["ancestral"] + str(int(mut["position"])) + mut["derived"]
                         transformed_muts.append(mut.to_dict())
-
         if tree_highlighting:
             height += 75
 
@@ -921,7 +948,8 @@ class D3ARG:
             title=None,
             show_mutations=False,
             ignore_mutation_times=True,
-            include_mutation_labels=False
+            include_mutation_labels=False,
+            condense_mutations=True
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -962,8 +990,18 @@ class D3ARG:
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
         include_mutation_labels : bool
             Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+        condense_mutations : bool
+            Whether to merge all mutations along an edge into a single mutation symbol. (default=True)
         """
         
+        if condense_mutations:
+            if not ignore_mutation_times:
+                print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
+                ignore_mutation_times = True
+            if include_mutation_labels:
+                print("WARNING: `condense_mutations=True` forces `include_mutation_labels=False`.")
+                include_mutation_labels = False
+
         arg = self._prepare_json(
             plot_type="full",
             nodes=self.nodes,
@@ -982,7 +1020,8 @@ class D3ARG:
             title=title,
             show_mutations=show_mutations,
             ignore_mutation_times=ignore_mutation_times,
-            include_mutation_labels=include_mutation_labels
+            include_mutation_labels=include_mutation_labels,
+            condense_mutations=condense_mutations
         )
         draw_D3(arg_json=arg)
 
@@ -1105,7 +1144,8 @@ class D3ARG:
             title=None,
             show_mutations=False,
             ignore_mutation_times=True,
-            include_mutation_labels=False
+            include_mutation_labels=False,
+            condense_mutations=True
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -1140,7 +1180,17 @@ class D3ARG:
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
         include_mutation_labels : bool
             Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+        condense_mutations : bool
+            Whether to merge all mutations along an edge into a single mutation symbol. (default=True)
         """
+
+        if condense_mutations:
+            if not ignore_mutation_times:
+                print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
+                ignore_mutation_times = True
+            if include_mutation_labels:
+                print("WARNING: `condense_mutations=True` forces `include_mutation_labels=False`.")
+                include_mutation_labels = False
         
         included_nodes, included_edges, included_mutations, included_breakpoints = self._subset_graph(node=node, degree=degree)
         arg = self._prepare_json(

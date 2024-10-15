@@ -304,7 +304,6 @@ function draw_force_diagram() {
             .style("fill", "gray")
             .text(function(d) { return d.not_included_children;});
 
-
     var node = node_group
         .append("path")
         .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
@@ -347,7 +346,7 @@ function draw_force_diagram() {
             var rect = d3.select("#arg_${divnum}").node().getBoundingClientRect();
             tip
                 .style("display", "block")
-                .html("<p style='margin: 0px;'>" + i.ancestral + i.position + i.derived + "</p>")
+                .html("<p style='margin: 0px;'>" + i.label + "</p>")
                 .style("border", i.fill + " solid 2px")
                 .style("left", (d.pageX - rect.x) + "px")
                 .style("top", (d.pageY - rect.y + 25) + "px")
@@ -381,12 +380,14 @@ function draw_force_diagram() {
             .attr("stroke", "#053e4e")
             .attr("stroke-width", 2);
 
-    var mut_symbol_label = mut_symbol
-        .append("text")
-            .attr("class", "label")
-            .style("font-size", "10px")
-            .attr("text-anchor", "middle")
-            .text(function(d) { return d.ancestral + d.position + d.derived; });
+    if ($include_mutation_labels) {
+        var mut_symbol_label = mut_symbol
+            .append("text")
+                .attr("class", "label")
+                .style("font-size", "10px")
+                .attr("text-anchor", "middle")
+                .text(function(d) { return d.label; });
+    }
 
     var label = svg
         .append("g")
@@ -682,33 +683,35 @@ function draw_force_diagram() {
             })
             .attr("y", function(d) { return d.y - mutation_rect_height/2; });
         
-        mut_symbol_label
-            .attr("transform", function(d) {
-                var y = d.y+3.5;
-                var x = 0;
-                var parent = document.getElementById(String($divnum) + "_node" + d.source);
-                if (parent != null) {
-                    var parent_x = parseFloat(parent.getAttribute("cx"));
-                    var parent_y = parseFloat(parent.getAttribute("cy"));
-                    var child = document.getElementById(String($divnum) + "_node" + d.target);
-                    if (child != null) {
-                        var child_x = parseFloat(child.getAttribute("cx"));
-                        var child_y = parseFloat(child.getAttribute("cy"));
-                        if (parent_x - child_x == 0) {
-                            x = parent_x;
+        if ($include_mutation_labels) {
+            mut_symbol_label
+                .attr("transform", function(d) {
+                    var y = d.y+3.5;
+                    var x = 0;
+                    var parent = document.getElementById(String($divnum) + "_node" + d.source);
+                    if (parent != null) {
+                        var parent_x = parseFloat(parent.getAttribute("cx"));
+                        var parent_y = parseFloat(parent.getAttribute("cy"));
+                        var child = document.getElementById(String($divnum) + "_node" + d.target);
+                        if (child != null) {
+                            var child_x = parseFloat(child.getAttribute("cx"));
+                            var child_y = parseFloat(child.getAttribute("cy"));
+                            if (parent_x - child_x == 0) {
+                                x = parent_x;
+                            } else {
+                                var slope = (parent_y - child_y) / (parent_x - child_x);
+                                var intercept = parent_y - slope * parent_x;
+                                x = ((d.y - intercept) / slope);
+                            }
                         } else {
-                            var slope = (parent_y - child_y) / (parent_x - child_x);
-                            var intercept = parent_y - slope * parent_x;
-                            x = ((d.y - intercept) / slope);
+                            x = 0;
                         }
                     } else {
                         x = 0;
                     }
-                } else {
-                    x = 0;
-                }
-                return "translate(" + String(x) + "," + String(y) + ")";
-            });
+                    return "translate(" + String(x) + "," + String(y) + ")";
+                });
+        }
 
         function determine_label_positioning(d) {
             if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
@@ -906,14 +909,30 @@ function draw_force_diagram() {
             .style("display", "none");
     
         mut_pos
-            .append("line")
-            .attr("x1", function(d) { return d.x_pos; })
-            .attr("y1", $height-60-5)
-            .attr("x2", function(d) { return d.x_pos; })
-            .attr("y2", $height-60+40+5)
-            .style("stroke-width", 3)
-            .style("stroke", function(d) { return d.fill; })
-            .style("fill", "none");
+            .each(function(d) {
+                if (typeof(d.x_pos) == "object") {
+                    d3.select(this).selectAll("line").data(d.x_pos)
+                        .enter()
+                        .append("line")
+                        .attr("x1", function(x) { return x; })
+                        .attr("y1", $height-60-5)
+                        .attr("x2", function(x) { return x; })
+                        .attr("y2", $height-60+40+5)
+                        .style("stroke-width", 3)
+                        .style("stroke", d.fill)
+                        .style("fill", "none");
+                } else {
+                    d3.select(this)
+                        .append("line")
+                        .attr("x1", d.x_pos)
+                        .attr("y1", $height-60-5)
+                        .attr("x2", d.x_pos)
+                        .attr("y2", $height-60+40+5)
+                        .style("stroke-width", 3)
+                        .style("stroke", d.fill)
+                        .style("fill", "none");
+                }
+            });
         
         /*
         var mut_text = mut_pos
@@ -939,7 +958,7 @@ function draw_force_diagram() {
                 if ($include_mutation_labels) {
                     return String(d.site_id) + ":" + String(d.position);
                 } else {
-                    return d.ancestral + String(d.position) + d.derived;
+                    return d.label;
                 }
             });
         */
