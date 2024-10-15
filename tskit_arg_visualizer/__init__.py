@@ -367,8 +367,8 @@ class D3ARG:
                 child_time = ts.node(child).time
                 region_size = 0
                 bounds = ""
-                alternative_child = ""
-                alternative_parent = ""
+                alternative_child = -1
+                alternative_parent = -1
                 if (ts.nodes_flags[parent] & msprime.NODE_IS_RE_EVENT) == 0:
                     children = np.array(list(edges_for_child.keys()))
                     if len(children) > 2:
@@ -388,7 +388,7 @@ class D3ARG:
                     if len(alt_id_parents):
                         alternative_parent = alt_id_parents[0]
                     else:
-                        alternative_parent = ""
+                        alternative_parent = -1
                 if child in recombination_nodes_to_merge:
                     child = child - 1
                 for edge in equivalent_edges:
