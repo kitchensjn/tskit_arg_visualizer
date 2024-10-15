@@ -949,7 +949,7 @@ class D3ARG:
             show_mutations=False,
             ignore_mutation_times=True,
             include_mutation_labels=False,
-            condense_mutations=True
+            condense_mutations=False
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -991,7 +991,7 @@ class D3ARG:
         include_mutation_labels : bool
             Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
         condense_mutations : bool
-            Whether to merge all mutations along an edge into a single mutation symbol. (default=True)
+            Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
         """
         
         if condense_mutations:
@@ -1145,7 +1145,7 @@ class D3ARG:
             show_mutations=False,
             ignore_mutation_times=True,
             include_mutation_labels=False,
-            condense_mutations=True
+            condense_mutations=False
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -1181,7 +1181,7 @@ class D3ARG:
         include_mutation_labels : bool
             Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
         condense_mutations : bool
-            Whether to merge all mutations along an edge into a single mutation symbol. (default=True)
+            Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
         """
 
         if condense_mutations:
@@ -1207,7 +1207,8 @@ class D3ARG:
             title=title,
             show_mutations=show_mutations,
             ignore_mutation_times=ignore_mutation_times,
-            include_mutation_labels=include_mutation_labels
+            include_mutation_labels=include_mutation_labels,
+            condense_mutations=condense_mutations
         )
         draw_D3(arg_json=arg)
 
