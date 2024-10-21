@@ -13,8 +13,10 @@ keywords = [
 ]
 requires-python = ">=3.7"
 dependencies = [
+    "pandas",
     "msprime",
     "IPython",
+    "tqdm
 ]
 classifiers = [
     "Programming Language :: Python",

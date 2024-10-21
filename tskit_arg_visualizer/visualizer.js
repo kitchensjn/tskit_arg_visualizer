@@ -1,3 +1,8 @@
+var script = document.createElement('script');
+script.type = 'text/javascript';
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js';
+document.head.appendChild(script);
+
 require.config({ 
     paths: { 
         d3: 'https://d3js.org/d3.v7.min'
@@ -315,7 +320,7 @@ require(["d3"], function(d3) {
         }
 
         if ($tree_highlighting) {
-            d3.selectAll(".link")
+            d3.selectAll("#arg_${divnum} .link")
                 .on('mouseover', function (event, d) {
                     d3.select(this)
                         .style('stroke', '#1eebb1')
@@ -323,6 +328,7 @@ require(["d3"], function(d3) {
                     d3.select("#arg_${divnum} .breakpoints")
                         .selectAll(".included")
                             .filter(function(j) {
+                                console.log(d.bounds);
                                 return d.bounds.split(" ").some(function(region) {
                                     region = region.split("-");
                                     return (parseFloat(region[0]) <= j.start) & (parseFloat(region[1]) >= j.stop)

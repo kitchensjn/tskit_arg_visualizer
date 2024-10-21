@@ -40,17 +40,7 @@ d3arg.draw(
 )
 ```
 
-The above code can be run in two ways: terminal or JupyterLab/Jupyter Notebook. For JupyterLab/Jupyter Notebook, you will need to add the following code block to the top of the document to properly load D3.js.
-
-### JupyterLab or Jupyter Notebook 7- 
-
-```
-%%javascript
-var script = document.createElement('script');
-script.type = 'text/javascript';
-script.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js';
-document.head.appendChild(script);
-```
+The above code can be run in two ways: terminal or JupyterLab/Jupyter Notebook.
 
 ## Drawing Parameters
 
