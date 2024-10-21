@@ -92,11 +92,11 @@ def draw_D3(arg_json):
     styles = css.read()
     css.close()
     if running_in_notebook():
-        display(HTML("<style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script>" + html))
+        display(HTML("<style>"+styles+"</style>" + html))
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
-            f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script></head><body>" + html + "</body></html>")
+            f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js'></script></head><body>" + html + "</body></html>")
         webbrowser.open(url, new=2)
 
 class D3ARG:
@@ -777,7 +777,6 @@ class D3ARG:
         unique_times = list(np.unique(tick_times)) # Determines the rank (y position) of each time point 
 
         node_y_pos = {}
-
         for index, node in nodes.iterrows():
             if "x_pos_01" in node:
                 node["fx"] = node["x_pos_01"] * (width-100) + x_shift
@@ -808,8 +807,8 @@ class D3ARG:
                             x_pos = muts["position_01"] * width + 50
                         else:
                             x_pos = muts["position_01"] * width
-                        source = muts.iloc[0]["source"]
-                        target = muts.iloc[0]["target"]
+                        source = int(muts.iloc[0]["source"])
+                        target = int(muts.iloc[0]["target"])
                         source_y = node_y_pos[source]
                         target_y = node_y_pos[target]
                         fy = (source_y + target_y) / 2
@@ -874,6 +873,7 @@ class D3ARG:
                         mut["position_index"] = mut.site_id
                         mut["label"] = mut["ancestral"] + str(int(mut["position"])) + mut["derived"]
                         transformed_muts.append(mut.to_dict())
+
         if tree_highlighting:
             height += 75
 

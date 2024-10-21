@@ -8,3 +8,6 @@ examples/
 tskit_arg_visualizer/_version.py
 dist/
 old_dist/
+mwe.html
+mwe.qmd
+mwe_files/

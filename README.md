@@ -40,29 +40,15 @@ d3arg.draw(
 )
 ```
 
-The above code can be run in three ways: terminal, Jupyter Notebook, or JupyterLab. For Jupyter Notebook and JupyterLab, you will need to add the following code block to the top of the document to properly load D3.js.
+The above code can be run in two ways: terminal or JupyterLab/Jupyter Notebook. For JupyterLab/Jupyter Notebook, you will need to add the following code block to the top of the document to properly load D3.js.
 
-### Jupyter Notebook -
-
-```
-%%javascript
-require.config({ 
-    paths: { 
-    d3: 'https://d3js.org/d3.v7.min'
-}});
-
-require(["d3"], function(d3) {
-    window.d3 = d3;
-});
-```
-
-### JupyterLab - 
+### JupyterLab or Jupyter Notebook 7- 
 
 ```
 %%javascript
 var script = document.createElement('script');
 script.type = 'text/javascript';
-script.src = 'https://d3js.org/d3.v7.min.js';
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js';
 document.head.appendChild(script);
 ```
 
