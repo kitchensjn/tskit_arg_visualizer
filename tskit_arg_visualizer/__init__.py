@@ -503,7 +503,7 @@ class D3ARG:
             raise ValueError("Node IDs in labels must be IDs of nodes in the graph.") from e
         self.nodes['label'] = df_id_index['label'].values
 
-    def reset_node_labels(self):
+    def reset_all_node_labels(self):
         """Resets node labels to default (based on msprime IDs)"""
 
         for node in self.nodes:
@@ -565,7 +565,7 @@ class D3ARG:
         Parameters
         ----------
         styles : list
-            List of dicts, one per node, with the styling keys: id, size, symbol, fill, stroke_width,
+            List of dicts, one per node, with the styling keys: id, size, symbol, fill, stroke, stroke_width,
             include_label. "id" is the only mandatory key. Only nodes that need styles updated need to
             be provided.
         """
@@ -575,7 +575,7 @@ class D3ARG:
                 if key in ["size", "symbol", "fill", "stroke", "stroke_width", "include_label"]:
                     self.nodes.loc[self.nodes["id"]==node["id"], key] = node[key]
         
-    def set_edge_strokes(self, colors):
+    def set_edge_colors(self, colors):
         """Set the color of each edge in the ARG
 
         Parameters
@@ -589,13 +589,28 @@ class D3ARG:
                 self.edges.loc[self.edges["id"]==id, "stroke"] = colors[id]
             else:
                 raise ValueError(f"Edge '{id}' not in the graph. Cannot update the edge stroke. Make sure all IDs are integers.")
-        
-    def reset_edge_colors(self):
-        """Resets the edge colors to the default (#053e4e)"""
+
+    def set_all_edge_colors(self, color):
+        """Sets the edge strokes to the specified color"""
+
+        self.edges["stroke"] = color   
+    
+    def reset_all_edge_colors(self):
+        """Resets the edge strokes to the default (#053e4e)"""
 
         self.edges["stroke"] = "#053e4e"
 
-    def set_breakpoint_fill(self, colors):
+    def set_all_breakpoint_fills(self, color):
+        """Sets the fill of genome bar blocks to the specified color"""
+
+        self.breakpoints["fill"] = color
+
+    def reset_all_breakpoint_fills(self):
+        """Sets the fill of genome bar blocks to the specified color"""
+
+        self.breakpoints["fill"] = "#053e4e"
+
+    def set_breakpoint_fills(self, colors):
         """Set the fill of each breakpoint block in the ARG
 
         Parameters
@@ -1145,7 +1160,8 @@ class D3ARG:
             show_mutations=False,
             ignore_mutation_times=True,
             include_mutation_labels=False,
-            condense_mutations=False
+            condense_mutations=False,
+            return_included_nodes=False
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -1182,6 +1198,8 @@ class D3ARG:
             Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
+        return_included_nodes : bool
+            Returns a list of nodes plotted in the subgraph. (default=False)
         """
 
         if condense_mutations:
@@ -1211,6 +1229,8 @@ class D3ARG:
             condense_mutations=condense_mutations
         )
         draw_D3(arg_json=arg)
+        if return_included_nodes:
+            return list(included_nodes["id"])
 
     def draw_genome_bar(
             self,

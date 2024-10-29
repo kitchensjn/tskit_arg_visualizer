@@ -1,8 +1,3 @@
-var script = document.createElement('script');
-script.type = 'text/javascript';
-script.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js';
-document.head.appendChild(script);
-
 require.config({ 
     paths: { 
         d3: 'https://d3js.org/d3.v7.min'

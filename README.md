@@ -58,7 +58,11 @@ def draw(
     variable_edge_width=False,
     include_underlink=True,
     sample_order=None,
-    title=None
+    title=None,
+    show_mutations=False,
+    ignore_mutation_times=True,
+    include_mutation_labels=False,
+    condense_mutations=False
 ):
 """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -99,6 +103,8 @@ ignore_mutation_times : bool
     Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
 include_mutation_labels : bool
     Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+condense_mutations : bool
+    Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
 """
 ```
 
@@ -118,7 +124,12 @@ def draw_node(
     y_axis_labels=True,
     y_axis_scale="rank",
     tree_highlighting=True,
-    title=None
+    title=None,
+    show_mutations=False,
+    ignore_mutation_times=True,
+    include_mutation_labels=False,
+    condense_mutations=False,
+    return_included_nodes=False
 ):
 """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -153,6 +164,10 @@ ignore_mutation_times : bool
     Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
 include_mutation_labels : bool
     Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+condense_mutations : bool
+    Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
+return_included_nodes : bool
+    Returns a list of nodes plotted in the subgraph. (default=False)
 """
 ```
 
