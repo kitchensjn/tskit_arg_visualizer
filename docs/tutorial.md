@@ -104,7 +104,11 @@ edge_colors = {
     2:"green"
 }
 d3arg.set_edge_colors(colors=edge_colors)
+```
 
+For `d3arg.draw_genome_bar()`, you can also control the fill of the blocks along the chromosome.
+
+```
 block_colors = {
     1:"red",
     2:"#0000FF
