@@ -151,6 +151,8 @@ The ARG representation used by the D3ARG object hosts some distinct advantages o
 
 ## Troubleshooting
 
+The visualizer tries to determine whether the user is in a Jupyter Notebook or not and plots accordingly. A known issue occurs when you are in an environment that has not been fully tested, in these cases the visualizer might not recognize that you are in a notebook. If your plots are not showing up, try adding the `force_notebook=True` parameter to any of your plotting commands. If this solves your issue, please still submit a GitHub issue with details about your environment and I will add it to the list that the visualizer checks against in the future.
+
 ## Development
 
 This package is under active development; if you would like to use the absolute latest version, you can install the [GitHub repository](https://github.com/kitchensjn/tskit_arg_visualizer) directly. Note that this is an unstable version of the package, and features may change or not work as expected.

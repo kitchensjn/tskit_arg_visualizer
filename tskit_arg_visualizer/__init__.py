@@ -243,6 +243,7 @@ class D3ARG:
         return cls(
             nodes=nodes,
             edges=pd.DataFrame(json["data"]["links"]),
+            mutations=pd.DataFrame(json["data"]["mutations"]),
             breakpoints=pd.DataFrame(json["data"]["breakpoints"]),
             num_samples=samples.shape[0],
             sample_order=[sample for _, sample in sorted(zip(samples["fx"], samples["id"]))]
