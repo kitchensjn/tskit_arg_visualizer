@@ -323,7 +323,6 @@ require(["d3"], function(d3) {
                     d3.select("#arg_${divnum} .breakpoints")
                         .selectAll(".included")
                             .filter(function(j) {
-                                console.log(d.bounds);
                                 return d.bounds.split(" ").some(function(region) {
                                     region = region.split("-");
                                     return (parseFloat(region[0]) <= j.start) & (parseFloat(region[1]) >= j.stop)
@@ -425,7 +424,7 @@ require(["d3"], function(d3) {
                 var rect = d3.select("#arg_${divnum}").node().getBoundingClientRect();
                 tip
                     .style("display", "block")
-                    .html("<p style='margin: 0px;'>" + i.label + "</p>")
+                    .html("<p style='margin: 0px;'>" + i.content + "</p>")
                     .style("border", i.fill + " solid 2px")
                     .style("left", (d.pageX - rect.x) + "px")
                     .style("top", (d.pageY - rect.y + 25) + "px")

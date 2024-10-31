@@ -817,7 +817,7 @@ class D3ARG:
             if (edge_type == "line") and (len(mutations.index) > 0):
                 if condense_mutations:
                     for edge, muts in mutations.sort_values(["time"],ascending=False).groupby("edge"):
-                        muts["label"] = muts["ancestral"] + muts["position"].astype(int).astype(str) + muts["derived"] + ":" + muts["time"].astype(int).astype(str)            
+                        muts["content"] = muts["ancestral"] + muts["position"].astype(int).astype(str) + muts["derived"] + ":" + muts["time"].astype(int).astype(str)            
                         if y_axis_labels:
                             x_pos = muts["position_01"] * width + 50
                         else:
@@ -837,7 +837,8 @@ class D3ARG:
                             "x_pos": list(x_pos),
                             "fill": "red",
                             "active": "false",
-                            "label": "<br>".join(muts.label)
+                            "label": "⨉"+str(muts.shape[0]),
+                            "content": "<br>".join(muts.content)
                         })
                 elif ignore_mutation_times:
                     for index, edge in edges.iterrows():
@@ -852,6 +853,7 @@ class D3ARG:
                             else:
                                 x_pos = mut["position_01"] * width
                             label = mut["ancestral"] + str(int(mut["position"])) + mut["derived"]
+                            content = mut["ancestral"] + str(int(mut["position"])) + mut["derived"] + ":" + str(int(mut["time"]))
                             transformed_muts.append({
                                 "edge": edge["id"],
                                 "source": edge["source"],
@@ -866,7 +868,8 @@ class D3ARG:
                                 "derived": mut.derived,
                                 "fill": mut.fill,
                                 "active": "false",
-                                "label": label
+                                "label": label,
+                                "content": content
                             })
                 else:
                     for index, mut in mutations.iterrows():
@@ -887,6 +890,7 @@ class D3ARG:
                         mut["y"] = mut["fy"]
                         mut["position_index"] = mut.site_id
                         mut["label"] = mut["ancestral"] + str(int(mut["position"])) + mut["derived"]
+                        mut["content"] = mut["ancestral"] + str(int(mut["position"])) + mut["derived"] + ":" + str(int(mut["time"]))
                         transformed_muts.append(mut.to_dict())
 
         if tree_highlighting:
@@ -943,6 +947,7 @@ class D3ARG:
                 "variable_width":str(variable_edge_width).lower(),
                 "include_underlink":str(include_underlink).lower()
             },
+            "condense_mutations":str(condense_mutations).lower(),
             "include_mutation_labels":str(include_mutation_labels).lower(),
             "tree_highlighting":str(tree_highlighting).lower(),
             "title":str(title)
@@ -1016,9 +1021,6 @@ class D3ARG:
             if not ignore_mutation_times:
                 print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
                 ignore_mutation_times = True
-            if include_mutation_labels:
-                print("WARNING: `condense_mutations=True` forces `include_mutation_labels=False`.")
-                include_mutation_labels = False
 
         arg = self._prepare_json(
             plot_type="full",
@@ -1212,9 +1214,6 @@ class D3ARG:
             if not ignore_mutation_times:
                 print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
                 ignore_mutation_times = True
-            if include_mutation_labels:
-                print("WARNING: `condense_mutations=True` forces `include_mutation_labels=False`.")
-                include_mutation_labels = False
         
         included_nodes, included_edges, included_mutations, included_breakpoints = self._subset_graph(node=node, degree=degree)
         arg = self._prepare_json(
