@@ -104,14 +104,10 @@ edge_colors = {
     2:"green"
 }
 d3arg.set_edge_colors(colors=edge_colors)
-```
 
-For `d3arg.draw_genome_bar()`, you can also control the fill of the blocks along the chromosome.
-
-```
 block_colors = {
     1:"red",
-    2:"#0000FF
+    2:"#0000FF"
 }
 d3arg.set_breakpoint_fills(colors=block_colors)
 ```
@@ -152,6 +148,8 @@ Below are the two steps for converting the edge and node tables:
 - All parent and child node IDs in the edges table are updated to reflect the new recombination node ID mapping.
 
 The ARG representation used by the D3ARG object hosts some distinct advantages over the original tskit.TreeSequence for the purpose of visualization. As recombination node pairs really refer to the same event, it is clearest visually to merge nodes in the ARG. In most cases, the ARG can be represented by a directed graph rather than a directed multigraph ("diamonds" are the only instance when a multigraph is necessary). This reduces the number of edges that are drawn to the screen without any loss of information as an edge now represents a line of inheritance from a parent node and a child node and includes all of the regions inherited along that connection, even if these regions are disjoint. This opens up the possibility for visualizations and interactions that focus on the relative amount of inheritance between two nodes in the ARG, which would not be as straightforward if the visualization used the tskit.TreeSequence edge representation.
+
+## Troubleshooting
 
 ## Development
 

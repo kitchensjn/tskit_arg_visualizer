@@ -79,7 +79,7 @@ def map_value(n, start1, stop1, start2, stop2):
     """
     return (n - start1) / (stop1 - start1) * (stop2 - start2) + start2
 
-def draw_D3(arg_json):
+def draw_D3(arg_json, force_notebook=False):
     arg_json["source"] = arg_json.copy()
     arg_json["divnum"] = str(random.randint(0,9999999999))
     JS_text = Template("<div id='arg_" + arg_json['divnum'] + "'class='d3arg' style='min-width:" + str(arg_json["width"]+40) + "px; min-height:" + str(arg_json["height"]+80) + "px;'></div><script>$main_text</script>")
@@ -91,7 +91,7 @@ def draw_D3(arg_json):
     css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
     styles = css.read()
     css.close()
-    if running_in_notebook():
+    if force_notebook or running_in_notebook():
         display(HTML("<style>"+styles+"</style>" + html))
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
@@ -964,7 +964,8 @@ class D3ARG:
             show_mutations=False,
             ignore_mutation_times=True,
             include_mutation_labels=False,
-            condense_mutations=False
+            condense_mutations=False,
+            force_notebook=False
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -1007,6 +1008,8 @@ class D3ARG:
             Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
+        force_notebook : bool
+            Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
         """
         
         if condense_mutations:
@@ -1038,7 +1041,7 @@ class D3ARG:
             include_mutation_labels=include_mutation_labels,
             condense_mutations=condense_mutations
         )
-        draw_D3(arg_json=arg)
+        draw_D3(arg_json=arg, force_notebook=force_notebook)
 
     def _subset_graph(self, node, degree):
         """Subsets the graph to focus around a specific node
@@ -1161,7 +1164,8 @@ class D3ARG:
             ignore_mutation_times=True,
             include_mutation_labels=False,
             condense_mutations=False,
-            return_included_nodes=False
+            return_included_nodes=False,
+            force_notebook=False
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -1200,6 +1204,8 @@ class D3ARG:
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
         return_included_nodes : bool
             Returns a list of nodes plotted in the subgraph. (default=False)
+        force_notebook : bool
+            Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
         """
 
         if condense_mutations:
@@ -1228,7 +1234,7 @@ class D3ARG:
             include_mutation_labels=include_mutation_labels,
             condense_mutations=condense_mutations
         )
-        draw_D3(arg_json=arg)
+        draw_D3(arg_json=arg, force_notebook=force_notebook)
         if return_included_nodes:
             return list(included_nodes["id"])
 
@@ -1236,7 +1242,8 @@ class D3ARG:
             self,
             width=500,
             windows=None,
-            include_mutations=False
+            include_mutations=False,
+            force_notebook=False
         ):
         """Draws a genome bar for the D3ARG using D3.js
 
@@ -1249,6 +1256,8 @@ class D3ARG:
             (Default is None, ignored)
         include_mutations : bool
             Whether to add ticks for mutations along the genome bar
+        force_notebook : bool
+            Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
         """
 
         transformed_bps = self.breakpoints.loc[:,:]
@@ -1297,7 +1306,7 @@ class D3ARG:
         css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
         styles = css.read()
         css.close()
-        if running_in_notebook():
+        if force_notebook or running_in_notebook():
             display(HTML("<style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script>" + html))
         else:
             with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:

@@ -21,15 +21,15 @@ Major efficiency improvements necessary for large ARGs
 Added titles to plots
 
 --------------------
-[0.0.3] - XXXX-XX-XX
+[0.0.3] - 2024-11-XX
 --------------------
-
-edge "color" changed to edge "stroke" for consistency across tables
 
 Mutations
 
 Genome bar standalone
 
-Option to download the HTML of the visualizer
-
 Loading JSON fixed (#90)
+
+Tutorial doc
+
+Support for RevealJS

@@ -338,7 +338,7 @@ require(["d3"], function(d3) {
                         })
                         .style("cursor", "default")
                     d3.select("#arg_${divnum} .breakpoints").selectAll(".included")
-                        .style("fill", "#053e4e")
+                        .style("fill", d.fill)
                 });
         }
 
@@ -923,7 +923,7 @@ require(["d3"], function(d3) {
                 .attr("stroke-width", 1)
                 .attr("fill", function(d) {
                     if (eval(d.included)) {
-                        return "#053e4e";
+                        return d.fill;
                     } else {
                         return "gray";
                     }
@@ -950,7 +950,7 @@ require(["d3"], function(d3) {
                 .on('mouseout', function (event, d) {
                     if (eval(d.included)) {
                         d3.select(this)
-                            .style('fill', '#053e4e')
+                            .style('fill', d.fill)
                             .style("cursor", "default");
                         d3.selectAll("#arg_${divnum} .link")
                             .style("stroke", function(d) {
