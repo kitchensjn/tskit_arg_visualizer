@@ -818,7 +818,7 @@ class D3ARG:
             if (edge_type == "line") and (len(mutations.index) > 0):
                 if condense_mutations:
                     for edge, muts in mutations.sort_values(["time"],ascending=False).groupby("edge"):
-                        muts["content"] = muts["ancestral"] + muts["position"].astype(int).astype(str) + muts["derived"] + ":" + muts["time"].astype(int).astype(str)            
+                        muts["content"] = muts["ancestral"] + muts["position"].astype(int).astype(str) + muts["derived"] #+ ":" + muts["time"].astype(int).astype(str)            
                         if y_axis_labels:
                             x_pos = muts["position_01"] * width + 50
                         else:
@@ -854,7 +854,7 @@ class D3ARG:
                             else:
                                 x_pos = mut["position_01"] * width
                             label = mut["ancestral"] + str(int(mut["position"])) + mut["derived"]
-                            content = mut["ancestral"] + str(int(mut["position"])) + mut["derived"] + ":" + str(int(mut["time"]))
+                            content = mut["ancestral"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
                             transformed_muts.append({
                                 "edge": edge["id"],
                                 "source": edge["source"],
@@ -891,7 +891,7 @@ class D3ARG:
                         mut["y"] = mut["fy"]
                         mut["position_index"] = mut.site_id
                         mut["label"] = mut["ancestral"] + str(int(mut["position"])) + mut["derived"]
-                        mut["content"] = mut["ancestral"] + str(int(mut["position"])) + mut["derived"] + ":" + str(int(mut["time"]))
+                        mut["content"] = mut["ancestral"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
                         transformed_muts.append(mut.to_dict())
 
         if tree_highlighting:

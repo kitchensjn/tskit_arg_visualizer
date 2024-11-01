@@ -24,7 +24,7 @@ Added titles to plots
 [0.0.3] - 2024-11-XX
 --------------------
 
-Mutations
+Mutations (for `edge_type=line`)
 
 Genome bar standalone
 
