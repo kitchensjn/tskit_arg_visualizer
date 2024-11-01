@@ -1,0 +1,11 @@
+name: tsviz
+channels:
+  - conda-forge
+dependencies:
+  - python=3.13.0
+  - pip
+  - jupyterlab
+  - pandas
+  - msprime
+  - IPython
+  - tqdm

@@ -19,3 +19,17 @@ Option to ignore unattached nodes when building the D3ARG
 Major efficiency improvements necessary for large ARGs
 
 Added titles to plots
+
+--------------------
+[0.0.3] - 2024-11-XX
+--------------------
+
+Mutations (for `edge_type=line`)
+
+Genome bar standalone
+
+Loading JSON fixed (#90)
+
+Tutorial doc
+
+Support for RevealJS

@@ -1,15 +1,13 @@
-function draw_breakpoints_on_chromosome() {
+function draw_genome_bar() {
 
     var graph = $data;
         
-    var svg = d3.select("#my_dataviz").append("svg")
+    var svg = d3.select("#genome_bar_${divnum}").append("svg")
         .attr("width", $width)
         .attr("height", 100)
         .style("background-color", "white");
-
-    var th_group = svg.append("g").attr("class", "tree_highlighting");
     
-    th_group
+    svg
         .append("g")
         .attr("class", "breakpoints")
         .selectAll("rect")
@@ -32,39 +30,11 @@ function draw_breakpoints_on_chromosome() {
         .attr("height", 40)
         .attr("stroke", "#FFFFFF")
         .attr("stroke-width", 1)
-        .attr("fill", "#053e4e")
-        .on('mouseover', function (event, d) {
-            d3.select(this)
-                .style('fill', '#1eebb1')
-                .style("cursor", "pointer");
-            /*
-            var highlight_links = d3.select("#arg_${divnum} .links")
-                .selectAll("g")
-                    .filter(function(j) {
-                        return j.bounds.split(" ").some(function(region) {
-                            region = region.split("-");
-                            return (parseFloat(region[1]) > d.start) & (parseFloat(region[0]) < d.stop)
-                        });
-                    });
-            highlight_links.raise();
-            highlight_links
-                .select(".link")
-                .style("stroke", "#1eebb1");
-            */
-        })
-        .on('mouseout', function (d, i) {
-            d3.select(this)
-                .style('fill', '#053e4e')
-                .style("cursor", "default");
-            /*
-            d3.selectAll("#arg_${divnum} .link")
-                .style("stroke", function(d) {
-                    return d.color;
-                });   
-            */
+        .attr("fill", function(d) {
+            return d.fill;
         });
 
-    th_group
+    svg
         .append("g")
         .attr("class", "windows")
         .selectAll("rect")
@@ -84,7 +54,7 @@ function draw_breakpoints_on_chromosome() {
         .attr("fill", "none");
 
     
-    var endpoints = th_group.append("g").attr("class", "endpoints");
+    var endpoints = svg.append("g").attr("class", "endpoints");
     
     endpoints
         .append("text")
@@ -107,6 +77,39 @@ function draw_breakpoints_on_chromosome() {
             .text(graph.breakpoints[graph.breakpoints.length-1].stop)
             .attr("x", $width)
             .attr("y", 80);
+
+    var mut_pos = svg
+        .append("g")
+        .attr("class", "mutations")
+        .selectAll("line")
+        .data(graph.mutations)
+        .enter()
+        .append("g");
+
+    mut_pos
+        .append("line")
+        .attr("x1", function(d) { return d.x_pos; })
+        .attr("y1", 20)
+        .attr("x2", function(d) { return d.x_pos; })
+        .attr("y2", 70)
+        .style("stroke-width", 3)
+        .style("stroke", function(d) { return d.fill; })
+        .style("fill", "none");
+    
+    mut_pos
+        .append("text")
+        .attr("text-anchor", "middle")
+        .style("font-size", "10px")
+        .style("font-family", "Arial")
+        .attr("fill", function(d) { return d.fill; })
+        .attr("transform", function(d) {
+            if (d.site_id % 2 == 0) {
+                return "translate(" + String(d.x_pos) + "," + String(20-5) + ")";
+            } else {
+                return "translate(" + String(d.x_pos) + "," + String(70+12) + ")";
+            }
+        })
+        .text(function(d) { return d.site_id; });
 }
 
-draw_breakpoints_on_chromosome()
+draw_genome_bar()
