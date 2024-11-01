@@ -16,7 +16,7 @@ dependencies = [
     "pandas",
     "msprime",
     "IPython",
-    "tqdm
+    "tqdm"
 ]
 classifiers = [
     "Programming Language :: Python",
