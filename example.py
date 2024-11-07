@@ -6,7 +6,7 @@ import tskit_arg_visualizer
 ts_rs = random.randint(0,10000) 
 print(ts_rs)  
 ts = msprime.sim_ancestry(
-    samples=100000,
+    samples=5,
     recombination_rate=1e-8,
     sequence_length=3_000,
     population_size=10_000,
@@ -31,9 +31,12 @@ d3arg = tskit_arg_visualizer.D3ARG.from_ts(ts=ts, progress=True)
 #d3arg.draw(
 #    width=1000,
 #    height=1000,
-#    edge_type="line"
+#    edge_type="ortho",
+#    rotate_tip_labels=True
 #)
 
 d3arg.draw_node(
-    node=300000
+    node=20,
+    degree=5,
+    rotate_tip_labels=True
 )

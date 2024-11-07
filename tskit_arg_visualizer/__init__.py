@@ -704,7 +704,8 @@ class D3ARG:
             show_mutations=False,
             ignore_mutation_times=True,
             include_mutation_labels=False,
-            condense_mutations=True
+            condense_mutations=True,
+            rotate_tip_labels=False
         ):
         """Creates the required JSON for both draw() and draw_node()
 
@@ -757,6 +758,8 @@ class D3ARG:
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
         include_mutation_labels : bool
             Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+        rotate_tip_labels : bool
+            Rotates tip labels by 90 degrees. (default=False)
             
         Returns
         -------
@@ -951,7 +954,8 @@ class D3ARG:
             "condense_mutations":str(condense_mutations).lower(),
             "include_mutation_labels":str(include_mutation_labels).lower(),
             "tree_highlighting":str(tree_highlighting).lower(),
-            "title":str(title)
+            "title":str(title),
+            "rotate_tip_labels":str(rotate_tip_labels).lower()
         }
         return arg
 
@@ -971,7 +975,8 @@ class D3ARG:
             ignore_mutation_times=True,
             include_mutation_labels=False,
             condense_mutations=False,
-            force_notebook=False
+            force_notebook=False,
+            rotate_tip_labels=False
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -1016,6 +1021,8 @@ class D3ARG:
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
         force_notebook : bool
             Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
+        rotate_tip_labels : bool
+            Rotates tip labels by 90 degrees. (default=False)
         """
         
         if condense_mutations:
@@ -1042,7 +1049,8 @@ class D3ARG:
             show_mutations=show_mutations,
             ignore_mutation_times=ignore_mutation_times,
             include_mutation_labels=include_mutation_labels,
-            condense_mutations=condense_mutations
+            condense_mutations=condense_mutations,
+            rotate_tip_labels=rotate_tip_labels
         )
         draw_D3(arg_json=arg, force_notebook=force_notebook)
 
@@ -1168,7 +1176,8 @@ class D3ARG:
             include_mutation_labels=False,
             condense_mutations=False,
             return_included_nodes=False,
-            force_notebook=False
+            force_notebook=False,
+            rotate_tip_labels=False
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -1209,6 +1218,8 @@ class D3ARG:
             Returns a list of nodes plotted in the subgraph. (default=False)
         force_notebook : bool
             Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
+        rotate_tip_labels : bool
+            Rotates tip labels by 90 degrees. (default=False)
         """
 
         if condense_mutations:
@@ -1232,7 +1243,8 @@ class D3ARG:
             show_mutations=show_mutations,
             ignore_mutation_times=ignore_mutation_times,
             include_mutation_labels=include_mutation_labels,
-            condense_mutations=condense_mutations
+            condense_mutations=condense_mutations,
+            rotate_tip_labels=rotate_tip_labels
         )
         draw_D3(arg_json=arg, force_notebook=force_notebook)
         if return_included_nodes:

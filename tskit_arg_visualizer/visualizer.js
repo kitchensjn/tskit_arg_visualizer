@@ -474,11 +474,20 @@ require(["d3"], function(d3) {
             .data(graph.nodes)
             .enter()
             .filter(function(d) { return eval(d.include_label); })
+            .append("g");
+
+        var label_text = label
             .append("text")
                 .attr("class", function(d) {
                     return "label"
                 })
-                .text(function (d) { return d.label; });
+                .text(function (d) { return d.label; })
+                .attr("transform", function(d){
+                    if ((d.parent_of.length == 0) & (eval($rotate_tip_labels))) {
+                        return "translate(-4, 0) rotate(90)"
+                    }
+                    return "rotate(0)"
+                });
 
         function determine_path_type(d) {
             path_type = ""
