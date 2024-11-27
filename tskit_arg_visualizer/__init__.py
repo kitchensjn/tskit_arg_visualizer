@@ -787,9 +787,11 @@ class D3ARG:
         else:
             tick_times = pd.concat([nodes["time"],mutations["plot_time"]], axis=0).sort_values(ignore_index=True)
         
-        sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
         if plot_type == "full":
+            sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
             sample_order = self._calculate_sample_order(order=sample_order)
+        else:
+            sample_positions = []
 
         max_time = max(tick_times)
         h_spacing = 1 / (len(np.unique(tick_times))-1)
@@ -955,9 +957,108 @@ class D3ARG:
             "include_mutation_labels":str(include_mutation_labels).lower(),
             "tree_highlighting":str(tree_highlighting).lower(),
             "title":str(title),
-            "rotate_tip_labels":str(rotate_tip_labels).lower()
+            "rotate_tip_labels":str(rotate_tip_labels).lower(),
+            "plot_type":plot_type
         }
         return arg
+
+
+    def _get_summary_node_subs(self, node, summary_nodes):
+        if type(node) == str:
+            descendants = []
+            sn_id = int(node.replace("S", ""))
+            for sn in summary_nodes[sn_id]:
+                descendants.extend(self.get_summary_descendants(sn, summary_nodes))
+            return descendants
+        return [node]
+
+    def _get_edge_collapse_order(self, zoom):
+        """Generates a sequence of edge collapses up to a specified zoom level
+
+        Parameters
+        ----------
+        zoom : int
+            The level of detail that you want. Larger numbers equate to less detail/more collapsing
+
+        Returns
+        -------
+        summary_nodes : list
+            Ordered list of edge collapses by increasing branch length
+        """
+
+        branch_lengths = self.edges.loc[:,["source", "target"]].join((self.edges["source_time"] - self.edges["target_time"]).rename("edge_length")).sort_values("edge_length")
+        counter = 0
+        largest_summary_node = [i for i in self.nodes["id"]]
+        summary_nodes = []
+        for edge in branch_lengths.itertuples():
+            if counter >= zoom:
+                break
+            if self.nodes.loc[self.nodes["id"] == edge.target]["flag"].iloc[0] != 1:
+                source_i = self.nodes[self.nodes["id"] == edge.source].index[0]
+                target_i = self.nodes[self.nodes["id"] == edge.target].index[0]
+                if largest_summary_node[source_i] != largest_summary_node[target_i]:
+                    summary_nodes.append([largest_summary_node[source_i], largest_summary_node[target_i]])
+                    indices = [i for i, x in enumerate(largest_summary_node) if (x == largest_summary_node[source_i]) or (x == largest_summary_node[target_i])]
+                    # Surely a better way to do this using numpy but the typing within the array can get tricky
+                    for i in indices:
+                        largest_summary_node[i] = f"S{counter}"
+                    counter += 1
+        return summary_nodes
+
+    def _collapse_graph(self, zoom):
+        """Collapses the graph to a specified zoom level
+
+        Parameters
+        ----------
+        zoom : int
+            The level of detail that you want. Larger numbers equate to less detail/more collapsing
+        
+        Returns
+        -------
+        nodes : pd.DataFrame
+            Collapsed nodes table including necessary summary nodes
+        edges : pd.DataFrame
+            Collapsed nodes table with new source/target IDs
+        """
+
+        if zoom > 0:
+            edge_collapses = self._get_edge_collapse_order(zoom_level=zoom)
+            nodes = self.nodes
+            # Previously, the "id" is of type int64, but because we will have IDs for summary nodes
+            # this needs to be changed to object. Could be improved, though may require changes more
+            # broadly to "id" typing. Or having a different ID convention for summary nodes.
+            nodes = nodes.astype(dtype={"id":"object"})
+            edges = self.edges
+            edges = edges.astype(dtype={"source":"object", "target":"object"})
+            for i,ec in enumerate(edge_collapses):
+                nodes_to_drop = nodes.loc[nodes["id"].isin(ec)]
+                edges.loc[edges["source"].isin(ec), "source"] = f"S{i}"
+                edges.loc[edges["target"].isin(ec), "target"] = f"S{i}"
+                # By simply changing the source/target IDs without further checks, it is 
+                # possible to have edges that have the same source and target IDs. The visualizer
+                # does not care, though if there are many edges it could slow down the simulation.
+                nodes = nodes.drop(nodes_to_drop.index)
+                new_node = pd.DataFrame([{
+                    "id":f"S{i}",
+                    "flag":99,
+                    "time":nodes_to_drop["time"].mean(),
+                    "child_of":nodes_to_drop["child_of"].sum(),
+                    "parent_of":nodes_to_drop["parent_of"].sum(),
+                    # These don't work as intended, and instead need to be updated with the summary node IDs
+                    "size":150,
+                    "symbol":"d3.symbolCircle",
+                    "fill":"#FFFFFF",
+                    "stroke":"#053e4e",
+                    "stroke_width":4,
+                    "include_label":"true",
+                    "x_pos_reference":-1,
+                    "label":f"S{i}"
+                }])
+                nodes = pd.concat([nodes, new_node]).reset_index(drop=True)
+                # This is inefficient for large graphs and would need more thought
+            return nodes, edges
+        return self.nodes, self.edges
+
 
     def draw(
             self,
@@ -976,7 +1077,8 @@ class D3ARG:
             include_mutation_labels=False,
             condense_mutations=False,
             force_notebook=False,
-            rotate_tip_labels=False
+            rotate_tip_labels=False,
+            zoom=0
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -1023,6 +1125,8 @@ class D3ARG:
             Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
         rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
+        zoom : int
+            The level of detail that you want. Larger numbers equate to less detail/more collapsing
         """
         
         if condense_mutations:
@@ -1030,12 +1134,14 @@ class D3ARG:
                 print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
                 ignore_mutation_times = True
 
+        included_nodes, included_edges = self._collapse_graph(zoom_level=zoom)        
+
         arg = self._prepare_json(
             plot_type="full",
-            nodes=self.nodes,
-            edges=self.edges,
-            mutations=self.mutations,
-            breakpoints=self.breakpoints,
+            nodes=included_nodes,
+            edges=included_edges,
+            mutations=included_mutations,
+            breakpoints=included_breakpoints,
             width=width,
             height=height,
             tree_highlighting=tree_highlighting,
@@ -1325,3 +1431,5 @@ class D3ARG:
                 url = "file://" + f.name
                 f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script></head><body>" + html + "</body></html>")
             webbrowser.open(url, new=2)
+
+    
