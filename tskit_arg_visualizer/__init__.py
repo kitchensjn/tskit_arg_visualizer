@@ -1022,7 +1022,7 @@ class D3ARG:
         """
 
         if zoom > 0:
-            edge_collapses = self._get_edge_collapse_order(zoom_level=zoom)
+            edge_collapses = self._get_edge_collapse_order(zoom=zoom)
             nodes = self.nodes
             # Previously, the "id" is of type int64, but because we will have IDs for summary nodes
             # this needs to be changed to object. Could be improved, though may require changes more
@@ -1134,14 +1134,14 @@ class D3ARG:
                 print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
                 ignore_mutation_times = True
 
-        included_nodes, included_edges = self._collapse_graph(zoom_level=zoom)        
+        included_nodes, included_edges = self._collapse_graph(zoom=zoom)        
 
         arg = self._prepare_json(
             plot_type="full",
             nodes=included_nodes,
             edges=included_edges,
-            mutations=included_mutations,
-            breakpoints=included_breakpoints,
+            mutations=self.mutations,
+            breakpoints=self.breakpoints,
             width=width,
             height=height,
             tree_highlighting=tree_highlighting,
