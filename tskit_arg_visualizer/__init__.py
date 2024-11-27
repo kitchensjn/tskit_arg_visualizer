@@ -903,16 +903,14 @@ class D3ARG:
             height += 75
 
         if y_axis_scale == "time":
-            y_axis_text = np.array(calculate_evenly_distributed_positions(10, start=0, end=max_time))
-            y_axis_ticks = (1-y_axis_text/max_time) * (height-100) + y_shift
+            y_axis_text = calculate_evenly_distributed_positions(10, start=0, end=max_time)
+            y_axis_ticks = [(1-time/max_time) * (height-100) + y_shift for time in y_axis_text]
         elif y_axis_scale == "log_time":
             digits = int(math.log10(max_time))+1
             if (max_time - 10**(digits-1) < 10**(digits-1)): # this just removes the tick mark if its likely there is overlap
                 digits -= 1
             y_axis_text = [0] + [10**i for i in range(1, digits)] + [max_time]
-            y_axis_ticks = []
-            for time in y_axis_text:
-                y_axis_ticks.append((1-math.log(time+1)/math.log(max_time)) * (height-100) + y_shift)
+            y_axis_ticks = [(1-math.log(time+1)/math.log(max_time)) * (height-100) + y_shift for time in y_axis_text]
 
         y_axis_text = [round(t) for t in set(y_axis_text)]
         
