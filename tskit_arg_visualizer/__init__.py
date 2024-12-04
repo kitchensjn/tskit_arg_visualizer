@@ -432,6 +432,7 @@ class D3ARG:
                 else:
                     plot_time = mut.time
                     fill = "orange"
+                inherited_state = site.ancestral_state if mut.parent == tskit.NULL else ts.mutation(mut.parent).derived_state
                 mutations.append({
                     "edge": new_edge[0],
                     "source": new_edge[1],
@@ -442,10 +443,11 @@ class D3ARG:
                     "position": site.position,
                     "position_01": site.position/ts.sequence_length,
                     "ancestral": site.ancestral_state,
+                    "inherited": inherited_state,
                     "derived": mut.derived_state,
                     "fill": fill
                 })
-        mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","derived","fill"])
+        mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","inherited","derived","fill"])
         return edges_output, mutations_output
    
     def _identify_breakpoints(ts):
@@ -757,7 +759,7 @@ class D3ARG:
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
         include_mutation_labels : bool
-            Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+            Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
             
@@ -823,7 +825,7 @@ class D3ARG:
             if (edge_type == "line") and (len(mutations.index) > 0):
                 if condense_mutations:
                     for edge, muts in mutations.sort_values(["time"],ascending=False).groupby("edge"):
-                        muts["content"] = muts["ancestral"] + muts["position"].astype(int).astype(str) + muts["derived"] #+ ":" + muts["time"].astype(int).astype(str)            
+                        muts["content"] = muts["inherited"] + muts["position"].astype(int).astype(str) + muts["derived"] #+ ":" + muts["time"].astype(int).astype(str)            
                         if y_axis_labels:
                             x_pos = muts["position_01"] * width + 50
                         else:
@@ -858,8 +860,8 @@ class D3ARG:
                                 x_pos = mut["position_01"] * width + 50
                             else:
                                 x_pos = mut["position_01"] * width
-                            label = mut["ancestral"] + str(int(mut["position"])) + mut["derived"]
-                            content = mut["ancestral"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
+                            label = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
+                            content = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
                             transformed_muts.append({
                                 "edge": edge["id"],
                                 "source": edge["source"],
@@ -871,6 +873,7 @@ class D3ARG:
                                 "position": mut.position,
                                 "x_pos": x_pos,
                                 "ancestral": mut.ancestral,
+                                "inherited": mut.inherited,
                                 "derived": mut.derived,
                                 "fill": mut.fill,
                                 "active": "false",
@@ -895,8 +898,8 @@ class D3ARG:
                         mut["fy"] = fy
                         mut["y"] = mut["fy"]
                         mut["position_index"] = mut.site_id
-                        mut["label"] = mut["ancestral"] + str(int(mut["position"])) + mut["derived"]
-                        mut["content"] = mut["ancestral"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
+                        mut["label"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
+                        mut["content"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
                         transformed_muts.append(mut.to_dict())
 
         if tree_highlighting:
@@ -1116,7 +1119,7 @@ class D3ARG:
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
         include_mutation_labels : bool
-            Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+            Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
         force_notebook : bool
@@ -1315,7 +1318,7 @@ class D3ARG:
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
         include_mutation_labels : bool
-            Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+            Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
         return_included_nodes : bool
