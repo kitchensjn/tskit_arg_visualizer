@@ -1166,8 +1166,8 @@ class D3ARG:
 
         Parameters
         ----------
-        node : int
-            Node ID that will be central to the subgraph
+        node : int or list
+            Node ID or list of node IDs that will be central to the subgraph
         degree : int or list(int, int)
             Number of degrees above (older than) and below (younger than) the central
             node to include in the subgraph (default=1). If this is a list, the
@@ -1186,42 +1186,62 @@ class D3ARG:
             The breakpoints to be plotted, potentially subset of original graph
         """
 
-        if node not in self.nodes.id.values:
-            raise ValueError(f"Node '{node}' not in the graph.")
-    
-        nodes = [node]
-        above = [node]
-        below = [node]
-        first = True
+        if type(node) == int:
+            if node not in self.nodes.id.values:
+                raise ValueError(f"Node '{node}' not in the graph.")
+            node = [node]
+        else:
+            for n in node:
+                if n not in self.nodes.id.values:
+                    raise ValueError(f"Node '{n}' not in the graph.")
+
         try:
             older_degree = degree[0]
             younger_degree = degree[-1]
         except TypeError:
             older_degree = younger_degree = degree
-        for _ in range(older_degree):
-            new_above = []
-            for n in above:
-                to_add = self.edges.loc[self.edges["target"] == n, :]
-                if first:
-                    included_edges = to_add
-                    first = False
-                else:
-                    included_edges = pd.concat([included_edges, to_add], ignore_index=True)
-                new_above.extend(list(to_add["source"]))
-            above = new_above
-            nodes.extend(new_above)
-        for _ in range(younger_degree):
-            new_below = []
-            for n in below:
-                to_add = self.edges.loc[self.edges["source"] == n, :]
-                if first:
-                    included_edges = to_add
-                    first = False
-                else:
-                    included_edges = pd.concat([included_edges, to_add], ignore_index=True)
-                new_below.extend(list(to_add["target"]))
-            below = new_below
-            nodes.extend(new_below)
+
+        nodes = node[:]
+        first = True
+
+        # Inefficient loop, doesn't acknowledge that some edges could be shared
+        # between focal nodes. These duplicates are dropped eventually, but
+        # a better function would not add them to start.
+        for focal in node:
+            
+            above = [focal]
+            below = [focal]
+
+            for od in range(older_degree+1):
+                new_above = []
+                for n in above:
+                    to_add = self.edges.loc[self.edges["target"] == n, :]
+                    if od == older_degree:
+                        to_add = to_add.loc[to_add["source"].isin(nodes), :]
+                    if first:
+                        included_edges = to_add
+                        first = False
+                    else:
+                        included_edges = pd.concat([included_edges, to_add], ignore_index=True)
+                    new_above.extend(list(to_add["source"]))
+                above = new_above
+                nodes.extend(new_above)
+
+            for yd in range(younger_degree+1):
+                new_below = []
+                for n in below:
+                    to_add = self.edges.loc[self.edges["source"] == n, :]
+                    if yd == younger_degree:
+                        to_add = to_add.loc[to_add["target"].isin(nodes), :]
+                    if first:
+                        included_edges = to_add
+                        first = False
+                    else:
+                        included_edges = pd.concat([included_edges, to_add], ignore_index=True)
+                    new_below.extend(list(to_add["target"]))
+                below = new_below
+                nodes.extend(new_below)
+
         included_edges = included_edges.drop_duplicates()
         included_nodes = self.nodes.loc[self.nodes["id"].isin(list(set(nodes))), :]
 
@@ -1249,10 +1269,10 @@ class D3ARG:
                     b = b.split("-")
                     start = float(b[0])
                     stop = float(b[1])
-                    # assumes edge lengths are always larger the breakpoints which should be true here
+                    # assumes edge lengths are always larger than breakpoints which should be true here
                     if (start <= bp["start"]) and (stop >= bp["stop"]):
                         bp["included"] = "true"
-                    if start == bp["start"]:
+                    if (start == bp["start"]) or (stop == bp["start"]):
                         important_bp = True
             if (bp["included"] == "false") and (current_region["included"] == "true"):
                 important_bp = True
@@ -1270,7 +1290,7 @@ class D3ARG:
 
     def draw_node(
             self,
-            node,
+            node,   # may want to change this parameter name if it's confusing that it can take multiple nodes.
             width=500,
             height=500,
             degree=1,
@@ -1290,8 +1310,8 @@ class D3ARG:
 
         Parameters
         ----------
-        node : int
-            Node ID that will be central to the subgraph
+        node : int or list
+            Node ID or list of node IDs that will be central to the subgraph
         width : int
             Width of the force layout graph plot in pixels (default=500)
         height : int
@@ -1333,7 +1353,7 @@ class D3ARG:
             if not ignore_mutation_times:
                 print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
                 ignore_mutation_times = True
-        
+
         included_nodes, included_edges, included_mutations, included_breakpoints = self._subset_graph(node=node, degree=degree)
         arg = self._prepare_json(
             plot_type="node",
@@ -1356,6 +1376,10 @@ class D3ARG:
         draw_D3(arg_json=arg, force_notebook=force_notebook)
         if return_included_nodes:
             return list(included_nodes["id"])
+        
+    # Alias of draw_node that users may be more likely to use when
+    # there are multiple focal nodes.
+    draw_nodes = draw_node
 
     def draw_genome_bar(
             self,
