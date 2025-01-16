@@ -96,7 +96,7 @@ def draw_D3(arg_json, force_notebook=False):
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
-            f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js'></script></head><body>" + html + "</body></html>")
+            f.write("<!DOCTYPE html><html><head><meta charset='utf-8'><style>"+styles+"</style><script src='https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js'></script></head><body>" + html + "</body></html>")
         webbrowser.open(url, new=2)
 
 class D3ARG:
@@ -426,9 +426,14 @@ class D3ARG:
         ):
             for mut in site.mutations:
                 new_edge = edge_id_reference[mut.edge]
-                if (mut.time == tskit.UNKNOWN_TIME):
-                    plot_time = (new_edge[3] + new_edge[4]) / 2 + random.uniform(0,1)
+                mut_time = mut.time
+                if (tskit.is_unknown_time(mut_time)):
+                    # Hacky way of placing mutations with unknown times randomly along
+                    # an edge. Essentially, giving them a false time just for plotting.
+                    middle = (new_edge[3] + new_edge[4]) / 2
+                    plot_time = middle + random.uniform(-(new_edge[3]-middle),(new_edge[3]-middle))
                     fill = "gold"
+                    mut_time = -1
                 else:
                     plot_time = mut.time
                     fill = "orange"
@@ -437,7 +442,7 @@ class D3ARG:
                     "edge": new_edge[0],
                     "source": new_edge[1],
                     "target": new_edge[2],
-                    "time": mut.time,
+                    "time": mut_time,
                     "plot_time": plot_time,
                     "site_id": site.id,
                     "position": site.position,
@@ -843,7 +848,7 @@ class D3ARG:
                             "fy": fy,
                             "site_id": edge,
                             "x_pos": list(x_pos),
-                            "fill": "red",
+                            "fill": "pink",
                             "active": "false",
                             "label": "⨉"+str(muts.shape[0]),
                             "content": "<br>".join(muts.content)
