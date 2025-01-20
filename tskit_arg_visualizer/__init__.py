@@ -875,6 +875,7 @@ class D3ARG:
                                 "y": fy,
                                 "fy": fy,
                                 "site_id": mut.site_id,
+                                "position_01": mut.position_01,
                                 "position": mut.position,
                                 "x_pos": x_pos,
                                 "ancestral": mut.ancestral,
