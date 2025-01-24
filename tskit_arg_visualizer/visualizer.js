@@ -501,7 +501,7 @@ require(["d3"], function(d3) {
         var label_text = label
             .append("text")
                 .attr("class", function(d) {
-                    return "label"
+                    return "label n" + d.id
                 })
                 .each(function(d) { multi_line_text.call(this, d.label); })
                 .attr("transform", function(d){
