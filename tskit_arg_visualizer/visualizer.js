@@ -238,6 +238,31 @@ require(["d3"], function(d3) {
             evenly_distribute.append("span").attr("class", "tip desc").text("Space Samples");
         }
 
+        var labelling = dashboard.append("button").attr("class", "dashbutton");
+        labelling.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+            .attr("xmlns", "http://www.w3.org/2000/svg")
+            .attr("viewBox", "0 0 512 512")
+            .append("path")
+            .attr("d", "M0 80L0 229.5c0 17 6.7 33.3 18.7 45.3l176 176c25 25 65.5 25 90.5 0L418.7 317.3c25-25 25-65.5 0-90.5l-176-176c-12-12-28.3-18.7-45.3-18.7L48 32C21.5 32 0 53.5 0 80zm112 32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z");
+        var labelling_methods = labelling.append("span").attr("class", "tip desc");
+        var methods = labelling_methods.append("div").text("Node labels").append("div").attr("class", "labelmethods")
+        
+        methods.append("button").text("default")
+            .on("click", function() {
+                d3.selectAll("#arg_${divnum} .node-labels .label tspan").style("display", "block");
+                d3.selectAll("#arg_${divnum} .node-labels .label tspan:first-of-type").style("display", "none");
+            });
+        methods.append("button").text("#id")
+            .on('click', function(){
+                d3.selectAll("#arg_${divnum} .node-labels .label tspan").style("display", "none");
+                d3.selectAll("#arg_${divnum} .node-labels .label tspan:first-of-type").style("display", "block");
+            });
+        methods.append("button").text("none")
+            .on('click', function(){
+                d3.selectAll("#arg_${divnum} .node-labels .label tspan").style("display", "none");
+            });
+
+
         var svg = d3.select("#arg_${divnum}").append("svg")
             .attr("width", $width)
             .attr("height", $height)
@@ -384,24 +409,19 @@ require(["d3"], function(d3) {
                 .style("fill", "gray")
                 .text(function(d) { return d.not_included_children;});
 
-        function multi_line_text(text) {
-            // Split text onto separate lines by newline characters, if they exist
+        function multi_line_node_text(text, id) {
+            // Split label text onto separate lines by newline characters, if they exist
             var lines = text.split('\n');
-            // If there are multiple lines, use tspan for each line
-            if (lines.length > 1) {
-                d3.select(this).selectAll('tspan')
-                    .data(lines)
-                    .enter()
-                    .append('tspan')
-                    .text(function(line) { return line; })
-                    .attr('x', 0)
-                    .attr('dy', function(d, i) { 
-                        return i > 0 ? '1em' : 0;
-                    });
-            } else {
-                // If single line, use standard text
-                d3.select(this).text(lines[0]);
-            }
+            lines.unshift('#' + id); // Add #ID label as first tspan, which is hidden by default
+            d3.select(this).selectAll('tspan')
+                .data(lines)
+                .enter()
+                .append('tspan')
+                .text(function(line) { return line; })
+                .attr('x', 0)
+                .attr('dy', function(d, i) { 
+                    return i > 1 ? '1em' : 0;
+                });
         }
 
         var node = node_group
@@ -489,9 +509,16 @@ require(["d3"], function(d3) {
                     .text(function(d) { return d.label; });
         }
 
+        function rotate_tip(d) {
+            if ((d.parent_of.length == 0) & (eval($rotate_tip_labels))) {
+                return "translate(-4, 0) rotate(90)"
+            }
+            return null
+        }
+
         var label = svg
             .append("g")
-            .attr("class", "labels")
+            .attr("class", "node-labels")
             .selectAll("text")
             .data(graph.nodes)
             .enter()
@@ -500,16 +527,9 @@ require(["d3"], function(d3) {
 
         var label_text = label
             .append("text")
-                .attr("class", function(d) {
-                    return "label n" + d.id
-                })
-                .each(function(d) { multi_line_text.call(this, d.label); })
-                .attr("transform", function(d){
-                    if ((d.parent_of.length == 0) & (eval($rotate_tip_labels))) {
-                        return "translate(-4, 0) rotate(90)"
-                    }
-                    return "rotate(0)"
-                });
+            .attr("class", function(d) {return "label n" + d.id})
+            .each(function(d) { multi_line_node_text.call(this, d.label, d.id); })
+            .attr("transform", rotate_tip);
 
         function determine_path_type(d) {
             path_type = ""

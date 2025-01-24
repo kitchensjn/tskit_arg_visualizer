@@ -57,7 +57,7 @@
     fill: #1eebb1;
 }
 
-.savemethods {
+.savemethods, .labelmethods {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -65,7 +65,7 @@
     flex-wrap: wrap;
 }
 
-.savemethods button {
+.savemethods button, .labelmethods button {
     background-color: lightgrey;
     color: #053e4e;
     font-size: 12px;
@@ -73,7 +73,7 @@
     border: none;
 }
 
-.savemethods button:hover {
+.savemethods button:hover, .labelmethods button:hover {
     color: #1eebb1;
 }
 
@@ -158,4 +158,10 @@ button {
     color: black;
     text-align: center;
     z-index: 9999;
+}
+
+/* Hide the first line (the ID) by default.
+ * This is switched on by toggling */
+.node-labels .label tspan:first-of-type {
+    display: none
 }
