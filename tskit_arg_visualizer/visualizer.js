@@ -247,19 +247,28 @@ require(["d3"], function(d3) {
         var labelling_methods = labelling.append("span").attr("class", "tip desc");
         var methods = labelling_methods.append("div").text("Node labels").append("div").attr("class", "labelmethods")
         
-        methods.append("button").text("default")
+        methods.append("button").attr("class", "node-labels-default").text("default")
             .on("click", function() {
                 d3.selectAll("#arg_${divnum} .node-labels .label tspan").style("display", "block");
                 d3.selectAll("#arg_${divnum} .node-labels .label tspan:first-of-type").style("display", "none");
+                // Underline the current selection (could use different highlighting method here)
+                d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
+                d3.select(this).style("text-decoration", "underline");
             });
-        methods.append("button").text("#id")
+        methods.append("button").attr("class", "node-labels-id").text("#id")
             .on('click', function(){
                 d3.selectAll("#arg_${divnum} .node-labels .label tspan").style("display", "none");
                 d3.selectAll("#arg_${divnum} .node-labels .label tspan:first-of-type").style("display", "block");
+                // Underline the current selection (could use different highlighting method here)
+                d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
+                d3.select(this).style("text-decoration", "underline");
             });
-        methods.append("button").text("none")
+        methods.append("button").attr("class", "node-labels-none").text("none")
             .on('click', function(){
                 d3.selectAll("#arg_${divnum} .node-labels .label tspan").style("display", "none");
+                // Underline the current selection (could use different highlighting method here)
+                d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
+                d3.select(this).style("text-decoration", "underline");
             });
 
 
