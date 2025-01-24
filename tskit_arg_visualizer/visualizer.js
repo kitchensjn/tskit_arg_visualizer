@@ -535,8 +535,8 @@ require(["d3"], function(d3) {
             .append("g");
 
         var label_text = label
-            .append("text")
             .attr("class", function(d) {return "label n" + d.id})
+            .append("text")
             .each(function(d) { multi_line_node_text.call(this, d.label, d.id); })
             .attr("transform", rotate_tip);
 
