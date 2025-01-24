@@ -384,6 +384,26 @@ require(["d3"], function(d3) {
                 .style("fill", "gray")
                 .text(function(d) { return d.not_included_children;});
 
+        function multi_line_text(text) {
+            // Split text onto separate lines by newline characters, if they exist
+            var lines = text.split('\n');
+            // If there are multiple lines, use tspan for each line
+            if (lines.length > 1) {
+                d3.select(this).selectAll('tspan')
+                    .data(lines)
+                    .enter()
+                    .append('tspan')
+                    .text(function(line) { return line; })
+                    .attr('x', 0)
+                    .attr('dy', function(d, i) { 
+                        return i > 0 ? '1em' : 0;
+                    });
+            } else {
+                // If single line, use standard text
+                d3.select(this).text(lines[0]);
+            }
+        }
+
         var node = node_group
             .append("path")
             .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
@@ -483,7 +503,7 @@ require(["d3"], function(d3) {
                 .attr("class", function(d) {
                     return "label"
                 })
-                .text(function (d) { return d.label; })
+                .each(function(d) { multi_line_text.call(this, d.label); })
                 .attr("transform", function(d){
                     if ((d.parent_of.length == 0) & (eval($rotate_tip_labels))) {
                         return "translate(-4, 0) rotate(90)"
