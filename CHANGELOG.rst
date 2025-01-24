@@ -21,7 +21,7 @@ Major efficiency improvements necessary for large ARGs
 Added titles to plots
 
 --------------------
-[0.0.3] - 2024-11-XX
+[0.0.3] - 2025-01-21
 --------------------
 
 Mutations (for `edge_type=line`)

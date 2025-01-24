@@ -1167,7 +1167,7 @@ class D3ARG:
         )
         draw_D3(arg_json=arg, force_notebook=force_notebook)
 
-    def _subset_graph(self, node, degree):
+    def subset_graph(self, node, degree):
         """Subsets the graph to focus around a specific node
 
         Parameters
@@ -1360,7 +1360,7 @@ class D3ARG:
                 print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
                 ignore_mutation_times = True
 
-        included_nodes, included_edges, included_mutations, included_breakpoints = self._subset_graph(node=node, degree=degree)
+        included_nodes, included_edges, included_mutations, included_breakpoints = self.subset_graph(node=node, degree=degree)
         arg = self._prepare_json(
             plot_type="node",
             nodes=included_nodes,
