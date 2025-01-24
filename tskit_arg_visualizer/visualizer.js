@@ -429,7 +429,7 @@ require(["d3"], function(d3) {
                 .text(function(line) { return line; })
                 .attr('x', 0)
                 .attr('dy', function(d, i) { 
-                    return i > 1 ? '1em' : 0;
+                    return i > 1 ? '1em' : null;
                 });
         }
 
