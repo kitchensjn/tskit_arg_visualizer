@@ -877,20 +877,30 @@ require(["d3"], function(d3) {
                     var positioning = determine_label_positioning(d);
                     var x = d.x;
                     var anchor = "middle";
+                    // Find offsets from CSS
+                    const cstyle = getComputedStyle(this)
+                    const symbolSize = Math.sqrt(d.size);
+                    const cssOffset = cstyle.getPropertyValue('--offset');
+                    // default should depend on the symbol size (which is square pixels) and the font size
+                    const offset = cssOffset ? parseInt(cssOffset) : symbolSize/2 + parseFloat(cstyle.fontSize)/2;
+                    const cssTipoffset = cstyle.getPropertyValue('--tipoffset');
+                    // default of 25 if not set: perhaps should be related to the tip symbol size?
+                    const tipoffset = cssTipoffset ? parseInt(cssTipoffset) : symbolSize/2 + parseFloat(cstyle.fontSize);
                     if (positioning == "l") {
-                        x = d.x - 15;
+                        x = d.x - offset;
                         anchor = "end";
                     } else if (positioning == "r") {
-                        x = d.x + 15;
+                        x = d.x + offset;
                         anchor = "start";
                     }
                     l.attr("text-anchor", anchor);
                     l.attr("transform", function(d) {
-                        var y = d.y - 15;
+                        var y = d.y - offset;
                         if (d.parent_of.length == 0) {
-                            y = d.y + 25;
+                            y = d.y + tipoffset;
                         }
-                        return "translate(" + String(x) + "," + String(y) + ")";
+                        // only bother showing up to 4 d.p.
+                        return "translate(" + parseFloat(x.toFixed(4)) + "," + parseFloat(y.toFixed(4)) + ")";
                     })
                 });
 
