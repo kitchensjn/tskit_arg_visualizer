@@ -1,15 +1,17 @@
-import random
-import math
+import collections
 import itertools
+import math
 import operator
-from string import Template
-import webbrowser
-import tempfile
 import os
+import random
+import tempfile
+import webbrowser
+from string import Template
+
 import msprime
-import tskit
 import numpy as np
 import pandas as pd
+import tskit
 from IPython.display import HTML, display
 from tqdm.auto import tqdm
 
@@ -1292,7 +1294,9 @@ class D3ARG:
         included_breakpoints.append(current_region) # make sure to append the last region
         included_breakpoints = pd.DataFrame(included_breakpoints)
 
-        return included_nodes, included_edges, included_mutations, included_breakpoints
+        return collections.namedtuple('IncludedInfo', ['nodes', 'edges', 'mutations', 'breakpoints'])(
+            included_nodes, included_edges, included_mutations, included_breakpoints
+        )
 
     def draw_node(
             self,
