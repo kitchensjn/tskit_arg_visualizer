@@ -27,7 +27,7 @@
 }
 
 .dashboard .dashbutton .tip {
-    width: 120px;
+    width: 150px;
     font-size: 12px;
     background-color: lightgrey;
     color: #053e4e;
@@ -161,10 +161,4 @@ button {
     color: black;
     text-align: center;
     z-index: 9999;
-}
-
-/* Hide the first line (the ID) by default.
- * This is switched on by toggling */
-.node-labels .label tspan:first-of-type {
-    display: none
 }

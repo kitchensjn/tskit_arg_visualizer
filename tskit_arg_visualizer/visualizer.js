@@ -245,27 +245,38 @@ require(["d3"], function(d3) {
             .append("path")
             .attr("d", "M0 80L0 229.5c0 17 6.7 33.3 18.7 45.3l176 176c25 25 65.5 25 90.5 0L418.7 317.3c25-25 25-65.5 0-90.5l-176-176c-12-12-28.3-18.7-45.3-18.7L48 32C21.5 32 0 53.5 0 80zm112 32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z");
         var labelling_methods = labelling.append("span").attr("class", "tip desc");
-        var methods = labelling_methods.append("div").text("Node labels").append("div").attr("class", "labelmethods")
+        var methods = labelling_methods.append("div").text("Node Labels:").append("div").attr("class", "labelmethods")
         
-        methods.append("button").attr("class", "node-labels-default").text("default")
+        function switch_node_label(selected) {
+            label_text.each(function(d) {
+                d3.select(this).selectAll("*").remove();
+                if (selected == "default") {
+                    multi_line_node_text.call(this, d.label);
+                } else if (selected == "id") {
+                    multi_line_node_text.call(this, "#" + String(d.id));
+                } else {
+                    multi_line_node_text.call(this, "");
+                }
+            })
+        }
+        
+        methods.append("button").attr("class", "node-labels-default").text("DEFAULT")
             .on("click", function() {
-                d3.selectAll("#arg_${divnum} .node-labels .label tspan").style("display", "block");
-                d3.selectAll("#arg_${divnum} .node-labels .label tspan:first-of-type").style("display", "none");
+                switch_node_label("default");
                 // Underline the current selection (could use different highlighting method here)
                 d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
-        methods.append("button").attr("class", "node-labels-id").text("#id")
+        methods.append("button").attr("class", "node-labels-id").text("#ID")
             .on('click', function(){
-                d3.selectAll("#arg_${divnum} .node-labels .label tspan").style("display", "none");
-                d3.selectAll("#arg_${divnum} .node-labels .label tspan:first-of-type").style("display", "block");
+                switch_node_label("id");
                 // Underline the current selection (could use different highlighting method here)
                 d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
-        methods.append("button").attr("class", "node-labels-none").text("none")
+        methods.append("button").attr("class", "node-labels-none").text("NONE")
             .on('click', function(){
-                d3.selectAll("#arg_${divnum} .node-labels .label tspan").style("display", "none");
+                switch_node_label("none");
                 // Underline the current selection (could use different highlighting method here)
                 d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
@@ -418,18 +429,21 @@ require(["d3"], function(d3) {
                 .style("fill", "gray")
                 .text(function(d) { return d.not_included_children;});
 
-        function multi_line_node_text(text, id) {
+        function multi_line_node_text(text) {
             // Split label text onto separate lines by newline characters, if they exist
             var lines = text.split('\n');
-            lines.unshift('#' + id); // Add #ID label as first tspan, which is hidden by default
             d3.select(this).selectAll('tspan')
                 .data(lines)
                 .enter()
                 .append('tspan')
                 .text(function(line) { return line; })
                 .attr('x', 0)
-                .attr('dy', function(d, i) { 
-                    return i > 1 ? '1em' : null;
+                .attr('y', function(d, i) { 
+                    if (lines.length > 1) {
+                        // Positioning multiple lines so bottom line is always in the same position
+                        return String(i - lines.length + 1) + "em"
+                    }
+                    return null
                 });
         }
 
@@ -531,13 +545,15 @@ require(["d3"], function(d3) {
             .selectAll("text")
             .data(graph.nodes)
             .enter()
-            .filter(function(d) { return eval(d.include_label); })
+            //.filter(function(d) { return eval(d.include_label); })
             .append("g");
 
         var label_text = label
             .attr("class", function(d) {return "label n" + d.id})
             .append("text")
-            .each(function(d) { multi_line_node_text.call(this, d.label, d.id); })
+            .each(function(d) {
+                return multi_line_node_text.call(this, d.label);
+            })
             .attr("transform", rotate_tip);
 
         function determine_path_type(d) {
@@ -895,9 +911,16 @@ require(["d3"], function(d3) {
                     }
                     l.attr("text-anchor", anchor);
                     l.attr("transform", function(d) {
+                        // adding slightly more spacing in the y-axis when positioning is middle (c)
                         var y = d.y - offset;
+                        if (positioning == "c") {
+                            y = y - 3;
+                        }
                         if (d.parent_of.length == 0) {
                             y = d.y + tipoffset;
+                            if (positioning == "c") {
+                                y = y + 3;
+                            }
                         }
                         // only bother showing up to 4 d.p.
                         return "translate(" + parseFloat(x.toFixed(4)) + "," + parseFloat(y.toFixed(4)) + ")";
