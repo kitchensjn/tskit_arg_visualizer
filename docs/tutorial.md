@@ -38,18 +38,6 @@ d3arg = tskit_arg_visualizer.D3ARG.from_json(json=arg_json)
 
 ## Plotting
 
-<blockquote>
-**_Plotting In Jupyter Notebooks:_** Sometimes Jupyter does not succeed in loading the require.js header, in which case the visualization may appear blank. If so, you can add the header using the following code in a new cell:
-
-```
-%%javascript
-var script = document.createElement('script');
-script.type = 'text/javascript';
-script.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js';
-document.head.appendChild(script);
-```
-</blockquote>
-
 There are currently three plotting methods: `draw()`, `draw_node()`, and `draw_genome_bar()`.
 
 ### `draw()`
