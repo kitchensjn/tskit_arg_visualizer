@@ -187,7 +187,9 @@ function main_visualizer(d3) {
                 d3.selectAll("#arg_${divnum} .node").classed("fix", function(d) {
                     d.fx = d.x;
                 });
-                var textBlob = new Blob(["${source}".replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"')], {type: "text/plain"});
+                var source = "${source}";
+                source = source.replace(/\n/g, "\\n");
+                var textBlob = new Blob([source.replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"')], {type: "text/plain"});
                 saveAs(textBlob, "tskit_arg_visualizer.json");
             });
         methods.append("button").text("SVG")
@@ -255,6 +257,51 @@ function main_visualizer(d3) {
                 .attr("d", "M504.3 273.6c4.9-4.5 7.7-10.9 7.7-17.6s-2.8-13-7.7-17.6l-112-104c-7-6.5-17.2-8.2-25.9-4.4s-14.4 12.5-14.4 22l0 56-192 0 0-56c0-9.5-5.7-18.2-14.4-22s-18.9-2.1-25.9 4.4l-112 104C2.8 243 0 249.3 0 256s2.8 13 7.7 17.6l112 104c7 6.5 17.2 8.2 25.9 4.4s14.4-12.5 14.4-22l0-56 192 0 0 56c0 9.5 5.7 18.2 14.4 22s18.9 2.1 25.9-4.4l112-104z")
             evenly_distribute.append("span").attr("class", "tip desc").text("Space Samples");
         }
+
+        var labelling = dashboard.append("button").attr("class", "dashbutton");
+        labelling.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+            .attr("xmlns", "http://www.w3.org/2000/svg")
+            .attr("viewBox", "0 0 512 512")
+            .append("path")
+            .attr("d", "M0 80L0 229.5c0 17 6.7 33.3 18.7 45.3l176 176c25 25 65.5 25 90.5 0L418.7 317.3c25-25 25-65.5 0-90.5l-176-176c-12-12-28.3-18.7-45.3-18.7L48 32C21.5 32 0 53.5 0 80zm112 32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z");
+        var labelling_methods = labelling.append("span").attr("class", "tip desc");
+        var methods = labelling_methods.append("div").text("Node Labels:").append("div").attr("class", "labelmethods")
+        
+        function switch_node_label(selected) {
+            label_text.each(function(d) {
+                d3.select(this).selectAll("*").remove();
+                if (selected == "default") {
+                    multi_line_node_text.call(this, d.label);
+                } else if (selected == "id") {
+                    multi_line_node_text.call(this, "#" + String(d.id));
+                } else {
+                    multi_line_node_text.call(this, "");
+                }
+            })
+        }
+        
+        methods.append("button").attr("class", "node-labels-default").text("DEFAULT")
+            .on("click", function() {
+                switch_node_label("default");
+                // Underline the current selection (could use different highlighting method here)
+                d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
+                d3.select(this).style("text-decoration", "underline");
+            });
+        methods.append("button").attr("class", "node-labels-id").text("#ID")
+            .on('click', function(){
+                switch_node_label("id");
+                // Underline the current selection (could use different highlighting method here)
+                d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
+                d3.select(this).style("text-decoration", "underline");
+            });
+        methods.append("button").attr("class", "node-labels-none").text("NONE")
+            .on('click', function(){
+                switch_node_label("none");
+                // Underline the current selection (could use different highlighting method here)
+                d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
+                d3.select(this).style("text-decoration", "underline");
+            });
+
 
         var svg = d3.select("#arg_${divnum}").append("svg")
             .attr("width", $width)
@@ -402,6 +449,29 @@ function main_visualizer(d3) {
                 .style("fill", "gray")
                 .text(function(d) { return d.not_included_children;});
 
+        function multi_line_node_text(text, tip) {
+            // Split label text onto separate lines by newline characters, if they exist
+            var lines = text.split("\n");
+            d3.select(this).selectAll('tspan')
+                .data(lines)
+                .enter()
+                .append('tspan')
+                .text(function(line) { return line; })
+                .attr('x', 0)
+                .attr('y', function(d, i) { 
+                    if (lines.length > 1) {
+                        if (tip) {
+                            // Positioning multiple lines so top line is always in the same position
+                            return String(i) + "em"
+                        } else {
+                            // Positioning multiple lines so bottom line is always in the same position
+                            return String(i - lines.length + 1) + "em"
+                        }
+                    }
+                    return null
+                });
+        }
+
         var node = node_group
             .append("path")
             .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
@@ -487,27 +557,29 @@ function main_visualizer(d3) {
                     .text(function(d) { return d.label; });
         }
 
+        function rotate_tip(d) {
+            if ((d.parent_of.length == 0) & (eval($rotate_tip_labels))) {
+                return "translate(-4, 0) rotate(90)"
+            }
+            return null
+        }
+
         var label = svg
             .append("g")
-            .attr("class", "labels")
+            .attr("class", "node-labels")
             .selectAll("text")
             .data(graph.nodes)
             .enter()
-            .filter(function(d) { return eval(d.include_label); })
+            //.filter(function(d) { return eval(d.include_label); })
             .append("g");
 
         var label_text = label
+            .attr("class", function(d) {return "label n" + d.id})
             .append("text")
-                .attr("class", function(d) {
-                    return "label"
-                })
-                .text(function (d) { return d.label; })
-                .attr("transform", function(d){
-                    if ((d.parent_of.length == 0) & (eval($rotate_tip_labels))) {
-                        return "translate(-4, 0) rotate(90)"
-                    }
-                    return "rotate(0)"
-                });
+            .each(function(d) {
+                return multi_line_node_text.call(this, d.label, (d.parent_of.length == 0));
+            })
+            .attr("transform", rotate_tip);
 
         function determine_path_type(d) {
             path_type = ""
@@ -846,20 +918,37 @@ function main_visualizer(d3) {
                     var positioning = determine_label_positioning(d);
                     var x = d.x;
                     var anchor = "middle";
+                    // Find offsets from CSS
+                    const cstyle = getComputedStyle(this)
+                    const symbolSize = Math.sqrt(d.size);
+                    const cssOffset = cstyle.getPropertyValue('--offset');
+                    // default should depend on the symbol size (which is square pixels) and the font size
+                    const offset = cssOffset ? parseInt(cssOffset) : symbolSize/2 + parseFloat(cstyle.fontSize)/2;
+                    const cssTipoffset = cstyle.getPropertyValue('--tipoffset');
+                    // default of 25 if not set: perhaps should be related to the tip symbol size?
+                    const tipoffset = cssTipoffset ? parseInt(cssTipoffset) : symbolSize/2 + parseFloat(cstyle.fontSize);
                     if (positioning == "l") {
-                        x = d.x - 15;
+                        x = d.x - offset;
                         anchor = "end";
                     } else if (positioning == "r") {
-                        x = d.x + 15;
+                        x = d.x + offset;
                         anchor = "start";
                     }
                     l.attr("text-anchor", anchor);
                     l.attr("transform", function(d) {
-                        var y = d.y - 15;
-                        if (d.parent_of.length == 0) {
-                            y = d.y + 25;
+                        // adding slightly more spacing in the y-axis when positioning is middle (c)
+                        var y = d.y - offset;
+                        if (positioning == "c") {
+                            y = y - 3;
                         }
-                        return "translate(" + String(x) + "," + String(y) + ")";
+                        if (d.parent_of.length == 0) {
+                            y = d.y + tipoffset;
+                            if (positioning == "c") {
+                                y = y + 3;
+                            }
+                        }
+                        // only bother showing up to 4 d.p.
+                        return "translate(" + parseFloat(x.toFixed(4)) + "," + parseFloat(y.toFixed(4)) + ")";
                     })
                 });
 
