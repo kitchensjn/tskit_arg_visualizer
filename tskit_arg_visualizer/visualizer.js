@@ -169,7 +169,9 @@ require(["d3"], function(d3) {
                 d3.selectAll("#arg_${divnum} .node").classed("fix", function(d) {
                     d.fx = d.x;
                 });
-                var textBlob = new Blob(["${source}".replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"')], {type: "text/plain"});
+                var source = "${source}";
+                source = source.replace(/\n/g, "\\n");
+                var textBlob = new Blob([source.replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"')], {type: "text/plain"});
                 saveAs(textBlob, "tskit_arg_visualizer.json");
             });
         methods.append("button").text("SVG")
@@ -431,7 +433,7 @@ require(["d3"], function(d3) {
 
         function multi_line_node_text(text) {
             // Split label text onto separate lines by newline characters, if they exist
-            var lines = text.split('\n');
+            var lines = text.split("\n");
             d3.select(this).selectAll('tspan')
                 .data(lines)
                 .enter()

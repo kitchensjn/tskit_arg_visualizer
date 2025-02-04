@@ -239,14 +239,20 @@ class D3ARG:
             width -= 50
         nodes = pd.DataFrame(json["data"]["nodes"])
         nodes["x_pos_01"] = (nodes["x"] - x_shift) / (width-100)
-        samples = nodes.loc[nodes["flag"]==1,["id", "fx"]]
+        if json["plot_type"] == "full":
+            samples = nodes.loc[nodes["flag"]==1,["id", "fx"]]
+            num_samples = samples.shape[0]
+            sample_order = [sample for _, sample in sorted(zip(samples["fx"], samples["id"]))]
+        else:
+            num_samples = -1
+            sample_order = []
         return cls(
             nodes=nodes,
             edges=pd.DataFrame(json["data"]["links"]),
             mutations=pd.DataFrame(json["data"]["mutations"]),
             breakpoints=pd.DataFrame(json["data"]["breakpoints"]),
-            num_samples=samples.shape[0],
-            sample_order=[sample for _, sample in sorted(zip(samples["fx"], samples["id"]))]
+            num_samples=num_samples,
+            sample_order=sample_order
         )
 
     def _convert_nodes_table(ts, recombination_nodes_to_merge, ignore_unattached_nodes, progress=None):
@@ -296,7 +302,6 @@ class D3ARG:
                 "fill": "#1eebb1",
                 "stroke": "#053e4e",
                 "stroke_width": 4,
-                #"include_label": "true",
                 "x_pos_reference": -1,
             }
             for u, (flags, time) in enumerate(zip(ts.nodes_flags, ts.nodes_time))
@@ -531,9 +536,8 @@ class D3ARG:
         self.nodes["fill"] = "#1eebb1"
         self.nodes["stroke"] = "#053e4e"
         self.nodes["stroke_width"] = 4
-        #self.nodes["include_label"] = "true"
 
-    def set_all_node_styles(self, size=None, symbol=None, fill=None, stroke=None, stroke_width=None):#, include_label=""):
+    def set_all_node_styles(self, size=None, symbol=None, fill=None, stroke=None, stroke_width=None):
         """Sets the styling of all of the nodes at once for a specific option.
 
         If optional parameter not provided, that styling option will be ignored and unchanged.
@@ -550,8 +554,6 @@ class D3ARG:
             Color of the stroke around the node, "#XXXXXX" form
         stroke_width : int
             Pixel width for the stroke around the node
-        include_labels : string
-            "true" or "false" (will need to update this to bool eventually)
         """
 
         if size != None:
@@ -564,8 +566,6 @@ class D3ARG:
             self.nodes["stroke"] = stroke
         if stroke_width != None:
             self.nodes["stroke_width"] = stroke_width
-        #if include_label != "":
-        #    self.nodes["include_label"] = include_label
         
     def set_node_styles(self, styles):
         """Individually control the styling of each node.
@@ -579,7 +579,7 @@ class D3ARG:
 
         for node in styles:
             for key in node.keys():
-                if key in ["size", "symbol", "fill", "stroke", "stroke_width"]:#, "include_label"]:
+                if key in ["size", "symbol", "fill", "stroke", "stroke_width"]:
                     self.nodes.loc[self.nodes["id"]==node["id"], key] = node[key]
         
     def set_edge_colors(self, colors):
@@ -1056,7 +1056,6 @@ class D3ARG:
                     "fill":"#FFFFFF",
                     "stroke":"#053e4e",
                     "stroke_width":4,
-                    #"include_label":"true",
                     "x_pos_reference":-1,
                     "label":f"S{i}"
                 }])
