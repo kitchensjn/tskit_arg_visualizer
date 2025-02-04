@@ -431,7 +431,7 @@ require(["d3"], function(d3) {
                 .style("fill", "gray")
                 .text(function(d) { return d.not_included_children;});
 
-        function multi_line_node_text(text) {
+        function multi_line_node_text(text, tip) {
             // Split label text onto separate lines by newline characters, if they exist
             var lines = text.split("\n");
             d3.select(this).selectAll('tspan')
@@ -442,8 +442,13 @@ require(["d3"], function(d3) {
                 .attr('x', 0)
                 .attr('y', function(d, i) { 
                     if (lines.length > 1) {
-                        // Positioning multiple lines so bottom line is always in the same position
-                        return String(i - lines.length + 1) + "em"
+                        if (tip) {
+                            // Positioning multiple lines so top line is always in the same position
+                            return String(i) + "em"
+                        } else {
+                            // Positioning multiple lines so bottom line is always in the same position
+                            return String(i - lines.length + 1) + "em"
+                        }
                     }
                     return null
                 });
@@ -554,7 +559,7 @@ require(["d3"], function(d3) {
             .attr("class", function(d) {return "label n" + d.id})
             .append("text")
             .each(function(d) {
-                return multi_line_node_text.call(this, d.label);
+                return multi_line_node_text.call(this, d.label, (d.parent_of.length == 0));
             })
             .attr("transform", rotate_tip);
 
