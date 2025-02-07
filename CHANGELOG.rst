@@ -33,3 +33,18 @@ Loading JSON fixed (#90)
 Tutorial doc
 
 Support for RevealJS
+
+
+--------------------
+[0.0.4] - 2025-02-06
+--------------------
+
+Fixes require.js loading so that Jupyter Notebook header is not necessary (#131)
+
+Provide controls for hiding labels within JavaScript (removed controls from Python)
+
+Allow multi-line node labels (#129)
+
+`subset_graph()` now callable, returns a namedtuple (#133)
+
+Customizable stroke for mutations (#135)

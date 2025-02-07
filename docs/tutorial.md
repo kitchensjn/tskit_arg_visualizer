@@ -249,17 +249,16 @@ Node labels can be changed using the `d3arg.set_node_labels()` function. The exa
 ```
 node_styles = [
     {
-        id:0,
-        size:10,
-        symbol:"d3.symbolSquare",
-        fill:"blue",
-        stroke:"purple",
-        stroke_width:5
+        "id":0,
+        "size":10,
+        "symbol":"d3.symbolSquare",
+        "fill":"blue",
+        "stroke":"purple",
+        "stroke_width":5
     },
     {
-        id:1,
-        symbol:"d3.symbolStar"
-        include_label:False
+        "id":1,
+        "symbol":"d3.symbolStar"
     }
 ]
 d3arg.set_node_styles(styles=node_styles)
@@ -278,7 +277,7 @@ block_colors = {
 d3arg.set_breakpoint_fills(colors=block_colors)
 ```
 
-You can set the styles all nodes, edges, or genome bar blocks in your plot to the same styles using `d3arg.set_all_node_styles()`, `d3arg.set_all_edge_colors()`, `d3arg.set_all_breakpoint_fills()`, respectively. For `d3arg.set_all_node_styles()`, the styling options are the same as `d3arg.set_node_styles()`: size, symbol, fill, stroke, stroke_width, and include_label.
+You can set the styles all nodes, edges, or genome bar blocks in your plot to the same styles using `d3arg.set_all_node_styles()`, `d3arg.set_all_edge_colors()`, `d3arg.set_all_breakpoint_fills()`, respectively. For `d3arg.set_all_node_styles()`, the styling options are the same as `d3arg.set_node_styles()`: size, symbol, fill, stroke, and stroke_width.
 
 You can also use `pandas` functions if you want to edit the tables more directly. Say for example, you want to change all of the sample nodes to squares to better differentiate them from non-sample nodes (and match the styling used by `tskit`):
 
