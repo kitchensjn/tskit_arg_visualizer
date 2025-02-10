@@ -271,7 +271,7 @@ function main_visualizer(d3) {
             label_text.each(function(d) {
                 d3.select(this).selectAll("*").remove();
                 if (selected == "default") {
-                    multi_line_node_text.call(this, d.label);
+                    multi_line_node_text.call(this, d.label, (d.parent_of.length == 0));
                 } else if (selected == "id") {
                     multi_line_node_text.call(this, "#" + String(d.id));
                 } else {
