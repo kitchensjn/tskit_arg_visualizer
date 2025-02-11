@@ -680,21 +680,23 @@ class D3ARG:
 
         Returns
         -------
-        order : list
-            Sample nodes in desired order, including those not originally provided
+        order : dict
+            A dictionary mapping sample nodes IDs to the calculated order,
+            (including samples nodes not originally provided)
         """
-
         if order == None:
-            order = []
+            order = {}
+        else:
+            order = {node: i for i, node in enumerate(order)}
         check_samples = self._check_all_nodes_are_samples(nodes=order)
         if not check_samples[0]:
             raise ValueError(f"Node '{check_samples[1]}' not a sample and cannot be included in sample order.")
         for node in self.sample_order:
             found = self.nodes.loc[self.nodes["id"] == int(node)].iloc[0]
-            if found["flag"] == 1 and found["id"] not in order:
-                order.append(found["id"])
+            if (found["flag"] & tskit.NODE_IS_SAMPLE) and found["id"] not in order:
+                order[found["id"]] = len(order)
         return order
-    
+
     def _prepare_json(
             self,
             plot_type,
@@ -798,36 +800,40 @@ class D3ARG:
         else:
             tick_times = pd.concat([nodes["time"],mutations["plot_time"]], axis=0).sort_values(ignore_index=True)
         
-        if plot_type == "full":
-            sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
-            sample_order = self._calculate_sample_order(order=sample_order)
+        sample_positions = []
+        if "x_pos_01" in nodes.columns:  # Assume that all nodes have x_pos_01, or none do
+            nodes["fx"] = nodes["x_pos_01"] * (width-100) + x_shift
+        elif plot_type == "full":
+            sample_positions = calculate_evenly_distributed_positions(self.num_samples, start=x_shift, end=(width-100)+x_shift)
+            order_map = self._calculate_sample_order(order=sample_order)
+            fixed = (nodes.flag & tskit.NODE_IS_SAMPLE) != 0
+            nodes.loc[fixed, "fx"] = np.array(sample_positions)[nodes.loc[fixed, "id"].map(order_map)]
+            nodes.loc[np.logical_not(fixed), "x"] = 0.5 * (width-100) + x_shift
         else:
-            sample_positions = []
-
-        max_time = max(tick_times)
-        h_spacing = 1 / (len(np.unique(tick_times))-1)
-        unique_times = list(np.unique(tick_times)) # Determines the rank (y position) of each time point 
-
-        node_y_pos = {}
-        for index, node in nodes.iterrows():
-            if "x_pos_01" in node:
-                node["fx"] = node["x_pos_01"] * (width-100) + x_shift
-            elif (node["flag"] == 1) and (plot_type == "full"):
-                node["fx"] = sample_positions[sample_order.index(node["id"])]
-            else:
-                node["x"] = 0.5 * (width-100) + x_shift
-            if y_axis_scale == "time":
-                fy = (1-node["time"]/max_time) * (height-100) + y_shift
-            elif y_axis_scale == "log_time":
-                fy = (1-math.log(node["time"]+1)/math.log(max_time)) * (height-100) + y_shift
-            else:
-                fy = (1-unique_times.index(node["time"])*h_spacing) * (height-100) + y_shift
-                y_axis_text.append(node["time"])
-                y_axis_ticks.append(fy)
-            node["fy"] = fy
-            node["y"] = node["fy"]
-            node_y_pos[node["id"]] = node["fy"] 
-            transformed_nodes.append(node.to_dict())
+            # Set all nodes to the middle of the plot
+            nodes["x"] = 0.5 * (width-100) + x_shift
+        max_time, min_time = max(tick_times), min(tick_times)
+        if y_axis_scale == "time":
+            nodes["fy"] = (1-(nodes.time-min_time)/(max_time-min_time)) * (height-100) + y_shift
+        elif y_axis_scale == "log_time":
+            if min_time < 0:
+                raise ValueError("Cannot use log time scale with negative times.")
+            # TODO - account for min_time being > 0
+            nodes["fy"] = (1-np.log(nodes.time+1)/np.log(max_time)) * (height-100) + y_shift
+        else:
+            unique_times = np.unique(tick_times)
+            h_spacing = 1 / (len(unique_times)-1)
+            time_map = dict(zip(unique_times, range(len(unique_times))))
+            nodes["fy"] = (1-nodes.time.map(time_map)*h_spacing) * (height-100) + y_shift
+            y_axis_text = nodes.time.values
+            y_axis_ticks = nodes.fy.tolist()
+        nodes["y"] = nodes.fy
+        node_y_pos = dict(zip(nodes.id, nodes.fy))  # Is this right? We are using "id" here but setting using the index
+        # Check on this? Probably less wasteful to return orient='dict'?
+        transformed_nodes = [
+            {k : v for k, v in row.items() if k not in ("x", "fx") or not math.isnan(v)}
+            for row in nodes.to_dict(orient="records")
+        ]
 
         transformed_muts = []
         if show_mutations:
@@ -895,7 +901,7 @@ class D3ARG:
                 else:
                     for index, mut in mutations.iterrows():
                         if y_axis_scale == "time":
-                            fy = (1-mut["plot_time"]/max_time) * (height-100) + y_shift
+                            fy = (1-(mut["plot_time"]-min_time)/(max_time-min_time)) * (height-100) + y_shift
                         elif y_axis_scale == "log_time":
                             fy = (1-math.log(mut["plot_time"]+1)/math.log(max_time)) * (height-100) + y_shift
                         else:
@@ -918,8 +924,8 @@ class D3ARG:
             height += 75
 
         if y_axis_scale == "time":
-            y_axis_text = calculate_evenly_distributed_positions(10, start=0, end=max_time)
-            y_axis_ticks = [(1-time/max_time) * (height-100) + y_shift for time in y_axis_text]
+            y_axis_text = calculate_evenly_distributed_positions(10, start=min_time, end=max_time)
+            y_axis_ticks = [(1-(time-min_time)/(max_time-min_time)) * (height-100) + y_shift for time in y_axis_text]
         elif y_axis_scale == "log_time":
             digits = int(math.log10(max_time))+1
             if (max_time - 10**(digits-1) < 10**(digits-1)): # this just removes the tick mark if its likely there is overlap
