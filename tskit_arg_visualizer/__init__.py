@@ -935,8 +935,18 @@ class D3ARG:
         else:
             # add the oldest time, if not already included
             y_axis_ticks[y_shift] = time_range+min_time
+
+        if y_axis_scale == "time":
+            best_dp = math.log10(time_range/10)
+            # use integers if the range is large, else enough d.p. to show the range
+            best_dp = None if best_dp > 0 else -math.floor(best_dp)
+        elif y_axis_scale == "log_time":
+            best_dp = None
+        else:
+            best_dp = math.log10(min(np.abs(np.diff(list(y_axis_ticks.values())))))
+            best_dp = None if best_dp > 0 else -math.floor(best_dp)
         y_axis_ticks = {
-            k: round(y_axis_ticks[k])
+            k: round(y_axis_ticks[k], best_dp)
             for k in sorted(y_axis_ticks.keys(), reverse=True)
         }
         
