@@ -114,7 +114,7 @@ show_mutations : bool
 ignore_mutation_times : bool
     Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
 include_mutation_labels : bool
-    Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+    Whether to add the full label (inherited_state + position + derived_state) for each mutation. (default=False)
 condense_mutations : bool
     Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
 force_notebook : bool
