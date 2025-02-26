@@ -510,7 +510,7 @@ function main_visualizer(d3) {
                     .style("cursor", "pointer")
                     .selectAll("rect")
                         .style("stroke", i.fill);
-                d3.select("#arg${divnum}_mut" + i.site_id).style("display", "block");
+                d3.select("#arg_${divnum} .mutations .s" + i.site_id).style("display", "block");
                 var rect = d3.select("#arg_${divnum}").node().getBoundingClientRect();
                 tip
                     .style("display", "block")
@@ -527,7 +527,7 @@ function main_visualizer(d3) {
                         .selectAll("rect")
                             .style("stroke", i.stroke)
                             .style("fill", i.fill);
-                    d3.select("#arg${divnum}_mut" + i.site_id).style("display", "none");
+                    d3.select("#arg_${divnum} .mutations .s" + i.site_id).style("display", "none");
                     tip.style("display", "none");
                 }
             });
@@ -1101,7 +1101,7 @@ function main_visualizer(d3) {
                 .data(graph.mutations)
                 .enter()
                 .append("g")
-                .attr("id", function(d) { return "arg" + String($divnum) + "_mut" + d.site_id; })
+                .attr("class", function(d) { return "s" + d.site_id; })
                 .style("display", "none");
         
             mut_pos
