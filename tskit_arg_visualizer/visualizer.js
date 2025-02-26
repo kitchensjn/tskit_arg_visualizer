@@ -396,15 +396,16 @@ function main_visualizer(d3) {
                                 });
                             })
                             .style('fill', '#1eebb1');
+                    d3.selectAll("#arg_${divnum} .mutations .e" + d.id).style("display", "block");
                 })
-                .on('mouseout', function (d, i) {
+                .on('mouseout', function (event, d) {
                     d3.select(this)
-                        .style('stroke', function(d) {
-                            return d.stroke;
-                        })
-                        .style("cursor", "default")
+                        .style('stroke', d.stroke)
+                        .style("cursor", "default");
                     d3.select("#arg_${divnum} .breakpoints").selectAll(".included")
-                        .style("fill", d.fill)
+                        .style("fill", d.fill);
+                    d3.selectAll("#arg_${divnum} .mutations .e" + d.id).style("display", "none");
+
                 });
         }
 
@@ -1101,7 +1102,7 @@ function main_visualizer(d3) {
                 .data(graph.mutations)
                 .enter()
                 .append("g")
-                .attr("class", function(d) { return "s" + d.site_id; })
+                .attr("class", function(d) {return "s" + d.site_id + " e" + d.edge;})
                 .style("display", "none");
         
             mut_pos
