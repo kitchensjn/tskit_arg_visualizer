@@ -15,6 +15,22 @@ import tskit
 from IPython.display import HTML, display
 from tqdm.auto import tqdm
 
+# See visualiser.js for definitions of ensureRequire() and main_visualizer()
+js_call_string = """
+/* NB: the code below is the core call that fires up the visualizer.
+    Templates in this call can be used to pass in the appropriate data
+*/
+
+ensureRequire()
+    .then(require => {
+        require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
+        require(["d3"], function(d3) {
+            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $include_mutation_labels, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
+        });
+    })
+    .catch(err => console.error('Failed to load require.js:', err));
+"""
+
 
 def running_in_notebook():
     """Checks whether the code is being executed within a Jupyter Notebook.
@@ -126,22 +142,33 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
 def draw_D3(arg_json, force_notebook=False):
     arg_json["source"] = arg_json.copy()
     arg_json["divnum"] = str(random.randint(0,9999999999))
-    JS_text = Template("<div id='arg_" + arg_json['divnum'] + "'class='d3arg' style='min-width:" + str(arg_json["width"]+40) + "px; min-height:" + str(arg_json["height"]+80) + "px;'></div><script>$main_text</script>")
-    visualizerjs = open(os.path.dirname(__file__) + "/visualizer.js", "r")
-    main_text_template = Template(visualizerjs.read())
-    visualizerjs.close()
-    main_text = main_text_template.safe_substitute(arg_json)
-    html = JS_text.safe_substitute({'main_text': main_text})
-    css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
-    styles = css.read()
-    css.close()
+    main_call = Template(js_call_string).safe_substitute(arg_json)
+    html_template = Template(
+        f"<div id='arg_{arg_json['divnum']}' class='d3arg' style='min-width:{arg_json['width']+40}px;min-height:{arg_json['height']+80}px;'>"
+        "</div><script>$main_call</script>"
+    )
+    html = html_template.safe_substitute({'main_call': main_call})
+    
     if force_notebook or running_in_notebook():
-        display(HTML("<style>"+styles+"</style>" + html))
+        with (
+            open(os.path.dirname(__file__) + "/visualizer.css", "r") as css,
+            open(os.path.dirname(__file__) + "/visualizer.js", "r") as js,
+        ):
+            display(HTML(f"<style>{css.read()}</style>"))
+            display(HTML(f"<script>{js.read()}</script>"))
+            display(HTML(html))
     else:
-        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
+        with (
+            tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f,
+            open(os.path.dirname(__file__) + "/visualizer.css", "r") as css,
+            open(os.path.dirname(__file__) + "/visualizer.js", "r") as js,
+        ):
             url = "file://" + f.name
-            f.write("<!DOCTYPE html><html><head><meta charset='utf-8'><style>"+styles+"</style></head><body>" + html + "</body></html>")
-        webbrowser.open(url, new=2)
+            f.write("<!DOCTYPE html><html><head><meta charset='utf-8'>")
+            f.write(f"<style>{css.read()}</style>")
+            f.write(f"<script>{js.read()}</script>")
+            f.write(f"</head><body>{html}</body></html>")
+            webbrowser.open(url, new=2)
 
 class D3ARG:
     """Stores the ARG in a D3.js friendly format ready for plotting
