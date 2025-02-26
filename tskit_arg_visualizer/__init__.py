@@ -108,13 +108,15 @@ def draw_D3(arg_json, force_notebook=False):
     html = html_template.safe_substitute({'main_call': main_call})
     
     if force_notebook or running_in_notebook():
-        with (
-            open(os.path.dirname(__file__) + "/visualizer.css", "r") as css,
-            open(os.path.dirname(__file__) + "/visualizer.js", "r") as js,
-        ):
-            display(HTML(f"<style>{css.read()}</style>"))
-            display(HTML(f"<script>{js.read()}</script>"))
-            display(HTML(html))
+        if D3ARG.css_js_needs_loading:
+            with (
+                open(os.path.dirname(__file__) + "/visualizer.css", "r") as css,
+                open(os.path.dirname(__file__) + "/visualizer.js", "r") as js,
+            ):
+                display(HTML(f"<style>{css.read()}</style>"))
+                display(HTML(f"<script>{js.read()}</script>"))
+            D3ARG.css_js_needs_loading = False  # Styles and static js now loaded in this session
+        display(HTML(html))
     else:
         with (
             tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f,
@@ -175,6 +177,7 @@ class D3ARG:
         Sets the node labels back to default values
 
     """
+    css_js_needs_loading = True  # Will override once styles & static js loaded in notebook
 
     def __init__(self, nodes, edges, mutations, breakpoints, num_samples, sample_order):
         """Initializes a D3ARG object
