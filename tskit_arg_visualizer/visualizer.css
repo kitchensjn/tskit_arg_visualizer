@@ -129,6 +129,14 @@
     font-size: 12px;
 }
 
+.d3arg .label.start {
+    text-anchor: start;
+}
+
+.d3arg .label.stop {
+    text-anchor: end;
+}
+
 .d3arg .hiddenlabel {
     fill: lightgrey;
     font-family: Arial;
