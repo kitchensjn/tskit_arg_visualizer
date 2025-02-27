@@ -162,3 +162,7 @@
     text-align: center;
     z-index: 9999;
 }
+
+.d3arg .sites text {
+    text-anchor: middle;
+}

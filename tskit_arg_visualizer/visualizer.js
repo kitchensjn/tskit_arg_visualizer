@@ -396,7 +396,7 @@ function main_visualizer(d3) {
                                 });
                             })
                             .style('fill', '#1eebb1');
-                    d3.selectAll("#arg_${divnum} .mutations .e" + d.id).style("display", "block");
+                    d3.selectAll("#arg_${divnum} .sites .e" + d.id).style("display", "block");
                 })
                 .on('mouseout', function (event, d) {
                     d3.select(this)
@@ -404,8 +404,7 @@ function main_visualizer(d3) {
                         .style("cursor", "default");
                     d3.select("#arg_${divnum} .breakpoints").selectAll(".included")
                         .style("fill", d.fill);
-                    d3.selectAll("#arg_${divnum} .mutations .e" + d.id).style("display", "none");
-
+                    d3.selectAll("#arg_${divnum} .sites .e" + d.id).style("display", "none");
                 });
         }
 
@@ -511,7 +510,7 @@ function main_visualizer(d3) {
                     .style("cursor", "pointer")
                     .selectAll("rect")
                         .style("stroke", i.fill);
-                d3.select("#arg_${divnum} .mutations .s" + i.site_id).style("display", "block");
+                d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "block");
                 var rect = d3.select("#arg_${divnum}").node().getBoundingClientRect();
                 tip
                     .style("display", "block")
@@ -528,7 +527,7 @@ function main_visualizer(d3) {
                         .selectAll("rect")
                             .style("stroke", i.stroke)
                             .style("fill", i.fill);
-                    d3.select("#arg_${divnum} .mutations .s" + i.site_id).style("display", "none");
+                    d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "none");
                     tip.style("display", "none");
                 }
             });
@@ -1094,39 +1093,53 @@ function main_visualizer(d3) {
                     .attr("x", $width)
                     .attr("y", $height-5);
 
-            var mut_pos = th_group
+            var site_pos = th_group
                 .append("g")
-                .attr("class", "mutations")
+                .attr("class", "sites")
                 .selectAll("line")
                 .data(graph.mutations)
                 .enter()
                 .append("g")
                 .attr("class", function(d) {return "s" + d.site_id + " e" + d.edge;})
                 .style("display", "none");
-        
-            mut_pos
+
+            function createSiteLine(selection) {
+                return selection
+                    .append("line")
+                    .attr("y1", $height-60-5)
+                    .attr("y2", $height-60+40+5)
+                    .style("stroke-width", 3)
+                    .style("fill", "none");
+            }
+                  
+            function createSiteText(selection) {
+                return selection
+                    .append("text")
+                    .attr("y", $height-60-8)
+                    .attr("class", "label")
+            }
+                  
+            site_pos
                 .each(function(d) {
                     if (typeof(d.x_pos) == "object") {
-                        d3.select(this).selectAll("line").data(d.x_pos)
-                            .enter()
-                            .append("line")
-                            .attr("x1", function(x) { return x; })
-                            .attr("y1", $height-60-5)
-                            .attr("x2", function(x) { return x; })
-                            .attr("y2", $height-60+40+5)
-                            .style("stroke-width", 3)
-                            .style("stroke", d.fill)
-                            .style("fill", "none");
+                        /* d.x_pos is an array of x_pos values */
+                        const select = d3.select(this).selectAll("line").data(d.x_pos).enter();
+                        createSiteLine(select)
+                            .attr("x1", x => x)
+                            .attr("x2", x => x)
+                            .style("stroke", d.fill);
+                        createSiteText(select)
+                            .attr("x", x => x)
+                            .text((_, i) => String(d.position[i]));
                     } else {
-                        d3.select(this)
-                            .append("line")
+                        const select = d3.select(this);
+                        createSiteLine(select)
                             .attr("x1", d.x_pos)
-                            .attr("y1", $height-60-5)
                             .attr("x2", d.x_pos)
-                            .attr("y2", $height-60+40+5)
-                            .style("stroke-width", 3)
-                            .style("stroke", d.fill)
-                            .style("fill", "none");
+                            .style("stroke", d.fill);
+                        createSiteText(select)
+                            .attr("x", d.x_pos)
+                            .text(String(d.position));
                     }
                 });
             
