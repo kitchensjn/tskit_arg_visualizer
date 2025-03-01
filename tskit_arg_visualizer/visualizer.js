@@ -327,7 +327,7 @@ function main_visualizer(d3) {
 
             var y_axis_text = y_axis.text;
 
-            var y_axis = d3.axisRight().scale(yscale)
+            var d3_y_axis = d3.axisRight().scale(yscale)
                 .tickValues(result)
                 .tickFormat((d, i) => y_axis_text[i]); 
 
@@ -335,7 +335,7 @@ function main_visualizer(d3) {
                 .append("g")
                 .attr("class", "yaxis")
                 .attr("transform", "translate(5,0)")
-                .call(y_axis);
+                .call(d3_y_axis);
         }
 
         var simulation = d3
@@ -766,7 +766,6 @@ function main_visualizer(d3) {
         }
 
         function ticked() {
-
             node
                 .attr("transform", function(d) {
                     if (eval(y_axis.include_labels)) {
