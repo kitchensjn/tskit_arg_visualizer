@@ -81,6 +81,44 @@ def map_value(n, start1, stop1, start2, stop2):
     """
     return (n - start1) / (stop1 - start1) * (stop2 - start2) + start2
 
+def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spacing, height, y_shift=0):
+    """Calculates a y-axis position corresponding to a time on various axis scales
+
+    Parameters
+    ----------
+    t : int or float
+        Time to convert
+    min_time : int or float
+        Minimum time along axis
+    max_time
+        Maximum time along axis
+    scale : str
+        Axis scale to use (Options: "rank", "time", or "log_time).
+    unique_times : list
+        All of the node and mutation times used for determining rank of time.
+    h_spacing : float
+        Gap between ranks
+    height : int or float
+        Height of the visualizer
+    y_shift : int or float
+        Translation to add to the position. (default=0)
+    """
+
+    if scale == "rank":
+        # Need to add a check that time in in unique_times
+        if t not in unique_times:
+            raise RuntimeError(f"Time {t} not in list of node and mutation times. This is required to calculate rank.")
+        return (1-unique_times.index(t)*h_spacing) * (height-100) + y_shift
+    elif scale == "log_time":
+        if (t < 0) or (min_time < 0) or (max_time < 0):
+            raise ValueError("Cannot use log time scale with negative times.")
+        t = math.log10(t+1)
+        min_time = math.log10(min_time+1)
+        max_time = math.log10(max_time+1)
+    time_range = (max_time - min_time) or 1  # avoid division by zero if e.g. all nodes at t=0
+    return (1-(t-min_time)/time_range) * (height-100) + y_shift
+
+
 def draw_D3(arg_json, force_notebook=False):
     arg_json["source"] = arg_json.copy()
     arg_json["divnum"] = str(random.randint(0,9999999999))
@@ -695,6 +733,7 @@ class D3ARG:
                 order.append(found["id"])
         return order
     
+    
     def _prepare_json(
             self,
             plot_type,
@@ -778,8 +817,7 @@ class D3ARG:
             List of dictionaries (JSON) with all of the data need to plot in D3.js
         """
 
-        y_axis_ticks = []
-        y_axis_text = []
+        y_axis_ticks = {}  # pos -> label
         transformed_nodes = []
         transformed_muts = []
         
@@ -805,7 +843,10 @@ class D3ARG:
             sample_positions = []
 
         max_time = max(tick_times)
-        h_spacing = 1 / (len(np.unique(tick_times))-1)
+        min_time = min(tick_times)
+        time_range = (max_time - min_time) or 1  # avoid division by zero if e.g. all nodes at t=0
+
+        h_spacing = 1 / ((len(np.unique(tick_times))-1) or 1)
         unique_times = list(np.unique(tick_times)) # Determines the rank (y position) of each time point 
 
         node_y_pos = {}
@@ -816,14 +857,18 @@ class D3ARG:
                 node["fx"] = sample_positions[sample_order.index(node["id"])]
             else:
                 node["x"] = 0.5 * (width-100) + x_shift
-            if y_axis_scale == "time":
-                fy = (1-node["time"]/max_time) * (height-100) + y_shift
-            elif y_axis_scale == "log_time":
-                fy = (1-math.log(node["time"]+1)/math.log(max_time)) * (height-100) + y_shift
-            else:
-                fy = (1-unique_times.index(node["time"])*h_spacing) * (height-100) + y_shift
-                y_axis_text.append(node["time"])
-                y_axis_ticks.append(fy)
+            fy = convert_time_to_position(
+                node["time"],
+                min_time,
+                max_time,
+                y_axis_scale,
+                unique_times,
+                h_spacing,
+                height,
+                y_shift
+            )
+            if y_axis_scale == "rank":
+                y_axis_ticks[fy] = node["time"]
             node["fy"] = fy
             node["y"] = node["fy"]
             node_y_pos[node["id"]] = node["fy"] 
@@ -894,15 +939,19 @@ class D3ARG:
                             })
                 else:
                     for index, mut in mutations.iterrows():
-                        if y_axis_scale == "time":
-                            fy = (1-mut["plot_time"]/max_time) * (height-100) + y_shift
-                        elif y_axis_scale == "log_time":
-                            fy = (1-math.log(mut["plot_time"]+1)/math.log(max_time)) * (height-100) + y_shift
-                        else:
-                            fy = (1-unique_times.index(mut["plot_time"])*h_spacing) * (height-100) + y_shift
+                        fy = convert_time_to_position(
+                            mut["plot_time"],
+                            min_time,
+                            max_time,
+                            y_axis_scale,
+                            unique_times,
+                            h_spacing,
+                            height,
+                            y_shift
+                        )
+                        if y_axis_scale == "rank":
                             if mut["plot_time"] in mutations["time"].values:
-                                y_axis_text.append(mut["plot_time"])
-                                y_axis_ticks.append(fy)
+                                y_axis_ticks[fy] = mut["plot_time"]
                         if y_axis_labels:
                             mut["x_pos"] = mut["position_01"] * width + 50
                         else:
@@ -917,17 +966,49 @@ class D3ARG:
         if tree_highlighting:
             height += 75
 
-        if y_axis_scale == "time":
-            y_axis_text = calculate_evenly_distributed_positions(10, start=0, end=max_time)
-            y_axis_ticks = [(1-time/max_time) * (height-100) + y_shift for time in y_axis_text]
-        elif y_axis_scale == "log_time":
-            digits = int(math.log10(max_time))+1
-            if (max_time - 10**(digits-1) < 10**(digits-1)): # this just removes the tick mark if its likely there is overlap
-                digits -= 1
-            y_axis_text = [0] + [10**i for i in range(1, digits)] + [max_time]
-            y_axis_ticks = [(1-math.log(time+1)/math.log(max_time)) * (height-100) + y_shift for time in y_axis_text]
+        if (y_axis_scale == "time") or (y_axis_scale == "log_time"):
+            if y_axis_scale == "time":
+                ticks = calculate_evenly_distributed_positions(10, start=min_time, end=time_range+min_time)
+            elif y_axis_scale == "log_time":
+                start_digit = int(math.log10(min_time+1))
+                if ((min_time+1) + 10**(start_digit+1) > 10**(start_digit+1)): # this just removes the tick mark if its likely there is overlap
+                    start_digit += 1
+                stop_digit = int(math.log10(max_time))+1
+                if (max_time - 10**(stop_digit-1) < 10**(stop_digit-1)): # this just removes the tick mark if its likely there is overlap
+                    stop_digit -= 1
+                ticks = [min_time] + [10**i for i in range(start_digit, stop_digit)] + [max_time]
+            y_axis_ticks = {
+                convert_time_to_position(
+                    t,
+                    min_time,
+                    max_time,
+                    y_axis_scale,
+                    unique_times,
+                    h_spacing,
+                    height,
+                    y_shift
+                ): t
+                for t in ticks
+            }
+        else:
+            # add the oldest time, if not already included
+            y_axis_ticks[y_shift] = time_range+min_time
 
-        y_axis_text = [round(t) for t in set(y_axis_text)]
+        if y_axis_scale == "time":
+            best_dp = math.log10(time_range/10)
+            # use integers if the range is large, else enough d.p. to show the range
+            best_dp = None if best_dp > 0 else -math.floor(best_dp)
+        elif y_axis_scale == "log_time":
+            best_dp = None
+        else:
+            # This checks the minimum gap between tick marks and sets decimal point based on that
+            best_dp = math.log10(min(np.abs(np.diff(list(y_axis_ticks.values())))))
+            best_dp = None if best_dp > 0 else -math.floor(best_dp)
+        
+        y_axis_ticks = {
+            k: round(y_axis_ticks[k], best_dp)
+            for k in sorted(y_axis_ticks.keys(), reverse=True)
+        }
         
         transformed_bps = breakpoints.loc[:,:]
         if y_axis_labels:
@@ -956,9 +1037,9 @@ class D3ARG:
             "height":height,
             "y_axis":{
                 "include_labels":str(y_axis_labels).lower(),
-                "ticks":sorted(list(set(y_axis_ticks)), reverse=True),
-                "text":sorted(list(y_axis_text)),
-                "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
+                "ticks":list(y_axis_ticks.keys()),
+                "text":list(y_axis_ticks.values()),
+                "max_min":[max(y_axis_ticks.keys()),min(y_axis_ticks.keys())],
                 "scale":y_axis_scale,
             },
             "edges":{
