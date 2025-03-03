@@ -15,22 +15,75 @@ import tskit
 from IPython.display import HTML, display
 from tqdm.auto import tqdm
 
+def get_css_and_js():
+    with (
+        open(os.path.dirname(__file__) + "/visualizer.css", "r") as css,
+        open(os.path.dirname(__file__) + "/visualizer.js", "r") as js,
+    ):
+        return {"css": css.read(), "js": js.read()}
+
 # See visualiser.js for definitions of ensureRequire() and main_visualizer()
-js_call_string = """
-/* NB: the code below is the core call that fires up the visualizer.
-    Templates in this call can be used to pass in the appropriate data
-*/
+# NB: the code below is the core call that fires up the visualizer.
+# Templates in this call can be used to pass in the appropriate data
+def viz_html(arg_json=None, css_and_js=None):
+    html = ""
+    if arg_json is not None:
+        html += "<div id='arg_{n}' class='d3arg' style='min-width:{w}px;min-height:{h}px;'></div>".format(
+            n=arg_json['divnum'],
+            w=arg_json['width']+40,
+            h=arg_json['height']+80,
+        )
+    html += "<script>ensureRequire()"
+    if css_and_js is not None:
+        html += """
+        .then(
+          require => {
+            // Add CSS
+            const style = document.createElement('style');
+            style.textContent = String.raw`%(css)s`;
+            document.head.appendChild(style);
+            // Add additional JavaScript
+            return new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.textContent = String.raw`%(js)s`;
+              script.onload = () => resolve(require);
+              script.onerror = reject;
+              document.head.appendChild(script);
+              // If the script is inline, we need to trigger onload manually
+              setTimeout(() => resolve(require), 0);
+            });
+          })""" % css_and_js
+    # Pass in the template variables from arg_json to the javascript functions below
+    if arg_json is not None:
+        html += Template("""
+        .then(
+          require => {
+            require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
+            require(["d3"], function(d3) {
+              main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $include_mutation_labels, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
+            });
+          })""").safe_substitute(arg_json)
+    html += ".catch(err => console.error('Failed to load require.js:', err));</script>"
+    return html
 
-ensureRequire()
-    .then(require => {
-        require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
-        require(["d3"], function(d3) {
-            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $include_mutation_labels, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
-        });
-    })
-    .catch(err => console.error('Failed to load require.js:', err));
-"""
 
+def call_d3arg_javascript(arg_json, whole_page=True, inject_header=False):
+    """
+    Returns the JavaScript code to load the D3ARG visualizer.
+    If include_header is True, the code will add javascript to
+    insert the header css and js required for the visualizer.
+    """ 
+    if inject_header:
+        html = viz_html(arg_json, get_css_and_js())
+    else:
+        if whole_page:
+            html = "<!DOCTYPE html><html>"
+            html += "<head><style>%(css)s</style><script>%(js)s</script></head>" % get_css_and_js()
+            html += f"<body>{viz_html(arg_json)}</body>"
+            html += "</html>"
+        else:
+            html = viz_html(arg_json)
+    return html
 
 def running_in_notebook():
     """Checks whether the code is being executed within a Jupyter Notebook.
@@ -139,36 +192,23 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
     return (1-(t-min_time)/time_range) * (height-100) + y_shift
 
 
-def draw_D3(arg_json, force_notebook=False):
+def draw_D3(arg_json):
     arg_json["source"] = arg_json.copy()
     arg_json["divnum"] = str(random.randint(0,9999999999))
-    main_call = Template(js_call_string).safe_substitute(arg_json)
-    html_template = Template(
-        f"<div id='arg_{arg_json['divnum']}' class='d3arg' style='min-width:{arg_json['width']+40}px;min-height:{arg_json['height']+80}px;'>"
-        "</div><script>$main_call</script>"
-    )
-    html = html_template.safe_substitute({'main_call': main_call})
     
-    if force_notebook or running_in_notebook():
-        with (
-            open(os.path.dirname(__file__) + "/visualizer.css", "r") as css,
-            open(os.path.dirname(__file__) + "/visualizer.js", "r") as js,
-        ):
-            display(HTML(f"<style>{css.read()}</style>"))
-            display(HTML(f"<script>{js.read()}</script>"))
-            display(HTML(html))
+    if D3ARG.force_notebook or running_in_notebook():
+        display(HTML(call_d3arg_javascript(
+            arg_json,
+            whole_page=False,
+            inject_header=not D3ARG.css_and_js_included,
+        )))
+        D3ARG.css_and_js_included = True  # only inject the header once
     else:
-        with (
-            tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f,
-            open(os.path.dirname(__file__) + "/visualizer.css", "r") as css,
-            open(os.path.dirname(__file__) + "/visualizer.js", "r") as js,
-        ):
+        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
-            f.write("<!DOCTYPE html><html><head><meta charset='utf-8'>")
-            f.write(f"<style>{css.read()}</style>")
-            f.write(f"<script>{js.read()}</script>")
-            f.write(f"</head><body>{html}</body></html>")
+            f.write(call_d3arg_javascript(arg_json, whole_page=True))
             webbrowser.open(url, new=2)
+
 
 class D3ARG:
     """Stores the ARG in a D3.js friendly format ready for plotting
@@ -217,6 +257,8 @@ class D3ARG:
         Sets the node labels back to default values
 
     """
+    force_notebook = False  # can be overridden to force display in notebook
+    css_and_js_included = False  # 
 
     def __init__(self, nodes, edges, mutations, breakpoints, num_samples, sample_order, default_node_style):
         """Initializes a D3ARG object
@@ -1263,8 +1305,6 @@ class D3ARG:
             Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
-        force_notebook : bool
-            Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
         rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
         zoom : int
@@ -1300,7 +1340,7 @@ class D3ARG:
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels
         )
-        draw_D3(arg_json=arg, force_notebook=force_notebook)
+        draw_D3(arg_json=arg)
 
     def subset_graph(self, node, degree):
         """Subsets the graph to focus around a specific node
@@ -1446,7 +1486,6 @@ class D3ARG:
             include_mutation_labels=False,
             condense_mutations=False,
             return_included_nodes=False,
-            force_notebook=False,
             rotate_tip_labels=False
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
@@ -1488,8 +1527,6 @@ class D3ARG:
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
         return_included_nodes : bool
             Returns a list of nodes plotted in the subgraph. (default=False)
-        force_notebook : bool
-            Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
         rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
         """
@@ -1518,7 +1555,7 @@ class D3ARG:
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels
         )
-        draw_D3(arg_json=arg, force_notebook=force_notebook)
+        draw_D3(arg_json=arg)
         if return_included_nodes:
             return list(included_nodes["id"])
         
@@ -1544,8 +1581,6 @@ class D3ARG:
             (Default is None, ignored)
         include_mutations : bool
             Whether to add ticks for mutations along the genome bar
-        force_notebook : bool
-            Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
         """
 
         transformed_bps = self.breakpoints.loc[:,:]
@@ -1594,8 +1629,8 @@ class D3ARG:
         css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
         styles = css.read()
         css.close()
-        if force_notebook or running_in_notebook():
-            display(HTML("<style>"+styles+"</style>" + html))
+        if D3ARG.force_notebook or running_in_notebook():
+            display(HTML("<script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script></script>" + html))
         else:
             with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
                 url = "file://" + f.name
@@ -1603,3 +1638,13 @@ class D3ARG:
             webbrowser.open(url, new=2)
 
     
+def setup_notebook():
+    """
+    Sets up the styling and javascript code used to display the D3ARG visualizations.
+    This is not normally needed, as but can be used to force display in a notebook
+    if the visualizations are not displaying correctly.
+    """
+    D3ARG.force_notebook = True
+    # Output a script to inject the CSS and JS into the head of the notebook document
+    display(HTML(viz_html(css_and_js=get_css_and_js())))
+    D3ARG.css_and_js_included = True

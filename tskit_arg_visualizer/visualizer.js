@@ -1,11 +1,13 @@
-/* See __init__.py for how to call the main_visualizer after ensureRequire(). */
+/* See __init__.py for how to call the main_visualizer after ensureRequire(). 
+ * NB: you must avoid using backtinks in this file, as when used in a notebook
+* it can get templated into a javascript call then injected into the head of a document
+*/
 
 function ensureRequire() {
     // Needed e.g. in Jupyter notebooks: if require is already available, return resolved promise
     if (typeof require !== 'undefined') {
         return Promise.resolve(require);
     }
-
     // Otherwise, dynamically load require.js
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -35,10 +37,10 @@ function main_visualizer(
 
     function check_styles_loaded() {
         const bodyStyles = window.getComputedStyle(document.body);
-        if bodyStyles.getPropertyValue('--TskitArgvizHighlightCol') {
+        if (bodyStyles.getPropertyValue('--TskitArgvizHighlightCol')) {
             /* stylesheet already loaded, nothing to do */
         } else {
-            alert("Styles not loaded: if running in a notebook, please call `tskit_arg_visualizer.setup()")
+            alert("Styles not loaded: if running in a notebook, please call 'tskit_arg_visualizer.setup()'")
         }
     }
 
@@ -67,7 +69,7 @@ function main_visualizer(
         return xhr.status >= 200 && xhr.status <= 299
     }
     
-    // `a.click()` doesn't work for all browsers (#465)
+    // 'a.click()' doesn't work for all browsers (#465)
     function click (node) {
         try {
             node.dispatchEvent(new MouseEvent('click'))
