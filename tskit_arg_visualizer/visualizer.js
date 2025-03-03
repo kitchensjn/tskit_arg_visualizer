@@ -1,11 +1,13 @@
-/* See __init__.py for how to call the main_visualizer after ensureRequire(). */
+/* See __init__.py for how to call the main_visualizer after ensureRequire(). 
+ * NB: you must avoid using backtinks in this file, as when used in a notebook
+* it can get templated into a javascript call then injected into the head of a document
+*/
 
 function ensureRequire() {
     // Needed e.g. in Jupyter notebooks: if require is already available, return resolved promise
     if (typeof require !== 'undefined') {
         return Promise.resolve(require);
     }
-
     // Otherwise, dynamically load require.js
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -35,10 +37,10 @@ function main_visualizer(
 
     function check_styles_loaded() {
         const bodyStyles = window.getComputedStyle(document.body);
-        if bodyStyles.getPropertyValue('--TskitArgvizHighlightCol') {
+        if (bodyStyles.getPropertyValue('--TskitArgvizHighlightCol')) {
             /* stylesheet already loaded, nothing to do */
         } else {
-            alert("Styles not loaded: if running in a notebook, please call `tskit_arg_visualizer.setup()")
+            alert("Styles not loaded: if running in a notebook, please call 'tskit_arg_visualizer.setup()'")
         }
     }
 
@@ -67,7 +69,7 @@ function main_visualizer(
         return xhr.status >= 200 && xhr.status <= 299
     }
     
-    // `a.click()` doesn't work for all browsers (#465)
+    // 'a.click()' doesn't work for all browsers (#465)
     function click (node) {
         try {
             node.dispatchEvent(new MouseEvent('click'))
@@ -393,16 +395,16 @@ function main_visualizer(
                 });
         }
 
-        if ($tree_highlighting) {
-            d3.selectAll("#arg_${divnum} .link")
+        if (tree_highlighting) {
+            d3.selectAll(div_selector + " .link")
                 .on('mouseover', function (event, d) {
                     d3.select(this)
                         .style('stroke', '#1eebb1')
                         .style("cursor", "pointer");
-                    d3.selectAll("#arg_${divnum} .sites .e" + d.id).style("display", "block");
-                    d3.selectAll("#arg_${divnum} .endpoints")
+                    d3.selectAll(div_selector + " .sites .e" + d.id).style("display", "block");
+                    d3.selectAll(div_selector + " .endpoints")
                         .style('display', 'none'); /* hide other labels to avoid clashes */
-                    const bars = d3.select("#arg_${divnum} .breakpoints").selectAll(".included");
+                    const bars = d3.select(div_selector + " .breakpoints").selectAll(".included");
                     bars /* colour in all bars covered by these bounds */
                         .filter(function(j) {
                             return d.bounds.split(" ").some(function(region) {
@@ -433,12 +435,12 @@ function main_visualizer(
                     d3.select(this)
                         .style('stroke', d.stroke)
                         .style("cursor", "default");
-                    const bars = d3.select("#arg_${divnum} .breakpoints").selectAll(".included");
+                    const bars = d3.select(div_selector + " .breakpoints").selectAll(".included");
                     bars.selectAll("rect").style("fill", d.fill);
                     bars.selectAll("text").style("display", "none");
-                    d3.selectAll("#arg_${divnum} .endpoints")
+                    d3.selectAll(div_selector + " .endpoints")
                         .style('display', 'block');
-                    d3.selectAll("#arg_${divnum} .sites .e" + d.id).style("display", "none");
+                    d3.selectAll(div_selector + " .sites .e" + d.id).style("display", "none");
                 });
         }
 
@@ -544,8 +546,8 @@ function main_visualizer(
                     .style("cursor", "pointer")
                     .selectAll("rect")
                         .style("stroke", i.fill);
-                d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "block");
-                var rect = d3.select("#arg_${divnum}").node().getBoundingClientRect();
+                d3.select(div_selector + " .sites .s" + i.site_id).style("display", "block");
+                var rect = d3.select(div_selector).node().getBoundingClientRect();
                 tip
                     .style("display", "block")
                     .html("<p style='margin: 0px;'>" + i.content + "</p>")
@@ -561,7 +563,7 @@ function main_visualizer(
                         .selectAll("rect")
                             .style("stroke", i.stroke)
                             .style("fill", i.fill);
-                    d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "none");
+                    d3.select(div_selector + " .sites .s" + i.site_id).style("display", "none");
                     tip.style("display", "none");
                 }
             });
@@ -1058,7 +1060,7 @@ function main_visualizer(
             breakpoint_regions
                 .append("rect")
                 .attr("x", d => d.x_pos)
-                .attr("y", $height-60)
+                .attr("y", height-60)
                 .attr("width", d => d.width)
                 .attr("height", 40)
                 .attr("stroke", "#FFFFFF")
@@ -1068,7 +1070,7 @@ function main_visualizer(
             breakpoint_regions
                 .append("text")
                 .attr("x", d => d.x_pos)
-                .attr("y", $height-5)
+                .attr("y", height-5)
                 .attr("class", "label start")
                 .style("display", "none")
                 .text(d => String(d.start));
@@ -1076,7 +1078,7 @@ function main_visualizer(
             breakpoint_regions
                 .append("text")
                 .attr("x", d => d.x_pos + d.width)
-                .attr("y", $height-5)
+                .attr("y", height-5)
                 .attr("class", "label stop")
                 .style("display", "none")
                 .text(d => String(d.stop));
@@ -1089,9 +1091,9 @@ function main_visualizer(
                             .style("cursor", "pointer");
                         d3.select(this).selectAll("text")
                             .style('display', 'block');
-                        d3.selectAll("#arg_${divnum} .endpoints")
+                        d3.selectAll(div_selector + " .endpoints")
                             .style('display', 'none'); /* hide other labels to avoid clashes */
-                        var highlight_links = d3.select("#arg_${divnum} .links")
+                        var highlight_links = d3.select(div_selector + " .links")
                             .selectAll("g")
                                 .filter(function(j) {
                                     return j.bounds.split(" ").some(function(region) {
@@ -1112,9 +1114,9 @@ function main_visualizer(
                             .style("cursor", "default");
                         d3.select(this).selectAll("text")
                             .style('display', 'none');
-                        d3.selectAll("#arg_${divnum} .endpoints")
+                        d3.selectAll(div_selector + " .endpoints")
                             .style('display', 'block');
-                        d3.selectAll("#arg_${divnum} .link")
+                        d3.selectAll(div_selector + " .link")
                             .style("stroke", function(d) {
                                 return d.stroke;
                             });
@@ -1152,8 +1154,8 @@ function main_visualizer(
             function createSiteLine(selection) {
                 return selection
                     .append("line")
-                    .attr("y1", $height-60-5)
-                    .attr("y2", $height-60+40+5)
+                    .attr("y1", height-60-5)
+                    .attr("y2", height-60+40+5)
                     .style("stroke-width", 3)
                     .style("fill", "none");
             }
@@ -1161,7 +1163,7 @@ function main_visualizer(
             function createSiteText(selection) {
                 return selection
                     .append("text")
-                    .attr("y", $height-60-8)
+                    .attr("y", height-60-8)
                     .attr("class", "label")
             }
                   
