@@ -32,8 +32,18 @@ function main_visualizer(
     plot_type,
     source
 ) {
+
+    function check_styles_loaded() {
+        const bodyStyles = window.getComputedStyle(document.body);
+        if bodyStyles.getPropertyValue('--TskitArgvizHighlightCol') {
+            /* stylesheet already loaded, nothing to do */
+        } else {
+            alert("Styles not loaded: if running in a notebook, please call `tskit_arg_visualizer.setup()")
+        }
+    }
+
+
     /*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
-    
     function download (url, name, opts) {
         var xhr = new XMLHttpRequest()
         xhr.open('GET', url)
@@ -1254,6 +1264,7 @@ function main_visualizer(
         }
     }
 
+    check_styles_loaded()
     draw_force_diagram()
 }
 
