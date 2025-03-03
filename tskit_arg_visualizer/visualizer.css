@@ -1,3 +1,7 @@
+:root {
+    --TskitArgvizHighlightCol: #1eebb1;
+}
+
 .d3arg {
     position: relative;
     display: flex;
