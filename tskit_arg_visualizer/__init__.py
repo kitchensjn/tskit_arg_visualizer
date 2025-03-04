@@ -68,11 +68,11 @@ def viz_html(arg_json=None, css_and_js=None):
 
 
 def call_d3arg_javascript(arg_json, whole_page=True, inject_header=False):
-    """
-    Returns the JavaScript code to load the D3ARG visualizer.
-    If include_header is True, the code will add javascript to
-    insert the header css and js required for the visualizer.
-    """ 
+    # Internal code to create the JavaScript code to load the D3ARG visualizer.
+    # If whole_page is True, the code will return a full html document with the
+    # visualizer embedded in it. If inject_header is True, the code will add
+    # javascript to inject the static css and js required for the visualizer
+    # into the html document header (and whole_page is ignored).
     if inject_header:
         html = viz_html(arg_json, get_css_and_js())
     else:
