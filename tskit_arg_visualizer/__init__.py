@@ -42,15 +42,19 @@ def running_in_notebook():
     except NameError:
         return False      # Probably standard Python interpreter
     
-def calculate_evenly_distributed_positions(num_elements, start=0, end=1):
+def calculate_evenly_distributed_positions(num_elements, start=0, end=1, round_to=0):
     """Returns a list of `num_elements` evenly distributed positions on a given `length`
 
     Parameters
     ----------
     num_elements : int
         Number of positions to be returned
-    length : int or float
-        Range of positions
+    start : int
+        Start of position range
+    end : int
+        End of position range
+    round_to : int
+        The number of decimals to round to
 
     Returns
     -------
@@ -59,9 +63,9 @@ def calculate_evenly_distributed_positions(num_elements, start=0, end=1):
 
     if num_elements > 1:
         w_spacing = (end-start) / (num_elements - 1)
-        return [i * w_spacing + start for i in range(num_elements)]
+        return [round(i * w_spacing + start, round_to) for i in range(num_elements)]
     else:
-        return [0.5 * (end-start) + start]
+        return [round(0.5 * (end-start) + start, round_to)]
     
 def map_value(n, start1, stop1, start2, stop2):
     """Map a value to a new range
@@ -780,8 +784,10 @@ class D3ARG:
         tree_highlighting : bool
             Include the interactive chromosome at the bottom of the figure to
             to let users highlight trees in the ARG (default=True)
-        y_axis_labels : bool
-            Includes labelled y-axis on the left of the figure (default=True)
+        y_axis_labels : bool, list, or dict
+            Whether to include the y-axis on the left of the figure. By default, tick marks will be automatically
+            chosen. You can specify a list of tick marks to use instead. You can also set custom text for tick marks
+            using a dictionary where key is the time and value is the text. (default=True)
         y_axis_scale : string
             Scale used for the positioning nodes along the y-axis. Options:
                 "rank" (default) - equal vertical spacing between nodes
@@ -817,48 +823,57 @@ class D3ARG:
             List of dictionaries (JSON) with all of the data need to plot in D3.js
         """
 
-        y_axis_ticks = {}  # pos -> label
-        transformed_nodes = []
-        transformed_muts = []
-        
-        x_shift = 50
-        if y_axis_labels:
-            x_shift = 100
-
         y_shift = 50
         if title:
             y_shift = 100
-        
+
         if not show_mutations:
             tick_times = nodes["time"]
         elif ignore_mutation_times:
             tick_times = nodes["time"]
         else:
-            tick_times = pd.concat([nodes["time"],mutations["plot_time"]], axis=0).sort_values(ignore_index=True)
-        
-        if plot_type == "full":
-            sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=x_shift, end=(width-100)+x_shift)
-            sample_order = self._calculate_sample_order(order=sample_order)
-        else:
-            sample_positions = []
+            tick_times = pd.concat([nodes["time"], mutations["plot_time"]], axis=0)
 
+        shift_for_y_axis = False
+        if (type(y_axis_labels) == list) or (type(y_axis_labels) == dict):
+            if type(y_axis_labels) == list:
+                y_axis_labels = {t:t for t in y_axis_labels} #change it to a dictionary to keep things consistent
+            if len(y_axis_labels) > 0:
+                shift_for_y_axis = True
+                tick_times = pd.concat([tick_times, pd.Series(y_axis_labels.keys())])
+        if len(tick_times) == 1:
+            tick_times = pd.concat([tick_times, pd.Series([max(tick_times)+1])])
+
+        tick_times = tick_times.sort_values(ignore_index=True)
         max_time = max(tick_times)
         min_time = min(tick_times)
         time_range = (max_time - min_time) or 1  # avoid division by zero if e.g. all nodes at t=0
-
         h_spacing = 1 / ((len(np.unique(tick_times))-1) or 1)
-        unique_times = list(np.unique(tick_times)) # Determines the rank (y position) of each time point 
+        unique_times = list(np.unique(tick_times)) # Determines the rank (y position) of each time point
 
-        node_y_pos = {}
-        for index, node in nodes.iterrows():
-            if "x_pos_01" in node:
-                node["fx"] = node["x_pos_01"] * (width-100) + x_shift
-            elif (node["flag"] == 1) and (plot_type == "full"):
-                node["fx"] = sample_positions[sample_order.index(node["id"])]
+        if (type(y_axis_labels) == bool):
+            if y_axis_labels:
+                shift_for_y_axis = True
+            if (y_axis_scale == "time") or (y_axis_scale == "log_time"):
+                if y_axis_scale == "time":
+                    ticks = calculate_evenly_distributed_positions(10, start=min_time, end=time_range+min_time)
+                elif y_axis_scale == "log_time":
+                    start_digit = int(math.log10(min_time+1))
+                    if ((min_time+1) + 10**(start_digit+1) > 10**(start_digit+1)): # this just removes the tick mark if its likely there is overlap
+                        start_digit += 1
+                    stop_digit = int(math.log10(max_time))+1
+                    if (max_time - 10**(stop_digit-1) < 10**(stop_digit-1)): # this just removes the tick mark if its likely there is overlap
+                        stop_digit -= 1
+                    ticks = [min_time] + [10**i for i in range(start_digit, stop_digit)] + [max_time]
+                y_axis_labels = {t:t for t in ticks}
             else:
-                node["x"] = 0.5 * (width-100) + x_shift
-            fy = convert_time_to_position(
-                node["time"],
+                y_axis_labels = {float(t):float(t) for t in unique_times} #change it to a dictionary to keep things consistent
+
+        time_to_pos = {}
+        y_axis_ticks = {}
+        for time in unique_times:
+            pos = convert_time_to_position(
+                float(time),
                 min_time,
                 max_time,
                 y_axis_scale,
@@ -867,8 +882,33 @@ class D3ARG:
                 height,
                 y_shift
             )
-            if y_axis_scale == "rank":
-                y_axis_ticks[fy] = node["time"]
+            time_to_pos[time] = pos
+            if time in y_axis_labels:
+                y_axis_ticks[pos] = y_axis_labels[time]
+        
+        transformed_nodes = []
+        transformed_muts = []
+        
+        default_left_spacing = 50
+        y_axis_left_spacing = 0
+        if shift_for_y_axis:
+            y_axis_left_spacing = 50
+        
+        if plot_type == "full":
+            sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=default_left_spacing+y_axis_left_spacing, end=(width-100)+default_left_spacing+y_axis_left_spacing)
+            sample_order = self._calculate_sample_order(order=sample_order)
+        else:
+            sample_positions = []
+
+        node_y_pos = {}
+        for index, node in nodes.iterrows():
+            if "x_pos_01" in node:
+                node["fx"] = node["x_pos_01"] * (width-100) + default_left_spacing + y_axis_left_spacing
+            elif (node["flag"] == 1) and (plot_type == "full"):
+                node["fx"] = sample_positions[sample_order.index(node["id"])]
+            else:
+                node["x"] = 0.5 * (width-100) + default_left_spacing + y_axis_left_spacing
+            fy = time_to_pos[node["time"]]
             node["fy"] = fy
             node["y"] = node["fy"]
             node_y_pos[node["id"]] = node["fy"] 
@@ -879,11 +919,8 @@ class D3ARG:
             if (edge_type == "line") and (len(mutations.index) > 0):
                 if condense_mutations:
                     for edge, muts in mutations.sort_values(["time"],ascending=False).groupby("edge"):
-                        muts["content"] = muts["inherited"] + muts["position"].astype(int).astype(str) + muts["derived"] #+ ":" + muts["time"].astype(int).astype(str)            
-                        if y_axis_labels:
-                            x_pos = muts["position_01"] * width + 50
-                        else:
-                            x_pos = muts["position_01"] * width
+                        muts["content"] = muts["inherited"] + muts["position"].astype(int).astype(str) + muts["derived"] #+ ":" + muts["time"].astype(int).astype(str)
+                        x_pos = muts["position_01"] * width + y_axis_left_spacing
                         source = int(muts.iloc[0]["source"])
                         target = int(muts.iloc[0]["target"])
                         source_y = node_y_pos[source]
@@ -911,10 +948,7 @@ class D3ARG:
                         mutation_count = len(muts.index)
                         for m, mut in muts.iterrows():
                             fy = source_y - (source_y - target_y)/(mutation_count+1)*(m+1)# - 10*(m-((mutation_count-1)/2))
-                            if y_axis_labels:
-                                x_pos = mut["position_01"] * width + 50
-                            else:
-                                x_pos = mut["position_01"] * width
+                            x_pos = mut["position_01"] * width + y_axis_left_spacing
                             label = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
                             content = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
                             transformed_muts.append({
@@ -939,60 +973,14 @@ class D3ARG:
                             })
                 else:
                     for index, mut in mutations.iterrows():
-                        fy = convert_time_to_position(
-                            mut["plot_time"],
-                            min_time,
-                            max_time,
-                            y_axis_scale,
-                            unique_times,
-                            h_spacing,
-                            height,
-                            y_shift
-                        )
-                        if y_axis_scale == "rank":
-                            if mut["plot_time"] in mutations["time"].values:
-                                y_axis_ticks[fy] = mut["plot_time"]
-                        if y_axis_labels:
-                            mut["x_pos"] = mut["position_01"] * width + 50
-                        else:
-                            mut["x_pos"] = mut["position_01"] * width
+                        fy = time_to_pos[mut["plot_time"]]
+                        mut["x_pos"] = mut["position_01"] * width + y_axis_left_spacing
                         mut["fy"] = fy
                         mut["y"] = mut["fy"]
                         mut["position_index"] = mut.site_id
                         mut["label"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
                         mut["content"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
                         transformed_muts.append(mut.to_dict())
-
-        if tree_highlighting:
-            height += 75
-
-        if (y_axis_scale == "time") or (y_axis_scale == "log_time"):
-            if y_axis_scale == "time":
-                ticks = calculate_evenly_distributed_positions(10, start=min_time, end=time_range+min_time)
-            elif y_axis_scale == "log_time":
-                start_digit = int(math.log10(min_time+1))
-                if ((min_time+1) + 10**(start_digit+1) > 10**(start_digit+1)): # this just removes the tick mark if its likely there is overlap
-                    start_digit += 1
-                stop_digit = int(math.log10(max_time))+1
-                if (max_time - 10**(stop_digit-1) < 10**(stop_digit-1)): # this just removes the tick mark if its likely there is overlap
-                    stop_digit -= 1
-                ticks = [min_time] + [10**i for i in range(start_digit, stop_digit)] + [max_time]
-            y_axis_ticks = {
-                convert_time_to_position(
-                    t,
-                    min_time,
-                    max_time,
-                    y_axis_scale,
-                    unique_times,
-                    h_spacing,
-                    height,
-                    y_shift
-                ): t
-                for t in ticks
-            }
-        else:
-            # add the oldest time, if not already included
-            y_axis_ticks[y_shift] = time_range+min_time
 
         if y_axis_scale == "time":
             best_dp = math.log10(time_range/10)
@@ -1002,26 +990,31 @@ class D3ARG:
             best_dp = None
         else:
             # This checks the minimum gap between tick marks and sets decimal point based on that
-            best_dp = math.log10(min(np.abs(np.diff(list(y_axis_ticks.values())))))
-            best_dp = None if best_dp > 0 else -math.floor(best_dp)
+            numeric_vals = [i for i in list(y_axis_ticks.values()) if isinstance(i, (int, float, complex))]
+            if len(numeric_vals) > 1:
+                best_dp = math.log10(min(np.abs(np.diff(numeric_vals))))
+                best_dp = None if best_dp > 0 else -math.floor(best_dp)
+            else:
+                best_dp = None
         
-        y_axis_ticks = {
-            k: round(y_axis_ticks[k], best_dp)
-            for k in sorted(y_axis_ticks.keys(), reverse=True)
-        }
-        
+        y_axis_final = {}
+        for k in sorted(y_axis_ticks.keys(), reverse=True):
+            if isinstance(y_axis_ticks[k], (int, float, complex)):
+                y_axis_final[k] = round(y_axis_ticks[k], best_dp)
+            else:
+                y_axis_final[k] = y_axis_ticks[k]
+
         transformed_bps = breakpoints.loc[:,:]
-        if y_axis_labels:
-            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width + 50
-        else:
-            transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
+        transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width + y_axis_left_spacing
         transformed_bps["width"] = transformed_bps["width_01"] * width
         transformed_bps["included"] = "true"
         transformed_bps = transformed_bps.to_dict("records")
 
-        if y_axis_labels:
+        if shift_for_y_axis:
             width += 50
 
+        if tree_highlighting:
+            height += 75
         if title:
             height += 50
 
@@ -1036,10 +1029,10 @@ class D3ARG:
             "width":width,
             "height":height,
             "y_axis":{
-                "include_labels":str(bool(y_axis_labels)).lower(),
-                "ticks":sorted(list(set(y_axis_ticks)), reverse=True),
-                "text":sorted(list(y_axis_text)),
-                "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
+                "include_labels":str(shift_for_y_axis).lower(),
+                "ticks":list(y_axis_final.keys()),
+                "text":list(y_axis_final.values()),
+                "max_min":[max(y_axis_final.keys()),min(y_axis_final.keys())],
                 "scale":y_axis_scale,
             },
             "edges":{
@@ -1184,8 +1177,10 @@ class D3ARG:
         tree_highlighting : bool
             Include the interactive chromosome at the bottom of the figure to
             to let users highlight trees in the ARG (default=True)
-        y_axis_labels : bool
-            Includes labelled y-axis on the left of the figure (default=True)
+        y_axis_labels : bool, list, or dict
+            Whether to include the y-axis on the left of the figure. By default, tick marks will be automatically
+            chosen. You can specify a list of tick marks to use instead. You can also set custom text for tick marks
+            using a dictionary where key is the time and value is the text. (default=True)
         y_axis_scale : string
             Scale used for the positioning nodes along the y-axis. Options:
                 "rank" (default) - equal vertical spacing between nodes
@@ -1415,8 +1410,10 @@ class D3ARG:
             node to include in the subgraph (default=1). If this is a list, the
             number of degrees above is taken from the first element and
             the number of degrees below from the last element.
-        y_axis_labels : bool
-            Includes labelled y-axis on the left of the figure (default=True)
+        y_axis_labels : bool, list, or dict
+            Whether to include the y-axis on the left of the figure. By default, tick marks will be automatically
+            chosen. You can specify a list of tick marks to use instead. You can also set custom text for tick marks
+            using a dictionary where key is the time and value is the text. (default=True)
         y_axis_scale : string
             Scale used for the positioning nodes along the y-axis. Options:
                 "rank" (default) - equal vertical spacing between nodes

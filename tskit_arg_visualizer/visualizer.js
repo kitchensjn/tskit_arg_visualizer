@@ -323,7 +323,7 @@ function main_visualizer(d3) {
             }
             var yscale = d3.scaleLinear() 
                 .domain([y_axis.max_min[0], y_axis.max_min[1]]) 
-                .range([bottom, top]); 
+                .range([y_axis.max_min[0], y_axis.max_min[1]]); 
 
             var y_axis_text = y_axis.text;
 
@@ -790,10 +790,11 @@ function main_visualizer(d3) {
         function ticked() {
             node
                 .attr("transform", function(d) {
+                    console.log(y_axis.include_labels);
                     if (eval(y_axis.include_labels)) {
-                        return "translate(" + Math.max(50, Math.min($width-50, d.x)) + "," + d.y + ")";
-                    } else {
                         return "translate(" + Math.max(100, Math.min($width-50, d.x)) + "," + d.y + ")";
+                    } else {
+                        return "translate(" + Math.max(50, Math.min($width-50, d.x)) + "," + d.y + ")";
                     }
                 })
                 .attr("cx", function(d) {
@@ -804,9 +805,9 @@ function main_visualizer(d3) {
                         }
                     }
                     if (eval(y_axis.include_labels)) {
-                        return d.x = Math.max(50, Math.min($width-50, d.x));
-                    } else {
                         return d.x = Math.max(100, Math.min($width-50, d.x));
+                    } else {
+                        return d.x = Math.max(50, Math.min($width-50, d.x));
                     }
                 })
                 .attr("cy", function(d) {
