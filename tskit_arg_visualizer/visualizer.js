@@ -1,9 +1,13 @@
+/* See __init__.py for how to call the main_visualizer after ensureRequire(). 
+ * NB: you must avoid using backtinks in this file, as when used in a notebook
+* it can get templated into a javascript call then injected into the head of a document
+*/
+
 function ensureRequire() {
     // Needed e.g. in Jupyter notebooks: if require is already available, return resolved promise
     if (typeof require !== 'undefined') {
         return Promise.resolve(require);
     }
-
     // Otherwise, dynamically load require.js
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -14,17 +18,34 @@ function ensureRequire() {
     });
 };
 
-ensureRequire()
-    .then(require => {
-        require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
-        require(["d3"], main_visualizer);
-    })
-    .catch(err => console.error('Failed to load require.js:', err));
+function main_visualizer(
+    d3,
+    divnum,
+    graph,
+    width,
+    height,
+    y_axis,
+    edge_styles,
+    condense_mutations,
+    include_mutation_labels,
+    tree_highlighting,
+    title,
+    rotate_tip_labels,
+    plot_type,
+    source
+) {
+
+    function check_styles_loaded() {
+        const bodyStyles = window.getComputedStyle(document.body);
+        if (bodyStyles.getPropertyValue('--TskitArgvizHighlightCol')) {
+            /* stylesheet already loaded, nothing to do */
+        } else {
+            alert("Styles not loaded: if running in a notebook, please call 'tskit_arg_visualizer.setup()'")
+        }
+    }
 
 
-function main_visualizer(d3) {
     /*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
-    
     function download (url, name, opts) {
         var xhr = new XMLHttpRequest()
         xhr.open('GET', url)
@@ -48,7 +69,7 @@ function main_visualizer(d3) {
         return xhr.status >= 200 && xhr.status <= 299
     }
     
-    // `a.click()` doesn't work for all browsers (#465)
+    // 'a.click()' doesn't work for all browsers (#465)
     function click (node) {
         try {
             node.dispatchEvent(new MouseEvent('click'))
@@ -159,19 +180,13 @@ function main_visualizer(d3) {
     }
 
     function draw_force_diagram() {
-        
-        var graph = $data;
-        var y_axis = $y_axis;
-        var edge_styles = $edges;
-        var title = "$title";
-
         var evenly_distributed_positions = graph.evenly_distributed_positions;
-
-        var tip = d3.select("#arg_${divnum}").append("div")
+        var div_selector = "#arg_" + String(divnum)
+        var tip = d3.select(div_selector).append("div")
             .attr("class", "tooltip")
             .style("display", "none");
 
-        var dashboard = d3.select("#arg_${divnum}").append("div").attr("class", "dashboard");
+        var dashboard = d3.select(div_selector).append("div").attr("class", "dashboard");
         
         var saving = dashboard.append("button").attr("class", "dashbutton");
         saving.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
@@ -184,12 +199,11 @@ function main_visualizer(d3) {
         
         methods.append("button").text("JSON")
             .on("click", function() {
-                d3.selectAll("#arg_${divnum} .node").classed("fix", function(d) {
+                d3.selectAll(div_selector + " .node").classed("fix", function(d) {
                     d.fx = d.x;
                 });
-                var source = "${source}";
-                source = source.replace(/\n/g, "\\n");
-                var textBlob = new Blob([source.replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"')], {type: "text/plain"});
+                src = source.replace(/\n/g, "\\n");
+                var textBlob = new Blob([src.replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"')], {type: "text/plain"});
                 saveAs(textBlob, "tskit_arg_visualizer.json");
             });
         methods.append("button").text("SVG")
@@ -201,7 +215,7 @@ function main_visualizer(d3) {
         methods.append("button").text("PNG")
             .on('click', function(){
                 var svgString = getSVGString(svg.node());
-                svgString2Image(svgString, 2*$width, 2*$height, 'png', save); // passes Blob and filesize String to the callback
+                svgString2Image(svgString, 2*width, 2*height, 'png', save); // passes Blob and filesize String to the callback
             
                 function save(dataBlob){
                     saveAs(dataBlob, "tskit_arg_visualizer"); // FileSaver.js function
@@ -211,14 +225,14 @@ function main_visualizer(d3) {
         /*
         methods.append("button").text("HTML")
             .on("click", function(){
-                d3.selectAll("#arg_${divnum} .node").classed("fix", function(d) {
+                d3.selectAll(div_selector + " .node").classed("fix", function(d) {
                     d.fx = d.x;
                 });
                 var html = document.querySelector("html").outerHTML;
-                var arg_div = document.getElementById("arg_${divnum}").innerHTML;
+                var arg_div = document.getElementById(div_selector).innerHTML;
                 console.log(arg_div);
                 html = html.replace(arg_div, "");
-                html = html.replace("${source}".match(/'nodes': .*'links'/), "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'")
+                html = html.replace(source.match(/'nodes': .*'links'/), "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'")
                 saveAs(new Blob([html], {type:"text/plain;charset=utf-8"}), "tskit_arg_visualizer.html");
             })
         */
@@ -226,8 +240,8 @@ function main_visualizer(d3) {
         var reheat = dashboard.append("button").attr("class", "dashbutton activecolor")
             .on("click", function(event) {
                 if (!event.active) simulation.alphaTarget(0.3).restart();       
-                var order = d3.selectAll("#arg_${divnum} .flag1").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
-                d3.selectAll("#arg_${divnum} .node").classed("unfix", function(d) {
+                var order = d3.selectAll(div_selector + " .flag1").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
+                d3.selectAll(div_selector + " .node").classed("unfix", function(d) {
                     if ((d.flag != 1) & (d.x_pos_reference == -1)) {
                         delete d.fx;
                     } else {
@@ -242,11 +256,11 @@ function main_visualizer(d3) {
             .attr("d", "M153.6 29.9l16-21.3C173.6 3.2 180 0 186.7 0C198.4 0 208 9.6 208 21.3V43.5c0 13.1 5.4 25.7 14.9 34.7L307.6 159C356.4 205.6 384 270.2 384 337.7C384 434 306 512 209.7 512H192C86 512 0 426 0 320v-3.8c0-48.8 19.4-95.6 53.9-130.1l3.5-3.5c4.2-4.2 10-6.6 16-6.6C85.9 176 96 186.1 96 198.6V288c0 35.3 28.7 64 64 64s64-28.7 64-64v-3.9c0-18-7.2-35.3-19.9-48l-38.6-38.6c-24-24-37.5-56.7-37.5-90.7c0-27.7 9-54.8 25.6-76.9z");
         reheat.append("span").attr("class", "tip desc").text("Reheat Simulation");
         
-        if ("$plot_type" == "full") {
+        if (plot_type == "full") {
             var evenly_distribute = dashboard.append("button").attr("class", "dashbutton activecolor")
                 .on("click", function() {
-                    var order = d3.selectAll("#arg_${divnum} .flag1").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
-                    d3.selectAll("#arg_${divnum} .flag1").classed("distribute", function(d) {
+                    var order = d3.selectAll(div_selector + " .flag1").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
+                    d3.selectAll(div_selector + " .flag1").classed("distribute", function(d) {
                         d.fx = evenly_distributed_positions[order.indexOf(d.id)];
                     });
                 });
@@ -284,28 +298,28 @@ function main_visualizer(d3) {
             .on("click", function() {
                 switch_node_label("default");
                 // Underline the current selection (could use different highlighting method here)
-                d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
+                d3.selectAll(div_selector + " .labelmethods button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
         methods.append("button").attr("class", "node-labels-id").text("#ID")
             .on('click', function(){
                 switch_node_label("id");
                 // Underline the current selection (could use different highlighting method here)
-                d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
+                d3.selectAll(div_selector + " .labelmethods button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
         methods.append("button").attr("class", "node-labels-none").text("NONE")
             .on('click', function(){
                 switch_node_label("none");
                 // Underline the current selection (could use different highlighting method here)
-                d3.selectAll("#arg_${divnum} .labelmethods button").style("text-decoration", "none");
+                d3.selectAll(div_selector + " .labelmethods button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
 
 
-        var svg = d3.select("#arg_${divnum}").append("svg")
-            .attr("width", $width)
-            .attr("height", $height)
+        var svg = d3.select(div_selector).append("svg")
+            .attr("width", width)
+            .attr("height", height)
             .style("background-color", "white");
 
         var result = y_axis.ticks.map(function (x) { 
@@ -313,9 +327,9 @@ function main_visualizer(d3) {
         });
 
         if (eval(y_axis.include_labels)) {
-            var bottom = $height - 50;
-            if ($tree_highlighting) {
-                bottom = $height - 125;
+            var bottom = height - 50;
+            if (tree_highlighting) {
+                bottom = height - 125;
             }
             var top = 50;
             if (title != "None") {
@@ -381,16 +395,16 @@ function main_visualizer(d3) {
                 });
         }
 
-        if ($tree_highlighting) {
-            d3.selectAll("#arg_${divnum} .link")
+        if (tree_highlighting) {
+            d3.selectAll(div_selector + " .link")
                 .on('mouseover', function (event, d) {
                     d3.select(this)
-                        .style('stroke', '#1eebb1')
+                        .style('stroke', 'var(--TskitArgvizHighlightCol)')
                         .style("cursor", "pointer");
-                    d3.selectAll("#arg_${divnum} .sites .e" + d.id).style("display", "block");
-                    d3.selectAll("#arg_${divnum} .endpoints")
+                    d3.selectAll(div_selector + " .sites .e" + d.id).style("display", "block");
+                    d3.selectAll(div_selector + " .endpoints")
                         .style('display', 'none'); /* hide other labels to avoid clashes */
-                    const bars = d3.select("#arg_${divnum} .breakpoints").selectAll(".included");
+                    const bars = d3.select(div_selector + " .breakpoints").selectAll(".included");
                     bars /* colour in all bars covered by these bounds */
                         .filter(function(j) {
                             return d.bounds.split(" ").some(function(region) {
@@ -398,7 +412,7 @@ function main_visualizer(d3) {
                                 return (parseFloat(region[0]) <= j.start) & (parseFloat(region[1]) >= j.stop)
                             });
                         })
-                        .selectAll("rect").style('fill', '#1eebb1');
+                        .selectAll("rect").style('fill', 'var(--TskitArgvizHighlightCol)');
                     bars /* show the leftmost position label */
                         .filter(function(j) {
                             return d.bounds.split(" ").some(function(region) {
@@ -421,12 +435,12 @@ function main_visualizer(d3) {
                     d3.select(this)
                         .style('stroke', d.stroke)
                         .style("cursor", "default");
-                    const bars = d3.select("#arg_${divnum} .breakpoints").selectAll(".included");
+                    const bars = d3.select(div_selector + " .breakpoints").selectAll(".included");
                     bars.selectAll("rect").style("fill", d.fill);
                     bars.selectAll("text").style("display", "none");
-                    d3.selectAll("#arg_${divnum} .endpoints")
+                    d3.selectAll(div_selector + " .endpoints")
                         .style('display', 'block');
-                    d3.selectAll("#arg_${divnum} .sites .e" + d.id).style("display", "none");
+                    d3.selectAll(div_selector + " .sites .e" + d.id).style("display", "none");
                 });
         }
 
@@ -501,7 +515,7 @@ function main_visualizer(d3) {
             .attr("fill", function(d) { return d.fill; })
             .attr("stroke", function(d) { return d.stroke; })
             .attr("stroke-width", function(d) { return d.stroke_width; })
-            .attr("id", function(d) { return String($divnum) + "_node" + d.id; })
+            .attr("id", function(d) { return String(divnum) + "_node" + d.id; })
             .attr("class", function(d) {
                 return "node flag" + d.flag
             })
@@ -532,8 +546,8 @@ function main_visualizer(d3) {
                     .style("cursor", "pointer")
                     .selectAll("rect")
                         .style("stroke", i.fill);
-                d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "block");
-                var rect = d3.select("#arg_${divnum}").node().getBoundingClientRect();
+                d3.select(div_selector + " .sites .s" + i.site_id).style("display", "block");
+                var rect = d3.select(div_selector).node().getBoundingClientRect();
                 tip
                     .style("display", "block")
                     .html("<p style='margin: 0px;'>" + i.content + "</p>")
@@ -549,14 +563,14 @@ function main_visualizer(d3) {
                         .selectAll("rect")
                             .style("stroke", i.stroke)
                             .style("fill", i.fill);
-                    d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "none");
+                    d3.select(div_selector + " .sites .s" + i.site_id).style("display", "none");
                     tip.style("display", "none");
                 }
             });
             
         var mutation_rect_height = 5;
         var mutation_rect_width = 15;
-        if ($include_mutation_labels) {
+        if (include_mutation_labels) {
             mutation_rect_height = 15;
             mutation_rect_width = 40;
         }
@@ -570,7 +584,7 @@ function main_visualizer(d3) {
                 .attr("stroke", function(d) { return d.stroke; })
                 .attr("stroke-width", 2);
 
-        if ($include_mutation_labels) {
+        if (include_mutation_labels) {
             var mut_symbol_label = mut_symbol
                 .append("text")
                     .attr("class", "label")
@@ -580,7 +594,8 @@ function main_visualizer(d3) {
         }
 
         function rotate_tip(d) {
-            if ((d.parent_of.length == 0) & (eval($rotate_tip_labels))) {
+            /* NB: why is there an "eval" here? */
+            if ((d.parent_of.length == 0) & (eval(rotate_tip_labels))) {
                 return "translate(-4, 0) rotate(90)"
             }
             return null
@@ -613,7 +628,7 @@ function main_visualizer(d3) {
             if ("y_axis.scale" == "time" | "y_axis.scale" == "log_time") {
                 vnub = 0;
             }
-            var alt_child = document.getElementById(String($divnum) + "_node" + d.alt_child);
+            var alt_child = document.getElementById(String(divnum) + "_node" + d.alt_child);
             if (alt_child != null) {
                 var alt_child_x = alt_child.getAttribute("cx");
                 var alt_child_y = alt_child.getAttribute("cy");
@@ -680,7 +695,7 @@ function main_visualizer(d3) {
                     }
                 }
             }
-            var alt_parent = document.getElementById(String($divnum) + "_node" + d.alt_parent);
+            var alt_parent = document.getElementById(String(divnum) + "_node" + d.alt_parent);
             if (alt_parent != null) {
                 var alt_parent_x = alt_parent.getAttribute("cx");
                 var alt_parent_y = alt_parent.getAttribute("cy");
@@ -791,22 +806,22 @@ function main_visualizer(d3) {
             node
                 .attr("transform", function(d) {
                     if (eval(y_axis.include_labels)) {
-                        return "translate(" + Math.max(50, Math.min($width-50, d.x)) + "," + d.y + ")";
+                        return "translate(" + Math.max(50, Math.min(width-50, d.x)) + "," + d.y + ")";
                     } else {
-                        return "translate(" + Math.max(100, Math.min($width-50, d.x)) + "," + d.y + ")";
+                        return "translate(" + Math.max(100, Math.min(width-50, d.x)) + "," + d.y + ")";
                     }
                 })
                 .attr("cx", function(d) {
                     if ((edge_styles.type == "ortho") & (d.x_pos_reference != -1)) {
-                        var ref = document.getElementById(String($divnum) + "_node" + d.x_pos_reference);
+                        var ref = document.getElementById(String(divnum) + "_node" + d.x_pos_reference);
                         if (ref != null) {
                             d.fx = ref.getAttribute("cx");
                         }
                     }
                     if (eval(y_axis.include_labels)) {
-                        return d.x = Math.max(50, Math.min($width-50, d.x));
+                        return d.x = Math.max(50, Math.min(width-50, d.x));
                     } else {
-                        return d.x = Math.max(100, Math.min($width-50, d.x));
+                        return d.x = Math.max(100, Math.min(width-50, d.x));
                     }
                 })
                 .attr("cy", function(d) {
@@ -838,11 +853,11 @@ function main_visualizer(d3) {
 
             mut_symbol
                 .attr("transform", function(d) {
-                    var parent = document.getElementById(String($divnum) + "_node" + d.source);
+                    var parent = document.getElementById(String(divnum) + "_node" + d.source);
                     if (parent != null) {
                         var parent_x = parseFloat(parent.getAttribute("cx"));
                         var parent_y = parseFloat(parent.getAttribute("cy"));
-                        var child = document.getElementById(String($divnum) + "_node" + d.target);
+                        var child = document.getElementById(String(divnum) + "_node" + d.target);
                         if (child != null) {
                             var child_x = parseFloat(child.getAttribute("cx"));
                             var child_y = parseFloat(child.getAttribute("cy"));
@@ -859,11 +874,11 @@ function main_visualizer(d3) {
 
             mut_symbol_rect
                 .attr("x", function(d) {
-                    var parent = document.getElementById(String($divnum) + "_node" + d.source);
+                    var parent = document.getElementById(String(divnum) + "_node" + d.source);
                     if (parent != null) {
                         var parent_x = parseFloat(parent.getAttribute("cx"));
                         var parent_y = parseFloat(parent.getAttribute("cy"));
-                        var child = document.getElementById(String($divnum) + "_node" + d.target);
+                        var child = document.getElementById(String(divnum) + "_node" + d.target);
                         if (child != null) {
                             var child_x = parseFloat(child.getAttribute("cx"));
                             var child_y = parseFloat(child.getAttribute("cy"));
@@ -883,16 +898,16 @@ function main_visualizer(d3) {
                 })
                 .attr("y", function(d) { return d.y - mutation_rect_height/2; });
             
-            if ($include_mutation_labels) {
+            if (include_mutation_labels) {
                 mut_symbol_label
                     .attr("transform", function(d) {
                         var y = d.y+3.5;
                         var x = 0;
-                        var parent = document.getElementById(String($divnum) + "_node" + d.source);
+                        var parent = document.getElementById(String(divnum) + "_node" + d.source);
                         if (parent != null) {
                             var parent_x = parseFloat(parent.getAttribute("cx"));
                             var parent_y = parseFloat(parent.getAttribute("cy"));
-                            var child = document.getElementById(String($divnum) + "_node" + d.target);
+                            var child = document.getElementById(String(divnum) + "_node" + d.target);
                             if (child != null) {
                                 var child_x = parseFloat(child.getAttribute("cx"));
                                 var child_y = parseFloat(child.getAttribute("cy"));
@@ -917,7 +932,7 @@ function main_visualizer(d3) {
                 if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
                     return "c";
                 } else if (d.child_of.length == 1) {
-                    var parent = document.getElementById(String($divnum) + "_node" + d.child_of[0])
+                    var parent = document.getElementById(String(divnum) + "_node" + d.child_of[0])
                     if (parent != null) {
                         var parent_x = parent.getAttribute("cx");
                         if (parent_x > d.x+1) {
@@ -1011,7 +1026,7 @@ function main_visualizer(d3) {
         function dragstarted(event, d) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
-            d3.selectAll("#arg_${divnum} .node").classed("ref", function(j) {
+            d3.selectAll(div_selector + " .node").classed("ref", function(j) {
                 if ((edge_styles.type == "ortho") & (j.id == d.x_pos_reference)) {
                     j.fx = d.x;
                 }
@@ -1020,14 +1035,14 @@ function main_visualizer(d3) {
 
         function dragged(event, d) {
             d.fx = event.x;
-            d3.selectAll("#arg_${divnum} .node").classed("ref", function(j) {
+            d3.selectAll(div_selector + " .node").classed("ref", function(j) {
                 if ((edge_styles.type == "ortho") & (j.id == d.x_pos_reference)) {
                     j.fx = event.x;
                 }
             });
         }
 
-        if ($tree_highlighting) {
+        if (tree_highlighting) {
             
             var th_group = svg.append("g").attr("class", "tree_highlighting");
             
@@ -1045,7 +1060,7 @@ function main_visualizer(d3) {
             breakpoint_regions
                 .append("rect")
                 .attr("x", d => d.x_pos)
-                .attr("y", $height-60)
+                .attr("y", height-60)
                 .attr("width", d => d.width)
                 .attr("height", 40)
                 .attr("stroke", "#FFFFFF")
@@ -1055,7 +1070,7 @@ function main_visualizer(d3) {
             breakpoint_regions
                 .append("text")
                 .attr("x", d => d.x_pos)
-                .attr("y", $height-5)
+                .attr("y", height-5)
                 .attr("class", "label start")
                 .style("display", "none")
                 .text(d => String(d.start));
@@ -1063,7 +1078,7 @@ function main_visualizer(d3) {
             breakpoint_regions
                 .append("text")
                 .attr("x", d => d.x_pos + d.width)
-                .attr("y", $height-5)
+                .attr("y", height-5)
                 .attr("class", "label stop")
                 .style("display", "none")
                 .text(d => String(d.stop));
@@ -1072,13 +1087,13 @@ function main_visualizer(d3) {
                 .on('mouseover', function (event, d) {
                     if (eval(d.included)) {
                         d3.select(this).selectAll("rect")
-                            .style('fill', '#1eebb1')
+                            .style('fill', 'var(--TskitArgvizHighlightCol)')
                             .style("cursor", "pointer");
                         d3.select(this).selectAll("text")
                             .style('display', 'block');
-                        d3.selectAll("#arg_${divnum} .endpoints")
+                        d3.selectAll(div_selector + " .endpoints")
                             .style('display', 'none'); /* hide other labels to avoid clashes */
-                        var highlight_links = d3.select("#arg_${divnum} .links")
+                        var highlight_links = d3.select(div_selector + " .links")
                             .selectAll("g")
                                 .filter(function(j) {
                                     return j.bounds.split(" ").some(function(region) {
@@ -1089,7 +1104,7 @@ function main_visualizer(d3) {
                         highlight_links.raise();
                         highlight_links
                             .select(".link")
-                            .style("stroke", "#1eebb1");
+                            .style("stroke", "var(--TskitArgvizHighlightCol)");
                     }
                 })
                 .on('mouseout', function (event, d) {
@@ -1099,9 +1114,9 @@ function main_visualizer(d3) {
                             .style("cursor", "default");
                         d3.select(this).selectAll("text")
                             .style('display', 'none');
-                        d3.selectAll("#arg_${divnum} .endpoints")
+                        d3.selectAll(div_selector + " .endpoints")
                             .style('display', 'block');
-                        d3.selectAll("#arg_${divnum} .link")
+                        d3.selectAll(div_selector + " .link")
                             .style("stroke", function(d) {
                                 return d.stroke;
                             });
@@ -1116,15 +1131,15 @@ function main_visualizer(d3) {
                     .style("text-anchor", "start")
                     .text(graph.breakpoints[0].start)
                     .attr("x", graph.breakpoints[0].x_pos)
-                    .attr("y", $height-5);
+                    .attr("y", height-5);
             
             endpoints
                 .append("text")
                     .attr("class", "label")
                     .style("text-anchor", "end")
                     .text(graph.breakpoints[graph.breakpoints.length-1].stop)
-                    .attr("x", $width)
-                    .attr("y", $height-5);
+                    .attr("x", width)
+                    .attr("y", height-5);
 
             var site_pos = th_group
                 .append("g")
@@ -1139,8 +1154,8 @@ function main_visualizer(d3) {
             function createSiteLine(selection) {
                 return selection
                     .append("line")
-                    .attr("y1", $height-60-5)
-                    .attr("y2", $height-60+40+5)
+                    .attr("y1", height-60-5)
+                    .attr("y2", height-60+40+5)
                     .style("stroke-width", 3)
                     .style("fill", "none");
             }
@@ -1148,7 +1163,7 @@ function main_visualizer(d3) {
             function createSiteText(selection) {
                 return selection
                     .append("text")
-                    .attr("y", $height-60-8)
+                    .attr("y", height-60-8)
                     .attr("class", "label")
             }
                   
@@ -1180,9 +1195,9 @@ function main_visualizer(d3) {
             var mut_text = mut_pos
                 .append("text")
                 .attr("text-anchor", function(d) {
-                    if (d.x_pos > ($width*9/10)) {
+                    if (d.x_pos > (width*9/10)) {
                         return "end";
-                    } else if (d.x_pos < $width*1/10) {
+                    } else if (d.x_pos < width*1/10) {
                         return "start";
                     } else {
                         return "middle";
@@ -1192,12 +1207,12 @@ function main_visualizer(d3) {
                 .style("font-family", "Arial")
                 .attr("fill", function(d) { return d.fill; })
                 .attr("transform", function(d) {
-                    return "translate(" + String(d.x_pos) + "," + String($height-60-10) + ")";
+                    return "translate(" + String(d.x_pos) + "," + String(height-60-10) + ")";
                 });
         
             mut_text
                 .text(function(d) {
-                    if ($include_mutation_labels) {
+                    if (include_mutation_labels) {
                         return String(d.site_id) + ":" + String(d.position);
                     } else {
                         return d.label;
@@ -1211,11 +1226,13 @@ function main_visualizer(d3) {
                 .attr("class", "label")
                 .text(title)
                 .style("font-size", "20px")
-                .attr("x", $width / 2)
+                .attr("x", width / 2)
                 .style("transform", "translate(-50%, 50%)")
                 .attr("y", 30);
         }
     }
 
+    check_styles_loaded()
     draw_force_diagram()
 }
+
