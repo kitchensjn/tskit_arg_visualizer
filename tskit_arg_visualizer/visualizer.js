@@ -399,7 +399,7 @@ function main_visualizer(
             d3.selectAll(div_selector + " .link")
                 .on('mouseover', function (event, d) {
                     d3.select(this)
-                        .style('stroke', '#1eebb1')
+                        .style('stroke', 'var(--TskitArgvizHighlightCol)')
                         .style("cursor", "pointer");
                     d3.selectAll(div_selector + " .sites .e" + d.id).style("display", "block");
                     d3.selectAll(div_selector + " .endpoints")
@@ -412,7 +412,7 @@ function main_visualizer(
                                 return (parseFloat(region[0]) <= j.start) & (parseFloat(region[1]) >= j.stop)
                             });
                         })
-                        .selectAll("rect").style('fill', '#1eebb1');
+                        .selectAll("rect").style('fill', 'var(--TskitArgvizHighlightCol)');
                     bars /* show the leftmost position label */
                         .filter(function(j) {
                             return d.bounds.split(" ").some(function(region) {
@@ -1087,7 +1087,7 @@ function main_visualizer(
                 .on('mouseover', function (event, d) {
                     if (eval(d.included)) {
                         d3.select(this).selectAll("rect")
-                            .style('fill', '#1eebb1')
+                            .style('fill', 'var(--TskitArgvizHighlightCol)')
                             .style("cursor", "pointer");
                         d3.select(this).selectAll("text")
                             .style('display', 'block');
@@ -1104,7 +1104,7 @@ function main_visualizer(
                         highlight_links.raise();
                         highlight_links
                             .select(".link")
-                            .style("stroke", "#1eebb1");
+                            .style("stroke", "var(--TskitArgvizHighlightCol)");
                     }
                 })
                 .on('mouseout', function (event, d) {

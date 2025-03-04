@@ -58,7 +58,7 @@
 }
 
 .d3arg .dashboard .activecolor:active path {
-    fill: #1eebb1;
+    fill: var( --TskitArgvizHighlightCol);
 }
 
 .d3arg .savemethods, .d3arg .labelmethods {
@@ -78,7 +78,7 @@
 }
 
 .d3arg .savemethods button:hover, .d3arg .labelmethods button:hover {
-    color: #1eebb1;
+    color: var( --TskitArgvizHighlightCol);
 }
 
 .d3arg .labelmethods button.node-labels-default {
