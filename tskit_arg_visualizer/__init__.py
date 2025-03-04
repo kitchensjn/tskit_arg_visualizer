@@ -28,14 +28,14 @@ def get_css_and_js():
 def viz_html(arg_json=None, css_and_js=None):
     html = ""
     if arg_json is not None:
-        html += "<div id='arg_{n}' class='d3arg' style='min-width:{w}px;min-height:{h}px;'></div>".format(
+        html = "<div id='arg_{n}' class='d3arg' style='min-width:{w}px;min-height:{h}px;'></div>".format(
             n=arg_json['divnum'],
             w=arg_json['width']+40,
             h=arg_json['height']+80,
         )
-    html += "<script>ensureRequire()"
+    js = "ensureRequire()"
     if css_and_js is not None:
-        html += """
+        js += """
         .then(
           require => {
             // Add CSS
@@ -55,7 +55,7 @@ def viz_html(arg_json=None, css_and_js=None):
           })""" % css_and_js
     # Pass in the template variables from arg_json to the javascript functions below
     if arg_json is not None:
-        html += Template("""
+        js += Template("""
         .then(
           require => {
             require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
@@ -63,8 +63,8 @@ def viz_html(arg_json=None, css_and_js=None):
               main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $include_mutation_labels, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
             });
           })""").safe_substitute(arg_json)
-    html += ".catch(err => console.error('Failed to load require.js:', err));</script>"
-    return html
+    js += ".catch(err => console.error('Failed to load require.js:', err));"
+    return f"{html}<script>{js}</script>"
 
 
 def call_d3arg_javascript(arg_json, whole_page=True, inject_header=False):
