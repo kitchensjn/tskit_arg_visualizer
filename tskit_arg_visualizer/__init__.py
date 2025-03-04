@@ -1036,22 +1036,22 @@ class D3ARG:
             "width":width,
             "height":height,
             "y_axis":{
-                "include_labels":str(y_axis_labels).lower(),
-                "ticks":list(y_axis_ticks.keys()),
-                "text":list(y_axis_ticks.values()),
-                "max_min":[max(y_axis_ticks.keys()),min(y_axis_ticks.keys())],
+                "include_labels":str(bool(y_axis_labels)).lower(),
+                "ticks":sorted(list(set(y_axis_ticks)), reverse=True),
+                "text":sorted(list(y_axis_text)),
+                "max_min":[max(y_axis_ticks),min(y_axis_ticks)],
                 "scale":y_axis_scale,
             },
             "edges":{
                 "type":edge_type,
-                "variable_width":str(variable_edge_width).lower(),
-                "include_underlink":str(include_underlink).lower()
+                "variable_width":str(bool(variable_edge_width)).lower(),
+                "include_underlink":str(bool(include_underlink)).lower()
             },
-            "condense_mutations":str(condense_mutations).lower(),
-            "include_mutation_labels":str(include_mutation_labels).lower(),
-            "tree_highlighting":str(tree_highlighting).lower(),
+            "condense_mutations":str(bool(condense_mutations)).lower(),
+            "include_mutation_labels":str(bool(include_mutation_labels)).lower(),
+            "tree_highlighting":str(bool(tree_highlighting)).lower(),
             "title":str(title),
-            "rotate_tip_labels":str(rotate_tip_labels).lower(),
+            "rotate_tip_labels":str(bool(rotate_tip_labels)).lower(),
             "plot_type":plot_type
         }
         return arg
