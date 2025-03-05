@@ -384,49 +384,52 @@ function main_visualizer(d3) {
         if ($tree_highlighting) {
             d3.selectAll("#arg_${divnum} .link")
                 .on('mouseover', function (event, d) {
-                    d3.select(this)
-                        .style('stroke', '#1eebb1')
-                        .style("cursor", "pointer");
-                    d3.selectAll("#arg_${divnum} .sites .e" + d.id).style("display", "block");
-                    d3.selectAll("#arg_${divnum} .endpoints")
-                        .style('display', 'none'); /* hide other labels to avoid clashes */
-                    const bars = d3.select("#arg_${divnum} .breakpoints").selectAll(".included");
-                    bars /* colour in all bars covered by these bounds */
-                        .filter(function(j) {
-                            return d.bounds.split(" ").some(function(region) {
-                                region = region.split("-");
-                                return (parseFloat(region[0]) <= j.start) & (parseFloat(region[1]) >= j.stop)
-                            });
-                        })
-                        .selectAll("rect").style('fill', '#1eebb1');
-                    bars /* show the leftmost position label */
-                        .filter(function(j) {
-                            return d.bounds.split(" ").some(function(region) {
-                                region = region.split("-");
-                                return (parseFloat(region[0]) == j.start)
-                            });
-                        })
-                        .selectAll("text.start").style('display', 'block');
-                    bars /* show the rightmost position label */
-                        .filter(function(j) {
-                            return d.bounds.split(" ").some(function(region) {
-                                region = region.split("-");
-                                return (parseFloat(region[1]) == j.stop)
-                            });
-                        })
-                        .selectAll("text.stop").style('display', 'block');
-
+                    if (!d3.select("#arg_${divnum}>svg").classed("no-hover")) {
+                        d3.select(this)
+                            .style('stroke', '#1eebb1')
+                            .style("cursor", "pointer");
+                        d3.selectAll("#arg_${divnum} .sites .e" + d.id).style("display", "block");
+                        d3.selectAll("#arg_${divnum} .endpoints")
+                            .style('display', 'none'); /* hide other labels to avoid clashes */
+                        const bars = d3.select("#arg_${divnum} .breakpoints").selectAll(".included");
+                        bars /* colour in all bars covered by these bounds */
+                            .filter(function(j) {
+                                return d.bounds.split(" ").some(function(region) {
+                                    region = region.split("-");
+                                    return (parseFloat(region[0]) <= j.start) & (parseFloat(region[1]) >= j.stop)
+                                });
+                            })
+                            .selectAll("rect").style('fill', '#1eebb1');
+                        bars /* show the leftmost position label */
+                            .filter(function(j) {
+                                return d.bounds.split(" ").some(function(region) {
+                                    region = region.split("-");
+                                    return (parseFloat(region[0]) == j.start)
+                                });
+                            })
+                            .selectAll("text.start").style('display', 'block');
+                        bars /* show the rightmost position label */
+                            .filter(function(j) {
+                                return d.bounds.split(" ").some(function(region) {
+                                    region = region.split("-");
+                                    return (parseFloat(region[1]) == j.stop)
+                                });
+                            })
+                            .selectAll("text.stop").style('display', 'block');
+                    }
                 })
                 .on('mouseout', function (event, d) {
-                    d3.select(this)
-                        .style('stroke', d.stroke)
-                        .style("cursor", "default");
-                    const bars = d3.select("#arg_${divnum} .breakpoints").selectAll(".included");
-                    bars.selectAll("rect").style("fill", d.fill);
-                    bars.selectAll("text").style("display", "none");
-                    d3.selectAll("#arg_${divnum} .endpoints")
-                        .style('display', 'block');
-                    d3.selectAll("#arg_${divnum} .sites .e" + d.id).style("display", "none");
+                    if (!d3.select("#arg_${divnum}>svg").classed("no-hover")) {
+                        d3.select(this)
+                            .style('stroke', d.stroke)
+                            .style("cursor", "default");
+                        const bars = d3.select("#arg_${divnum} .breakpoints").selectAll(".included");
+                        bars.selectAll("rect").style("fill", d.fill);
+                        bars.selectAll("text").style("display", "none");
+                        d3.selectAll("#arg_${divnum} .endpoints")
+                            .style('display', 'block');
+                        d3.selectAll("#arg_${divnum} .sites .e" + d.id).style("display", "none");
+                    }
                 });
         }
 
@@ -512,6 +515,7 @@ function main_visualizer(d3) {
                     .drag()
                     .on("start", dragstarted)
                     .on("drag", dragged)
+                    .on("end", dragended)
             )
             .on('mouseover', function (d, i) {
                 d3.select(this)
@@ -528,29 +532,33 @@ function main_visualizer(d3) {
             .style("transform-box", "fill-box")
             .style("transform-origin", "center")
             .on("mouseover", function(d, i) {
-                d3.select(this)
-                    .style("cursor", "pointer")
-                    .selectAll("rect")
-                        .style("stroke", i.fill);
-                d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "block");
-                var rect = d3.select("#arg_${divnum}").node().getBoundingClientRect();
-                tip
-                    .style("display", "block")
-                    .html("<p style='margin: 0px;'>" + i.content + "</p>")
-                    .style("border", i.fill + " solid 2px")
-                    .style("left", (d.pageX - rect.x) + "px")
-                    .style("top", (d.pageY - rect.y + 25) + "px")
-                    .style("transform", "translateX(-50%)");
+                if (!d3.select("#arg_${divnum}>svg").classed("no-hover")) {
+                    d3.select(this)
+                        .style("cursor", "pointer")
+                        .selectAll("rect")
+                            .style("stroke", i.fill);
+                    d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "block");
+                    var rect = d3.select("#arg_${divnum}").node().getBoundingClientRect();
+                    tip
+                        .style("display", "block")
+                        .html("<p style='margin: 0px;'>" + i.content + "</p>")
+                        .style("border", i.fill + " solid 2px")
+                        .style("left", (d.pageX - rect.x) + "px")
+                        .style("top", (d.pageY - rect.y + 25) + "px")
+                        .style("transform", "translateX(-50%)");
+                }
             })
             .on("mouseout", function(d, i) {
-                if (!eval(i.active)) {
-                    d3.select(this)
-                        .style("cursor", "default")
-                        .selectAll("rect")
-                            .style("stroke", i.stroke)
-                            .style("fill", i.fill);
-                    d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "none");
-                    tip.style("display", "none");
+                if (!d3.select("#arg_${divnum}>svg").classed("no-hover")) {
+                    if (!eval(i.active)) {
+                        d3.select(this)
+                            .style("cursor", "default")
+                            .selectAll("rect")
+                                .style("stroke", i.stroke)
+                                .style("fill", i.fill);
+                        d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "none");
+                        tip.style("display", "none");
+                    }
                 }
             });
             
@@ -1017,6 +1025,7 @@ function main_visualizer(d3) {
                     j.fx = d.x;
                 }
             });
+            svg.attr("class", "no-hover");
         }
 
         function dragged(event, d) {
@@ -1026,6 +1035,10 @@ function main_visualizer(d3) {
                     j.fx = event.x;
                 }
             });
+        }
+
+        function dragended(event, d) {
+            svg.attr("class", null);
         }
 
         if ($tree_highlighting) {
@@ -1071,41 +1084,45 @@ function main_visualizer(d3) {
 
             breakpoint_regions
                 .on('mouseover', function (event, d) {
-                    if (eval(d.included)) {
-                        d3.select(this).selectAll("rect")
-                            .style('fill', '#1eebb1')
-                            .style("cursor", "pointer");
-                        d3.select(this).selectAll("text")
-                            .style('display', 'block');
-                        d3.selectAll("#arg_${divnum} .endpoints")
-                            .style('display', 'none'); /* hide other labels to avoid clashes */
-                        var highlight_links = d3.select("#arg_${divnum} .links")
-                            .selectAll("g")
-                                .filter(function(j) {
-                                    return j.bounds.split(" ").some(function(region) {
-                                        region = region.split("-");
-                                        return (parseFloat(region[1]) > d.start) & (parseFloat(region[0]) < d.stop)
+                    if (!d3.select("#arg_${divnum}>svg").classed("no-hover")) {
+                        if (eval(d.included)) {
+                            d3.select(this).selectAll("rect")
+                                .style('fill', '#1eebb1')
+                                .style("cursor", "pointer");
+                            d3.select(this).selectAll("text")
+                                .style('display', 'block');
+                            d3.selectAll("#arg_${divnum} .endpoints")
+                                .style('display', 'none'); /* hide other labels to avoid clashes */
+                            var highlight_links = d3.select("#arg_${divnum} .links")
+                                .selectAll("g")
+                                    .filter(function(j) {
+                                        return j.bounds.split(" ").some(function(region) {
+                                            region = region.split("-");
+                                            return (parseFloat(region[1]) > d.start) & (parseFloat(region[0]) < d.stop)
+                                        });
                                     });
-                                });
-                        highlight_links.raise();
-                        highlight_links
-                            .select(".link")
-                            .style("stroke", "#1eebb1");
+                            highlight_links.raise();
+                            highlight_links
+                                .select(".link")
+                                .style("stroke", "#1eebb1");
+                        }
                     }
                 })
                 .on('mouseout', function (event, d) {
-                    if (eval(d.included)) {
-                        d3.select(this).selectAll("rect")
-                            .style('fill', d.fill)
-                            .style("cursor", "default");
-                        d3.select(this).selectAll("text")
-                            .style('display', 'none');
-                        d3.selectAll("#arg_${divnum} .endpoints")
-                            .style('display', 'block');
-                        d3.selectAll("#arg_${divnum} .link")
-                            .style("stroke", function(d) {
-                                return d.stroke;
-                            });
+                    if (!d3.select("#arg_${divnum}>svg").classed("no-hover")) {
+                        if (eval(d.included)) {
+                            d3.select(this).selectAll("rect")
+                                .style('fill', d.fill)
+                                .style("cursor", "default");
+                            d3.select(this).selectAll("text")
+                                .style('display', 'none');
+                            d3.selectAll("#arg_${divnum} .endpoints")
+                                .style('display', 'block');
+                            d3.selectAll("#arg_${divnum} .link")
+                                .style("stroke", function(d) {
+                                    return d.stroke;
+                                });
+                        }
                     }
                 });
             
