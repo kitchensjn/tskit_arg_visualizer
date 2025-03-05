@@ -1,4 +1,28 @@
-function draw_genome_bar() {
+function ensureRequire() {
+    // Needed e.g. in Jupyter notebooks: if require is already available, return resolved promise
+    if (typeof require !== 'undefined') {
+        return Promise.resolve(require);
+    }
+
+    // Otherwise, dynamically load require.js
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js';
+        script.onload = () => resolve(require);
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+};
+
+ensureRequire()
+    .then(require => {
+        require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
+        require(["d3"], draw_genome_bar);
+    })
+    .catch(err => console.error('Failed to load require.js:', err));
+
+
+function draw_genome_bar(d3) {
 
     var graph = $data;
         

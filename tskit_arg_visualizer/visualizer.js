@@ -798,7 +798,6 @@ function main_visualizer(d3) {
         function ticked() {
             node
                 .attr("transform", function(d) {
-                    console.log(y_axis.include_labels);
                     if (eval(y_axis.include_labels)) {
                         return "translate(" + Math.max(100, Math.min($width-50, d.x)) + "," + d.y + ")";
                     } else {
