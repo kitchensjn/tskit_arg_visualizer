@@ -474,7 +474,7 @@ function main_visualizer(d3) {
                 .style("fill", "gray")
                 .text(function(d) { return d.not_included_children;});
 
-        function multi_line_node_text(text, tip) {
+        function multi_line_node_text(text, is_leaf) {
             // Split label text onto separate lines by newline characters, if they exist
             var lines = text.split("\n");
             d3.select(this).selectAll('tspan')
@@ -485,7 +485,7 @@ function main_visualizer(d3) {
                 .attr('x', 0)
                 .attr('y', function(d, i) { 
                     if (lines.length > 1) {
-                        if (tip) {
+                        if (is_leaf) {
                             // Positioning multiple lines so top line is always in the same position
                             return String(i) + "em"
                         } else {
