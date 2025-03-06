@@ -474,7 +474,7 @@ function main_visualizer(d3) {
                 .style("fill", "gray")
                 .text(function(d) { return d.not_included_children;});
 
-        function multi_line_node_text(text, tip) {
+        function multi_line_node_text(text, is_leaf) {
             // Split label text onto separate lines by newline characters, if they exist
             var lines = text.split("\n");
             d3.select(this).selectAll('tspan')
@@ -485,7 +485,7 @@ function main_visualizer(d3) {
                 .attr('x', 0)
                 .attr('y', function(d, i) { 
                     if (lines.length > 1) {
-                        if (tip) {
+                        if (is_leaf) {
                             // Positioning multiple lines so top line is always in the same position
                             return String(i) + "em"
                         } else {
@@ -529,15 +529,17 @@ function main_visualizer(d3) {
             .data(graph.mutations)
             .enter()
             .append("g")
+            .attr("class", d => "s" + d.site_id)  /* should probably add the mutation ID too */
             .style("transform-box", "fill-box")
             .style("transform-origin", "center")
             .on("mouseover", function(d, i) {
                 if (!d3.select("#arg_${divnum}>svg").classed("no-hover")) {
-                    d3.select(this)
-                        .style("cursor", "pointer")
-                        .selectAll("rect")
-                            .style("stroke", i.fill);
+                    d3.select(this).style("cursor", "pointer");
+                    /* highlight all mutations at the same site (easy to spot reversions etc) */
+                    d3.selectAll("#arg_${divnum} .mutations .s" + i.site_id + " rect")
+                        .style("stroke", i.fill);
                     d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "block");
+                    /* Show a tooltip with the mutation information */
                     var rect = d3.select("#arg_${divnum}").node().getBoundingClientRect();
                     tip
                         .style("display", "block")
@@ -551,11 +553,10 @@ function main_visualizer(d3) {
             .on("mouseout", function(d, i) {
                 if (!d3.select("#arg_${divnum}>svg").classed("no-hover")) {
                     if (!eval(i.active)) {
-                        d3.select(this)
-                            .style("cursor", "default")
-                            .selectAll("rect")
-                                .style("stroke", i.stroke)
-                                .style("fill", i.fill);
+                        d3.select(this).style("cursor", "default")
+                        d3.selectAll("#arg_${divnum} .mutations .s" + i.site_id + " rect")
+                            .style("stroke", i.stroke)
+                            .style("fill", i.fill);
                         d3.select("#arg_${divnum} .sites .s" + i.site_id).style("display", "none");
                         tip.style("display", "none");
                     }
@@ -604,7 +605,7 @@ function main_visualizer(d3) {
             .append("g");
 
         var label_text = label
-            .attr("class", function(d) {return "label n" + d.id})
+            .attr("class", d => "label n" + d.id)
             .append("text")
             .each(function(d) {
                 return multi_line_node_text.call(this, d.label, (d.parent_of.length == 0));
