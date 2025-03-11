@@ -191,15 +191,7 @@ class D3ARG:
 
     """
 
-    node_defaults = {
-        "size": 150,
-        "symbol": "d3.symbolCircle",
-        "fill": "#1eebb1",
-        "stroke": "#053e4e",
-        "stroke_width": 4,
-    }
-
-    def __init__(self, nodes, edges, mutations, breakpoints, num_samples, sample_order):
+    def __init__(self, nodes, edges, mutations, breakpoints, num_samples, sample_order, default_node_style):
         """Initializes a D3ARG object
 
         This is the generalized function for initializing a D3ARG object. It is most
@@ -226,13 +218,14 @@ class D3ARG:
         self.breakpoints = breakpoints
         self.num_samples = num_samples
         self.sample_order = sample_order
+        self.default_node_style = default_node_style
 
     def __str__(self):
         """Prints attributes of D3ARG object"""
-        return f"Nodes:\n{self.nodes}\n\nEdges:\n{self.edges}\n\nMutations:\n{self.mutations}\n\nBreakpoints:\n{self.breakpoints}\n\nNumber of Samples: {self.num_samples}\nSample Order: {self.sample_order}"
+        return f"Nodes:\n{self.nodes}\n\nEdges:\n{self.edges}\n\nMutations:\n{self.mutations}\n\nBreakpoints:\n{self.breakpoints}\n\nNumber of Samples: {self.num_samples}\nSample Order: {self.sample_order}\nDefault Node Style: {self.default_node_style}"
         
     @classmethod
-    def from_ts(cls, ts, ignore_unattached_nodes=False, progress=None):
+    def from_ts(cls, ts, ignore_unattached_nodes=False, progress=None, default_node_style=None):
         """Converts a tskit tree sequence into a D3ARG object
         
         Parameters
@@ -243,11 +236,26 @@ class D3ARG:
         ignore_unattached_nodes : bool
             Whether to include all nodes or ignore nodes that are completely
             unattached. Default is False.
+        progress : bool
+            Show progress bars during conversion
+        default_node_style : dict
+            Customizable node stylings that will be set as default. Options include size, symbol, fill, stroke, and stroke_width
         
         Returns
         -------
         D3ARG : a corresponding D3ARG object ready to be plotted
         """
+
+        nsd = {
+            "size": 150,
+            "symbol": "d3.symbolCircle",
+            "fill": "#1eebb1",
+            "stroke": "#053e4e",
+            "stroke_width": 4
+        }
+        if isinstance(default_node_style, dict):
+            for k, v in default_node_style.items():
+                nsd[k] = v
 
         in_edges = np.unique(np.append(ts.edges_parent, ts.edges_child))
         samples = []
@@ -259,14 +267,15 @@ class D3ARG:
                 samples.append(n)
         rcnm = np.where(ts.nodes_flags == 131072)[0][1::2]  # NB should probably be (ts.nodes_flags & msprime.NODE_IS_RE_EVENT) != 0
         edges, mutations = cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm, progress=progress)
-        nodes = cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, ignore_unattached_nodes=ignore_unattached_nodes, progress=progress)
+        nodes = cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, default_node_style=nsd, ignore_unattached_nodes=ignore_unattached_nodes, progress=progress)
         return cls(
             nodes=nodes,
             edges=edges,
             mutations=mutations,
             breakpoints=cls._identify_breakpoints(ts=ts),
             num_samples=len(samples),
-            sample_order=samples
+            sample_order=samples,
+            default_node_style=nsd
         )
     
     @classmethod
@@ -304,10 +313,11 @@ class D3ARG:
             mutations=pd.DataFrame(json["data"]["mutations"]),
             breakpoints=pd.DataFrame(json["data"]["breakpoints"]),
             num_samples=num_samples,
-            sample_order=sample_order
+            sample_order=sample_order,
+            default_node_style=json["default_node_style"]
         )
 
-    def _convert_nodes_table(ts, recombination_nodes_to_merge, ignore_unattached_nodes, progress=None):
+    def _convert_nodes_table(ts, recombination_nodes_to_merge, default_node_style, ignore_unattached_nodes, progress=None):
         """Creates nodes JSON from the tskit.TreeSequence nodes table
         
         A "reference" is the id of another node that is used to determine a property in the
@@ -322,9 +332,13 @@ class D3ARG:
             msprime.sim_ancestry(...,record_full_arg=True)
         recombination_nodes_to_merge : list or numpy.Array
             IDs of recombination nodes that need to be converted to their alternate ID
+        default_node_style : dict
+            Contains the default styling for nodes
         ignore_unattached_nodes : bool
             Whether to include all nodes or ignore nodes that are completely
             unattached
+        progress : bool
+            Show progress bars during conversion
 
         Returns
         -------
@@ -343,7 +357,7 @@ class D3ARG:
             omit_nodes[ts.edges_child] = False
 
         nodes = {
-            u: (self.node_defaults | {
+            u: (default_node_style | {
                 "id": u,
                 "flag": flags,
                 "time": time,
@@ -581,7 +595,7 @@ class D3ARG:
         
         WARNING: This might not match the initial styles if using D3ARG.from_json
         """
-        for k, v in self.node_defaults.items():
+        for k, v in self.default_node_style.items():
             self.nodes[k] = v
 
     def set_all_node_styles(self, size=None, symbol=None, fill=None, stroke=None, stroke_width=None):
@@ -1045,7 +1059,8 @@ class D3ARG:
             "tree_highlighting":str(bool(tree_highlighting)).lower(),
             "title":str(title),
             "rotate_tip_labels":str(bool(rotate_tip_labels)).lower(),
-            "plot_type":plot_type
+            "plot_type":plot_type,
+            "default_node_style":self.default_node_style
         }
         return arg
 
