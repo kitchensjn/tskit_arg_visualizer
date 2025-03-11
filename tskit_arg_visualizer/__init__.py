@@ -474,36 +474,37 @@ class D3ARG:
             disable=(not progress) or (ts.num_sites == 0)
         ):
             for mut in site.mutations:
-                new_edge = edge_id_reference[mut.edge]
-                mut_time = mut.time
-                if (tskit.is_unknown_time(mut_time)):
-                    # Hacky way of placing mutations with unknown times randomly along
-                    # an edge. Essentially, giving them a false time just for plotting.
-                    middle = (new_edge[3] + new_edge[4]) / 2
-                    plot_time = middle + random.uniform(-(new_edge[3]-middle),(new_edge[3]-middle))
-                    fill = "gold"
-                    stroke = "#053e4e"
-                    mut_time = -1
-                else:
-                    plot_time = mut.time
-                    fill = "orange"
-                    stroke = "#053e4e"
-                inherited_state = site.ancestral_state if mut.parent == tskit.NULL else ts.mutation(mut.parent).derived_state
-                mutations.append({
-                    "edge": new_edge[0],
-                    "source": new_edge[1],
-                    "target": new_edge[2],
-                    "time": mut_time,
-                    "plot_time": plot_time,
-                    "site_id": site.id,
-                    "position": site.position,
-                    "position_01": site.position/ts.sequence_length,
-                    "ancestral": site.ancestral_state,
-                    "inherited": inherited_state,
-                    "derived": mut.derived_state,
-                    "fill": fill,
-                    "stroke": stroke,
-                })
+                if mut.edge != -1:
+                    new_edge = edge_id_reference[mut.edge]
+                    mut_time = mut.time
+                    if (tskit.is_unknown_time(mut_time)):
+                        # Hacky way of placing mutations with unknown times randomly along
+                        # an edge. Essentially, giving them a false time just for plotting.
+                        middle = (new_edge[3] + new_edge[4]) / 2
+                        plot_time = middle + random.uniform(-(new_edge[3]-middle),(new_edge[3]-middle))
+                        fill = "gold"
+                        stroke = "#053e4e"
+                        mut_time = -1
+                    else:
+                        plot_time = mut.time
+                        fill = "orange"
+                        stroke = "#053e4e"
+                    inherited_state = site.ancestral_state if mut.parent == tskit.NULL else ts.mutation(mut.parent).derived_state
+                    mutations.append({
+                        "edge": new_edge[0],
+                        "source": new_edge[1],
+                        "target": new_edge[2],
+                        "time": mut_time,
+                        "plot_time": plot_time,
+                        "site_id": site.id,
+                        "position": site.position,
+                        "position_01": site.position/ts.sequence_length,
+                        "ancestral": site.ancestral_state,
+                        "inherited": inherited_state,
+                        "derived": mut.derived_state,
+                        "fill": fill,
+                        "stroke": stroke,
+                    })
         mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","inherited","derived","fill","stroke"])
         return edges_output, mutations_output
    
@@ -1058,6 +1059,48 @@ class D3ARG:
                 descendants.extend(self.get_summary_descendants(sn, summary_nodes))
             return descendants
         return [node]
+    
+    def _map_node_ids_at_zoom(self, zoom):
+        """
+
+        Parameters
+        ----------
+        zoom : int
+            The level of detail that you want. Larger numbers equate to less detail/more collapsing
+
+        Returns
+        -------
+        largest_summary_node : list
+            Ordered list of new node IDs
+        """
+
+        branch_lengths = self.edges.loc[:,["source", "target"]].join((self.edges["source_time"] - self.edges["target_time"]).rename("edge_length")).sort_values("edge_length")
+        counter = 0
+        largest_summary_node = list(self.nodes["id"])
+        node_times = {largest_summary_node[i]:t for i,t in enumerate(self.nodes["time"])} # This is bad, fix
+        for edge in branch_lengths.itertuples():
+            if counter >= zoom:
+                break
+            source_flag = self.nodes.loc[self.nodes["id"] == edge.source]["flag"].iloc[0]
+            target_flag = self.nodes.loc[self.nodes["id"] == edge.target]["flag"].iloc[0]
+            if (target_flag != 1): #and (target_flag != msprime.NODE_IS_RE_EVENT) and (source_flag != msprime.NODE_IS_RE_EVENT):
+                source_i = self.nodes[self.nodes["id"] == edge.source].index[0]
+                target_i = self.nodes[self.nodes["id"] == edge.target].index[0]
+                if largest_summary_node[source_i] != largest_summary_node[target_i]:
+                    indices = [i for i, x in enumerate(largest_summary_node) if (x == largest_summary_node[source_i]) or (x == largest_summary_node[target_i])]
+                    # Surely a better way to do this using numpy but the typing within the array can get tricky
+                    ids_to_remove = []
+                    times = []
+                    for i in indices:
+                        current_id = largest_summary_node[i]
+                        ids_to_remove.append(current_id)
+                        times.append(node_times[current_id])
+                        largest_summary_node[i] = f"S{counter}"
+                    node_times[f"S{counter}"] = sum(times)/len(times)
+                    for i in set(ids_to_remove):
+                        del node_times[i]
+                    counter += 1
+        return largest_summary_node, node_times
 
     def _get_edge_collapse_order(self, zoom):
         """Generates a sequence of edge collapses up to a specified zoom level
@@ -1107,7 +1150,37 @@ class D3ARG:
         edges : pd.DataFrame
             Collapsed nodes table with new source/target IDs
         """
-
+        if zoom > 0:
+            mapped_node_ids, mapped_node_times = self._map_node_ids_at_zoom(zoom=zoom)
+            nodes = []
+            for id in set(mapped_node_ids):
+                if type(id) == int:
+                    nodes.append(self.nodes.loc[self.nodes["id"] == id].to_dict(orient="records")[0])
+                else:
+                    nodes.append({
+                        "id":id,
+                        "flag":99,
+                        "time":mapped_node_times[id],
+                        "child_of":[],
+                        "parent_of":[],
+                        # These don't work as intended, and instead need to be updated with the summary node IDs
+                        "size":150,
+                        "symbol":"d3.symbolCircle",
+                        "fill":"#FFFFFF",
+                        "stroke":"#053e4e",
+                        "stroke_width":4,
+                        "x_pos_reference":-1,
+                        "label":""
+                    })
+            nodes = pd.DataFrame(nodes)
+            edges = self.edges
+            edges = edges.astype(dtype={"source":"object", "target":"object"})
+            for i,node in enumerate(self.nodes["id"]):
+                edges.loc[edges["source"] == node, "source"] = mapped_node_ids[i]
+                edges.loc[edges["target"] == node, "target"] = mapped_node_ids[i]
+            return nodes, edges
+        return self.nodes, self.edges
+        
         if zoom > 0:
             edge_collapses = self._get_edge_collapse_order(zoom=zoom)
             nodes = self.nodes
@@ -1222,7 +1295,7 @@ class D3ARG:
                 print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
                 ignore_mutation_times = True
 
-        included_nodes, included_edges = self._collapse_graph(zoom=zoom)        
+        included_nodes, included_edges = self._collapse_graph(zoom=zoom)
 
         arg = self._prepare_json(
             plot_type="full",
