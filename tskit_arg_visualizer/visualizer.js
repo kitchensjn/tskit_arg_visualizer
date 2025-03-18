@@ -562,31 +562,28 @@ function main_visualizer(
                     }
                 }
             });
-            
-        var mutation_rect_height = 5;
-        var mutation_rect_width = 15;
-        if (include_mutation_labels) {
-            mutation_rect_height = 15;
-            mutation_rect_width = 40;
-        }
+
 
         var mut_symbol_rect = mut_symbol
             .append("rect")
                 .attr("class", "symbol")
-                .attr("width", mutation_rect_width)
-                .attr("height", mutation_rect_height)
-                .attr("fill", function(d) { return d.fill; })
-                .attr("stroke", function(d) { return d.stroke; })
+                .attr("fill", d => d.fill)
+                .attr("stroke", d => d.stroke)
                 .attr("stroke-width", 2);
 
         if (include_mutation_labels) {
             var mut_symbol_label = mut_symbol
                 .append("text")
                     .attr("class", "label")
-                    .style("font-size", "10px")
+                    .style("font-size", d => (d.size * 2 + "px"))
                     .attr("text-anchor", "middle")
-                    .text(function(d) { return d.label; });
-        }
+                    .attr("alignment-baseline", "middle")
+                    .text(d => d.label)
+                    .each(function(d) {
+                        // Store the text width on the data object
+                        d.textWidth = this.getComputedTextLength();
+                    });
+            }
 
         function rotate_tip(d) {
             /* NB: why is there an "eval" here? */
@@ -868,6 +865,25 @@ function main_visualizer(
                 });
 
             mut_symbol_rect
+            // Set the rect width / height based on the calculated text width
+                .attr("width", function(d) {
+                    if (include_mutation_labels && d.textWidth) {
+                        d.computedWidth = d.textWidth + 6; // Add left/right padding
+                    } else {
+                        d.computedWidth = d.size * 3; // aspect ratio is 3 (3 times wider than tall)
+                    }
+                    return d.computedWidth;  
+                })
+                .attr("height", function(d) {
+                    console.log(d.size);
+                    if (include_mutation_labels) {
+                        d.computedHeight = (d.size * 2) + 4; // Font size + top/bottom padding
+                    }
+                    else {
+                        d.computedHeight = d.size;
+                    }
+                    return d.computedHeight;
+                })
                 .attr("x", function(d) {
                     var parent = document.getElementById(String(divnum) + "_node" + d.source);
                     if (parent != null) {
@@ -878,11 +894,11 @@ function main_visualizer(
                             var child_x = parseFloat(child.getAttribute("cx"));
                             var child_y = parseFloat(child.getAttribute("cy"));
                             if (parent_x - child_x == 0) {
-                                return parent_x - mutation_rect_width/2;
+                                return parent_x - d.computedWidth/2;
                             } else {
                                 var slope = (parent_y - child_y) / (parent_x - child_x);
                                 var intercept = parent_y - slope * parent_x;
-                                return ((d.y - intercept) / slope) - mutation_rect_width/2;
+                                return ((d.y - intercept) / slope) - d.computedWidth/2;
                             }
                         } else {
                             return 0;
@@ -891,12 +907,12 @@ function main_visualizer(
                         return 0;
                     }
                 })
-                .attr("y", function(d) { return d.y - mutation_rect_height/2; });
+                .attr("y", function(d) { return d.y - d.computedHeight/2;});
             
             if (include_mutation_labels) {
                 mut_symbol_label
                     .attr("transform", function(d) {
-                        var y = d.y+3.5;
+                        var y = d.y + 1;
                         var x = 0;
                         var parent = document.getElementById(String(divnum) + "_node" + d.source);
                         if (parent != null) {
