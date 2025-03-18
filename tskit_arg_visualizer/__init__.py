@@ -1116,39 +1116,6 @@ class D3ARG:
                     counter += 1
         return largest_summary_node, node_times
 
-    def _get_edge_collapse_order(self, zoom):
-        """Generates a sequence of edge collapses up to a specified zoom level
-
-        Parameters
-        ----------
-        zoom : int
-            The level of detail that you want. Larger numbers equate to less detail/more collapsing
-
-        Returns
-        -------
-        summary_nodes : list
-            Ordered list of edge collapses by increasing branch length
-        """
-
-        branch_lengths = self.edges.loc[:,["source", "target"]].join((self.edges["source_time"] - self.edges["target_time"]).rename("edge_length")).sort_values("edge_length")
-        counter = 0
-        largest_summary_node = [i for i in self.nodes["id"]]
-        summary_nodes = []
-        for edge in branch_lengths.itertuples():
-            if counter >= zoom:
-                break
-            if self.nodes.loc[self.nodes["id"] == edge.target]["flag"].iloc[0] != 1:
-                source_i = self.nodes[self.nodes["id"] == edge.source].index[0]
-                target_i = self.nodes[self.nodes["id"] == edge.target].index[0]
-                if largest_summary_node[source_i] != largest_summary_node[target_i]:
-                    summary_nodes.append([largest_summary_node[source_i], largest_summary_node[target_i]])
-                    indices = [i for i, x in enumerate(largest_summary_node) if (x == largest_summary_node[source_i]) or (x == largest_summary_node[target_i])]
-                    # Surely a better way to do this using numpy but the typing within the array can get tricky
-                    for i in indices:
-                        largest_summary_node[i] = f"S{counter}"
-                    counter += 1
-        return summary_nodes
-
     def _collapse_graph(self, zoom):
         """Collapses the graph to a specified zoom level
 
@@ -1194,39 +1161,6 @@ class D3ARG:
                 edges.loc[edges["target"] == node, "target"] = mapped_node_ids[i]
             return nodes, edges
         return self.nodes, self.edges
-        
-        if zoom > 0:
-            edge_collapses = self._get_edge_collapse_order(zoom=zoom)
-            nodes = self.nodes
-            # Previously, the "id" is of type int64, but because we will have IDs for summary nodes
-            # this needs to be changed to object. Could be improved, though may require changes more
-            # broadly to "id" typing. Or having a different ID convention for summary nodes.
-            nodes = nodes.astype(dtype={"id":"object"})
-            edges = self.edges
-            edges = edges.astype(dtype={"source":"object", "target":"object"})
-            for i,ec in enumerate(edge_collapses):
-                nodes_to_drop = nodes.loc[nodes["id"].isin(ec)]
-                edges.loc[edges["source"].isin(ec), "source"] = f"S{i}"
-                edges.loc[edges["target"].isin(ec), "target"] = f"S{i}"
-                # By simply changing the source/target IDs without further checks, it is 
-                # possible to have edges that have the same source and target IDs. The visualizer
-                # does not care, though if there are many edges it could slow down the simulation.
-                nodes = nodes.drop(nodes_to_drop.index)
-                new_node = pd.DataFrame([ self.node_defaults | {
-                    "id":f"S{i}",
-                    "flag":99,
-                    "time":nodes_to_drop["time"].mean(),
-                    "child_of":nodes_to_drop["child_of"].sum(),
-                    "parent_of":nodes_to_drop["parent_of"].sum(),
-                    # These don't work as intended, and instead need to be updated with the summary node IDs
-                    "x_pos_reference":-1,
-                    "label":f"S{i}"
-                }])
-                nodes = pd.concat([nodes, new_node]).reset_index(drop=True)
-                # This is inefficient for large graphs and would need more thought
-            return nodes, edges
-        return self.nodes, self.edges
-
 
     def draw(
             self,
