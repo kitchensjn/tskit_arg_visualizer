@@ -38,5 +38,7 @@ d3arg = tskit_arg_visualizer.D3ARG.from_ts(ts=ts, progress=True)
 d3arg.draw_node(
     node=20,
     degree=5,
-    rotate_tip_labels=True
+    rotate_tip_labels=True,
+    show_mutations=True,
+    condense_mutations=True
 )
