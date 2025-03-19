@@ -345,10 +345,11 @@ class D3ARG:
         nodes : list
             List of dictionaries containing information about a given node
         """
+        nodes_flags = ts.nodes_flags
         node_lookup = np.arange(ts.num_nodes)  # maps original node IDs to the plotted node ID
         merge_with_prev_node = np.zeros(ts.num_nodes, dtype=bool)
         merge_with_prev_node[recombination_nodes_to_merge] = True
-        merge_with_prev_node = np.logical_and(merge_with_prev_node, ts.nodes_flags & msprime.NODE_IS_RE_EVENT != 0)
+        merge_with_prev_node = np.logical_and(merge_with_prev_node, nodes_flags & msprime.NODE_IS_RE_EVENT != 0)
         node_lookup[merge_with_prev_node] = node_lookup[merge_with_prev_node] - 1  # plotted ID is ID of prev node
 
         if ignore_unattached_nodes:
@@ -365,13 +366,13 @@ class D3ARG:
                 "parent_of": set(),  # will later convert to list
                 "x_pos_reference": -1,
             })
-            for u, (flags, time) in enumerate(zip(ts.nodes_flags, ts.nodes_time))
+            for u, (flags, time) in enumerate(zip(nodes_flags, ts.nodes_time))
             if not (ignore_unattached_nodes and omit_nodes[u]) and not merge_with_prev_node[u]
         }
         
-        for edge in ts.edges():
-            nodes[node_lookup[edge.child]]['child_of'].add(int(node_lookup[edge.parent]))
-            nodes[node_lookup[edge.parent]]['parent_of'].add(int(node_lookup[edge.child]))
+        for child, parent in zip(ts.edges_child, ts.edges_parent):
+            nodes[node_lookup[child]]['child_of'].add(int(node_lookup[parent]))
+            nodes[node_lookup[parent]]['parent_of'].add(int(node_lookup[child]))
 
         for u in tqdm(nodes.keys(), desc="Nodes", disable=not progress):
             info = nodes[u]
@@ -380,7 +381,7 @@ class D3ARG:
 
             if info["flag"] == 131072:
                 info["label"] = str(u)+"/"+str(u+1)
-                if (len(unique_parent_of) == 1) and not (ts.nodes_flags[unique_parent_of[0]] & msprime.NODE_IS_RE_EVENT != 0):
+                if (len(unique_parent_of) == 1) and not (nodes_flags[unique_parent_of[0]] & msprime.NODE_IS_RE_EVENT != 0):
                     info["x_pos_reference"] = unique_parent_of[0]
             else:
                 info["label"] = str(u)
@@ -416,8 +417,13 @@ class D3ARG:
         # iterate over unique parent/child combos. Take advantage of the fact that edges
         # in a tree sequence are always ordered by parent ID.
         t = tqdm(total=ts.num_edges, desc="Edges", disable=not progress)
+        nodes_time = ts.nodes_time
+        nodes_flags = ts.nodes_flags
+        edges_child = ts.edges_child
+        edges_parent = ts.edges_parent
+
         for parent, edges in itertools.groupby(ts.edges(), operator.attrgetter("parent")):
-            parent_time = ts.node(parent).time
+            parent_time = nodes_time[parent]
             parent_links = []  # all links for this parent
             if parent in recombination_nodes_to_merge:
                 parent -= 1
@@ -430,28 +436,29 @@ class D3ARG:
                     edges_for_child[edge.child] = [edge]
                 else:
                     edges_for_child[edge.child].append(edge)
+            
+            children = np.array(list(edges_for_child.keys()))
             for child, equivalent_edges in edges_for_child.items():
-                child_time = ts.node(child).time
+                child_time = nodes_time[child]
                 region_size = 0
                 bounds = ""
                 alternative_child = -1
                 alternative_parent = -1
-                if (ts.nodes_flags[parent] & msprime.NODE_IS_RE_EVENT) == 0:
-                    children = np.array(list(edges_for_child.keys()))
+                if (nodes_flags[parent] & msprime.NODE_IS_RE_EVENT) == 0:
                     if len(children) > 2:
-                        alternative_child = children[np.where(children != child)][0]
+                        alternative_child = children[children != child][0]
                     elif len(children) > 1:
-                        alternative_child = children[np.where(children != child)][0]
+                        alternative_child = children[children != child][0]
                     else:
                         alternative_child = -1 # this occurs when converting from SLiM simulations, needs to have better handling
                     if alternative_child in recombination_nodes_to_merge:
                         alternative_child -= 1
-                if (ts.nodes_flags[child] & msprime.NODE_IS_RE_EVENT) != 0:
+                if (nodes_flags[child] & msprime.NODE_IS_RE_EVENT) != 0:
                     if child in recombination_nodes_to_merge:
                         alt_id = child - 1
                     else:
                         alt_id = child + 1
-                    alt_id_parents = ts.edges_parent[ts.edges_child == alt_id]
+                    alt_id_parents = edges_parent[edges_child == alt_id]
                     if len(alt_id_parents):
                         alternative_parent = alt_id_parents[0]
                     else:
@@ -491,7 +498,7 @@ class D3ARG:
             disable=(not progress) or (ts.num_sites == 0)
         ):
             for mut in site.mutations:
-                if mut.edge != -1:
+                if mut.edge != -1:  # mutations e.g. above a root are currently not plotted
                     new_edge = edge_id_reference[mut.edge]
                     mut_time = mut.time
                     if (tskit.is_unknown_time(mut_time)):
