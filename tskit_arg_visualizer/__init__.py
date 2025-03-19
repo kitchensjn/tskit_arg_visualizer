@@ -528,8 +528,9 @@ class D3ARG:
                         "derived": mut.derived_state,
                         "fill": fill,
                         "stroke": stroke,
+                        "size": 5,
                     })
-        mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","inherited","derived","fill","stroke"])
+        mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","inherited","derived","fill","stroke","size"])
         return edges_output, mutations_output
    
     def _identify_breakpoints(ts):
@@ -944,6 +945,7 @@ class D3ARG:
                         x_pos = muts["position_01"] * width + y_axis_left_spacing
                         source = int(muts.iloc[0]["source"])
                         target = int(muts.iloc[0]["target"])
+                        size = float(muts["size"].mean())  # average size of all symbols on this edge
                         source_y = node_y_pos[source]
                         target_y = node_y_pos[target]
                         fy = (source_y + target_y) / 2
@@ -959,7 +961,8 @@ class D3ARG:
                             "stroke": "#053e4e",
                             "active": "false",
                             "label": "⨉"+str(muts.shape[0]),
-                            "content": "<br>".join(muts.content)
+                            "content": "<br>".join(muts.content),
+                            "size": size,
                         })
                 elif ignore_mutation_times:
                     for index, edge in edges.iterrows():
@@ -990,7 +993,8 @@ class D3ARG:
                                 "stroke": mut.stroke,
                                 "active": "false",
                                 "label": label,
-                                "content": content
+                                "content": content,
+                                "size": mut['size'],  # can't use attribute access as "size" already exists
                             })
                 else:
                     for index, mut in mutations.iterrows():
