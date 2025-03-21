@@ -16,6 +16,19 @@ from IPython.display import HTML, display
 from tqdm.auto import tqdm
 
 
+# The javascript below is used as a string.Template to embed data (e.g. in $data) to visualize
+JS_TEMPLATE = '''<script>
+  ensureRequire()
+    .then(require => {
+      require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
+      require(["d3"], function(d3) {
+        main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $include_mutation_labels, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
+      });
+  })
+  .catch(err => console.error('Failed to load require.js:', err));
+</script>'''
+
+
 def running_in_notebook():
     """Checks whether the code is being executed within a Jupyter Notebook.
 
@@ -124,38 +137,44 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
 
 
 def draw_D3(arg_json, styles=None, force_notebook=False):
+    # Make the static header that is common to all d3arg instances.
+    # This contains the main code functions and default styles
+    css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
+    base_styles = css.read()
+    css.close()
+    js = open(os.path.dirname(__file__) + "/visualizer.js", "r")
+    base_script = js.read()
+    js.close()
+    common_header = f"<style>{base_styles}</style><script>{base_script}</script>"
+
+    # Make the css and javascript that is unique to this drawing instance
     arg_json["source"] = arg_json.copy()
     arg_json["divnum"] = str(random.randint(0,9999999999))
     arg_id = "arg_" + arg_json['divnum']
-    JS_text = Template((
-        '<div id="{}" class="d3arg" style="min-width:{}px; min-height:{}px;"></div>'
-        '<script>$main_text</script>'
-    ).format(arg_id, arg_json["width"]+40, arg_json["height"]+80))
-    visualizerjs = open(os.path.dirname(__file__) + "/visualizer.js", "r")
-    main_text_template = Template(visualizerjs.read())
-    visualizerjs.close()
-    main_text = main_text_template.safe_substitute(arg_json)
-    html = JS_text.safe_substitute({'main_text': main_text})
-    css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
-    default_styles = css.read()
-    css.close()
-    style = ""
+    plot_area = '<div id="{}" class="d3arg" style="min-width:{}px; min-height:{}px;"></div>'.format(
+        arg_id, arg_json["width"]+40, arg_json["height"]+80)
+    embedded_data = Template(JS_TEMPLATE).safe_substitute(arg_json)
+    user_style=""
     if styles is not None:
         if isinstance(styles, str):
             raise ValueError("Styles should be a list of CSS strings, not a single string")
         for s in styles:
-            style += f"#{arg_id} " + s
-        if "<" in style:
+            user_style += f"#{arg_id} " + s  # target each style to the specific arg div
+        if "<" in user_style:
             # prevent minor footguns e.g. accidentally closing the style tag
             # Note this doesn't stop malicious user code e.g. url() loading
             raise ValueError("Listed styles cannot contain the '<' sign.")
-        style = "<style>"+style+"</style>"
+        user_style = "<style>"+user_style+"</style>"
+
+    # Display the visualization
     if force_notebook or running_in_notebook():
-        display(HTML("<style>"+default_styles+"</style>" + style + html))
+        display(HTML(common_header + user_style + plot_area + embedded_data))
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
-            f.write("<!DOCTYPE html><html><head><meta charset='utf-8'><style>"+styles+"</style></head><body>" + html + "</body></html>")
+            f.write('<!DOCTYPE html><html><head><meta charset="utf-8">' + common_header + user_style + "</head><body>")
+            f.write(plot_area + embedded_data)
+            f.write("</body></html>")
         webbrowser.open(url, new=2)
 
 class D3ARG:
