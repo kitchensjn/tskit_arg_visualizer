@@ -123,20 +123,35 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
     return (1-(t-min_time)/time_range) * (height-100) + y_shift
 
 
-def draw_D3(arg_json, force_notebook=False):
+def draw_D3(arg_json, styles=None, force_notebook=False):
     arg_json["source"] = arg_json.copy()
     arg_json["divnum"] = str(random.randint(0,9999999999))
-    JS_text = Template("<div id='arg_" + arg_json['divnum'] + "'class='d3arg' style='min-width:" + str(arg_json["width"]+40) + "px; min-height:" + str(arg_json["height"]+80) + "px;'></div><script>$main_text</script>")
+    arg_id = "arg_" + arg_json['divnum']
+    JS_text = Template((
+        '<div id="{}" class="d3arg" style="min-width:{}px; min-height:{}px;"></div>'
+        '<script>$main_text</script>'
+    ).format(arg_id, arg_json["width"]+40, arg_json["height"]+80))
     visualizerjs = open(os.path.dirname(__file__) + "/visualizer.js", "r")
     main_text_template = Template(visualizerjs.read())
     visualizerjs.close()
     main_text = main_text_template.safe_substitute(arg_json)
     html = JS_text.safe_substitute({'main_text': main_text})
     css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
-    styles = css.read()
+    default_styles = css.read()
     css.close()
+    style = ""
+    if styles is not None:
+        if isinstance(styles, str):
+            raise ValueError("Styles should be a list of CSS strings, not a single string")
+        for s in styles:
+            style += f"#{arg_id} " + s
+        if "<" in style:
+            # prevent minor footguns e.g. accidentally closing the style tag
+            # Note this doesn't stop malicious user code e.g. url() loading
+            raise ValueError("Listed styles cannot contain the '<' sign.")
+        style = "<style>"+style+"</style>"
     if force_notebook or running_in_notebook():
-        display(HTML("<style>"+styles+"</style>" + html))
+        display(HTML("<style>"+default_styles+"</style>" + style + html))
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
@@ -1191,7 +1206,8 @@ class D3ARG:
             condense_mutations=False,
             force_notebook=False,
             rotate_tip_labels=False,
-            zoom=0
+            zoom=0,
+            styles=None,
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -1242,6 +1258,12 @@ class D3ARG:
             Rotates tip labels by 90 degrees. (default=False)
         zoom : int
             The level of detail that you want. Larger numbers equate to less detail/more collapsing
+        styles : list
+            A list of css strings, one per selector. The ID of the current drawing will be
+            appended to each string, so that the styles are unique to the current drawing.
+            For example, [".labels {font-family: Times}"] will change the font of all the
+            labels. Note that some styles are set from values in the dataframes stored in the
+            D3ARG object, and cannot be altered using the 'styles' parameter. (default=None)
         """
         
         if condense_mutations:
@@ -1273,7 +1295,7 @@ class D3ARG:
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels
         )
-        draw_D3(arg_json=arg, force_notebook=force_notebook)
+        draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
 
     def subset_graph(self, node, degree):
         """Subsets the graph to focus around a specific node
@@ -1420,7 +1442,8 @@ class D3ARG:
             condense_mutations=False,
             return_included_nodes=False,
             force_notebook=False,
-            rotate_tip_labels=False
+            rotate_tip_labels=False,
+            styles=None,
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -1465,6 +1488,12 @@ class D3ARG:
             Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
         rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
+        styles : list
+            A list of css strings, one per selector. The ID of the current drawing will be
+            appended to each string, so that the styles are unique to the current drawing.
+            For example, [".labels {font-family: Times}"] will change the font of all the
+            labels. Note that some styles are set from values in the dataframes stored in the
+            D3ARG object, and cannot be altered using the 'styles' parameter. (default=None)
         """
 
         if condense_mutations:
@@ -1491,7 +1520,7 @@ class D3ARG:
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels
         )
-        draw_D3(arg_json=arg, force_notebook=force_notebook)
+        draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
         if return_included_nodes:
             return list(included_nodes["id"])
         
