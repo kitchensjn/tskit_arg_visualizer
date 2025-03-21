@@ -1253,18 +1253,4 @@ function main_visualizer(
     }
 
     draw_force_diagram()
-}
-
-/* NB: the code below fires up the visualizer: templates in this call
-    can be used to pass in the appropriate data
-*/
-
-ensureRequire()
-    .then(require => {
-        require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
-        require(["d3"], function(d3) {
-            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $include_mutation_labels, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
-        });
-    })
-    .catch(err => console.error('Failed to load require.js:', err));
-
+};
