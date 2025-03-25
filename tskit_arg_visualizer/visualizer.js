@@ -770,7 +770,7 @@ function main_visualizer(
             return [path_type, start_position_x, start_position_y, stop_position_x, stop_position_y];
         }
 
-        function ortho_pathing(d, path_info) {      
+        function ortho_pathing(d, path_info, underlink=false) {      
             const path_type = path_info[0];
             const simple_path_type = Array.from(path_type)[0] + Array.from(path_type)[2];
             const start_position_x = path_info[1];
@@ -783,14 +783,26 @@ function main_visualizer(
             const step_paths = ["tt"];
             const mid_paths = ["rb", "ff"];
 
-            if (after_paths.includes(simple_path_type)) {
-                return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepAfter([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-            } else if (before_paths.includes(simple_path_type)) {
-                return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepBefore([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-            } else if (step_paths.includes(simple_path_type)) {
-                return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + step([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
-            } else if (mid_paths.includes(simple_path_type)) {
-                return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+            if (underlink) {
+                if (after_paths.includes(simple_path_type)) {
+                    return stepAfter([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]);
+                } else if (before_paths.includes(simple_path_type)) {
+                    return stepBefore([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]);
+                } else if (step_paths.includes(simple_path_type)) {
+                    return step([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]);
+                } else if (mid_paths.includes(simple_path_type)) {
+                    return line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]);
+                }
+            } else {
+                if (after_paths.includes(simple_path_type)) {
+                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepAfter([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                } else if (before_paths.includes(simple_path_type)) {
+                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + stepBefore([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                } else if (step_paths.includes(simple_path_type)) {
+                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + step([[start_position_x, start_position_y],[stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                } else if (mid_paths.includes(simple_path_type)) {
+                    return line([[d.source.x, d.source.y],[start_position_x, start_position_y]]) + line([[start_position_x, start_position_y],[start_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[start_position_x, start_position_y + (stop_position_y - start_position_y)/2],[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2]]) + line([[stop_position_x, start_position_y + (stop_position_y - start_position_y)/2], [stop_position_x, stop_position_y]]) + line([[stop_position_x, stop_position_y], [d.target.x, d.target.y]]);
+                }
             }
         }
 
@@ -825,6 +837,7 @@ function main_visualizer(
                 var path = "";
                 if (edge_styles.type == "ortho") {
                     path = ortho_pathing(d, path_info);
+                    underlink_path = ortho_pathing(d, path_info, underlink=true);
                 } else if (d.source.id == d.alt_parent) {
                     var leftOrRight = 20;
                     if (d.index % 2 == 0) {
@@ -836,7 +849,7 @@ function main_visualizer(
                 }
                 if ((edge_styles.type == "ortho") & eval(edge_styles.include_underlink)) {
                     var u = d3.select(this).select(".underlink");
-                    u.attr("d", path);
+                    u.attr("d", underlink_path);
                 }
                 var l = d3.select(this).select(".link");
                 l.attr("path_type", path_info[0]);

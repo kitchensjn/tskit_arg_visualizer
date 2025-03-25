@@ -879,6 +879,7 @@ class D3ARG:
             if (y_axis_scale == "time") or (y_axis_scale == "log_time"):
                 if y_axis_scale == "time":
                     ticks = calculate_evenly_distributed_positions(10, start=min_time, end=time_range+min_time)
+                    unique_times += ticks
                 elif y_axis_scale == "log_time":
                     start_digit = int(math.log10(min_time+1))
                     if ((min_time+1) + 10**(start_digit+1) > 10**(start_digit+1)): # this just removes the tick mark if its likely there is overlap
@@ -887,10 +888,11 @@ class D3ARG:
                     if (max_time - 10**(stop_digit-1) < 10**(stop_digit-1)): # this just removes the tick mark if its likely there is overlap
                         stop_digit -= 1
                     ticks = [min_time] + [10**i for i in range(start_digit, stop_digit)] + [max_time]
+                    unique_times += ticks
                 y_axis_labels = {t:t for t in ticks}
             else:
                 y_axis_labels = {float(t):float(t) for t in unique_times} #change it to a dictionary to keep things consistent
-
+    
         time_to_pos = {}
         y_axis_ticks = {}
         for time in unique_times:
