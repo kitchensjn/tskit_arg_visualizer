@@ -55,7 +55,7 @@ function main_visualizer(
         return xhr.status >= 200 && xhr.status <= 299
     }
     
-    // `a.click()` doesn't work for all browsers (#465)
+    // 'a.click()' doesn't work for all browsers (#465)
     function click (node) {
         try {
             node.dispatchEvent(new MouseEvent('click'))
@@ -341,9 +341,7 @@ function main_visualizer(
         var simulation = d3
             .forceSimulation(graph.nodes)
             .force("link", d3.forceLink()
-                .id(function(d) {
-                    return d.id;
-                })
+                .id(d => d.id)
                 .links(graph.links)
             )
             //.force("center", d3.forceCenter(275,250).strength(-10))
@@ -357,9 +355,7 @@ function main_visualizer(
             .data(graph.links)
             .enter()
             .append("g")
-            .attr("bounds", function(d) {
-                return d.bounds;
-            });
+            .attr("bounds", d => d.bounds);
 
         if ((edge_styles.type == "ortho") & eval(edge_styles.include_underlink)) {
             var underlink = link_container
@@ -370,15 +366,11 @@ function main_visualizer(
         var link = link_container
             .append("path")
             .attr("class", "link")
-            .attr("stroke", function(d) {
-                return d.stroke;
-            });
+            .attr("stroke", d => d.stroke);
         
         if (eval(edge_styles.variable_width)) {
             link
-                .style("stroke-width", function(d) {
-                    return d.region_fraction * 7 + 1;
-                });
+                .style("stroke-width", d => d.region_fraction * 7 + 1);
         }
 
         if (tree_highlighting) {
@@ -442,37 +434,33 @@ function main_visualizer(
             .append("g");
 
         var missing_edges = node_group
-            .filter(function(d) { return (d.not_included_parents>0) | (d.not_included_children>0); })
+            .filter(d => (d.not_included_parents>0) | (d.not_included_children>0))
             .append("g")
             .attr("class", "missing");
 
         var missing_parents = missing_edges
-            .filter(function(d) { return d.not_included_parents>0; })
+            .filter(d => d.not_included_parents>0)
             .append("g")
             .attr("class", "parents")
             .append("g");
         var missing_parents_paths = missing_parents.append("path");
         var missing_parents_texts = missing_parents
             .append("text")
-                .attr("class", function(d) {
-                    return "label"
-                })
+                .attr("class", "label")
                 .style("fill", "gray")
-                .text(function(d) { return d.not_included_parents;});
+                .text(d => d.not_included_parents);
 
         var missing_children = missing_edges
-            .filter(function(d) { return d.not_included_children>0; })
+            .filter(d => d.not_included_children>0)
             .append("g")
             .attr("class", "children")
             .append("g");
         var missing_children_paths = missing_children.append("path");
         var missing_children_texts = missing_children
             .append("text")
-                .attr("class", function(d) {
-                    return "label"
-                })
+                .attr("class", "label")
                 .style("fill", "gray")
-                .text(function(d) { return d.not_included_children;});
+                .text(d => d.not_included_children);
 
         function multi_line_node_text(text, is_leaf) {
             // Split label text onto separate lines by newline characters, if they exist
@@ -499,17 +487,15 @@ function main_visualizer(
 
         var node = node_group
             .append("path")
-            .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
-            .attr("d", d3.symbol().type(function(d) { return eval(d.symbol); }).size(function(d) { return d.size; }))
-            .attr("fill", function(d) { return d.fill; })
-            .attr("stroke", function(d) { return d.stroke; })
-            .attr("stroke-width", function(d) { return d.stroke_width; })
-            .attr("id", function(d) { return String(divnum) + "_node" + d.id; })
-            .attr("class", function(d) {
-                return "node flag" + d.flag
-            })
-            .attr("parents", function(d) { return d.child_of.toString().replace(",", " "); })
-            .attr("children", function(d) { return d.parent_of.toString().replace(",", " "); })
+            .attr("transform", d => "translate(" + d.x + "," + d.y + ")")
+            .attr("d", d3.symbol().type(d => eval(d.symbol)).size(d => d.size))
+            .attr("fill", d => d.fill)
+            .attr("stroke", d => d.stroke)
+            .attr("stroke-width", d => d.stroke_width)
+            .attr("id", d => String(divnum) + "_node" + d.id)
+            .attr("class", d => "node flag" + d.flag)
+            .attr("parents", d => d.child_of.toString().replace(",", " "))
+            .attr("children", d => d.parent_of.toString().replace(",", " "))
             .call(
                 d3
                     .drag()
@@ -599,15 +585,13 @@ function main_visualizer(
             .selectAll("text")
             .data(graph.nodes)
             .enter()
-            //.filter(function(d) { return eval(d.include_label); })
+            //.filter(d => eval(d.include_label))
             .append("g");
 
         var label_text = label
             .attr("class", d => "label n" + d.id)
             .append("text")
-            .each(function(d) {
-                return multi_line_node_text.call(this, d.label, (d.parent_of.length == 0));
-            })
+            .each(d => multi_line_node_text.call(this, d.label, (d.parent_of.length == 0)))
             .attr("transform", rotate_tip);
 
         function determine_path_type(d) {
@@ -816,9 +800,7 @@ function main_visualizer(
                         return d.x = Math.max(50, Math.min(width-50, d.x));
                     }
                 })
-                .attr("cy", function(d) {
-                    return d.y;
-                });
+                .attr("cy", d => d.y);
             
             link_container.each(function(d) {
                 var path_info = determine_path_type(d);
@@ -907,7 +889,7 @@ function main_visualizer(
                         return 0;
                     }
                 })
-                .attr("y", function(d) { return d.y - d.computedHeight/2;});
+                .attr("y", d => d.y - d.computedHeight/2);
             
             if (include_mutation_labels) {
                 mut_symbol_label
@@ -1136,9 +1118,7 @@ function main_visualizer(
                             d3.selectAll(div_selector + " .endpoints")
                                 .style('display', 'block');
                             d3.selectAll(div_selector + " .link")
-                                .style("stroke", function(d) {
-                                    return d.stroke;
-                                });
+                                .style("stroke", d => d.stroke);
                         }
                     }
                 });
@@ -1168,7 +1148,7 @@ function main_visualizer(
                 .data(graph.mutations)
                 .enter()
                 .append("g")
-                .attr("class", function(d) {return "s" + d.site_id + " e" + d.edge;})
+                .attr("class", d => "s" + d.site_id + " e" + d.edge)
                 .style("display", "none");
 
             function createSiteLine(selection) {
@@ -1225,10 +1205,8 @@ function main_visualizer(
                 })
                 .style("font-size", "10px")
                 .style("font-family", "Arial")
-                .attr("fill", function(d) { return d.fill; })
-                .attr("transform", function(d) {
-                    return "translate(" + String(d.x_pos) + "," + String(height-60-10) + ")";
-                });
+                .attr("fill", d => d.fill)
+                .attr("transform", d => "translate(" + String(d.x_pos) + "," + String(height-60-10) + ")");
         
             mut_text
                 .text(function(d) {
