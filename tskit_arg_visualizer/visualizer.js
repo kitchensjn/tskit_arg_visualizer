@@ -594,7 +594,10 @@ function main_visualizer(
         var label_text = label
             .attr("class", d => "label n" + d.id)
             .append("text")
-            .each(d => multi_line_node_text.call(this, d.label, (d.parent_of.length == 0)))
+            .each(function(d) {
+                return multi_line_node_text.call(this, d.label, (d.parent_of.length == 0));
+            })
+            //.each(d => multi_line_node_text.call(this, d.label, (d.parent_of.length == 0)))
             .attr("transform", rotate_tip);
 
         function determine_path_type(d) {
