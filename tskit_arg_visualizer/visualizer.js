@@ -555,8 +555,11 @@ function main_visualizer(
                     if (!eval(i.active)) {
                         d3.select(this).style("cursor", "default")
                         d3.selectAll(div_selector + " .mutations .s" + i.site_id + " rect")
-                            .style("stroke", i.stroke)
-                            .style("fill", i.fill);
+                            .each(function(d) {
+                                d3.select(this)
+                                .style("stroke", d.stroke)
+                                .style("fill", d.fill);
+                            });
                         d3.select(div_selector + " .sites .s" + i.site_id).style("display", "none");
                         tip.style("display", "none");
                     }
