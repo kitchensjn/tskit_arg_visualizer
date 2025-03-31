@@ -1,5 +1,6 @@
 import collections
 import itertools
+import json
 import math
 import operator
 import os
@@ -1577,4 +1578,46 @@ class D3ARG:
                 f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script></head><body>" + html + "</body></html>")
             webbrowser.open(url, new=2)
 
-    
+    def set_x_from_json_file(self, json_path):
+        """
+        Set the x_pos_01 attribute of nodes from a saved JSON file. The
+        returned values are simply for reference and correspond to the
+        non-normalised x_pos values extracted from the file.
+
+        Parameters
+        ----------
+        json_path :
+            Path to a file saved using the 'Download As: JSON' button
+
+        Returns
+        -------
+        x_pos : dict
+            A mapping of node IDs to the x positions in the JSON file.
+        """
+        with open(json_path) as f:
+            return self.set_x_from_json_dict(json.load(f))
+        
+    def set_x_from_json(self, json_string):
+        """
+        Set the x_pos_01 attribute of nodes from a JSON string. The
+        returned values are simply for reference and correspond to the
+        non-normalised x_pos values extracted from the string.
+
+        Parameters
+        ----------
+        json_string :
+            A JSON string, in the format returned by the "Download As: JSON" button
+
+        Returns
+        -------
+        x_pos : dict
+            A mapping of node IDs to the x positions in the JSON string.
+        """
+        return self.set_x_from_json_dict(json.loads(json_string))
+
+    def set_x_from_json_dict(self, json_dict):
+        x_pos = {nd["id"]: nd["x"] for nd in json_dict["data"]["nodes"]}
+        mx, mn = max(x_pos.values()), min(x_pos.values())
+        x_pos_01 = {k: (v-mn)/(mx-mn) for k, v in x_pos.items()}
+        self.nodes["x_pos_01"] = self.nodes.id.map(x_pos_01)
+        return x_pos  # Just for debugging
