@@ -119,7 +119,7 @@ function main_visualizer(
         function getCSSStyles() {
             // Extract CSS Rules
             var extractedCSSText = "";
-            for (var i = 0; i < document.styleSheets.length; i++) {
+            for (var i = 0; i < document.styleSheets.length; i++) { // this could be improved as it loops through all stylings on page
                 var s = document.styleSheets[i];
                 try {
                     if(!s.cssRules) continue;
@@ -129,7 +129,7 @@ function main_visualizer(
                 }
                 var cssRules = s.cssRules;
                 for (var r = 0; r < cssRules.length; r++) {
-                    extractedCSSText += cssRules[r].cssText;
+                    extractedCSSText += cssRules[r].cssText.replace(".d3arg ", ""); // removing reference to d3arg
                 }
             }
             return extractedCSSText;
@@ -182,7 +182,7 @@ function main_visualizer(
             .attr("d", "M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V274.7l-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7V32zM64 352c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V416c0-35.3-28.7-64-64-64H346.5l-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352H64zm368 56a24 24 0 1 1 0 48 24 24 0 1 1 0-48z");
         var saving_methods = saving.append("span").attr("class", "tip desc");
         var methods = saving_methods.append("div").text("Download As:").append("div").attr("class", "savemethods")
-        
+
         methods.append("button").text("JSON")
             .on("click", function() {
                 d3.selectAll(div_selector + " .node").classed("fix", function(d) {
@@ -876,7 +876,6 @@ function main_visualizer(
                     return d.computedWidth;  
                 })
                 .attr("height", function(d) {
-                    console.log(d.size);
                     if (include_mutation_labels) {
                         d.computedHeight = (d.size * 2) + 4; // Font size + top/bottom padding
                     }
