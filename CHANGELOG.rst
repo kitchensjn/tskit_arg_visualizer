@@ -1,4 +1,12 @@
 --------------------
+[0.0.6] - 2025-XX-XX
+--------------------
+
+Added functions for reading in X positions from a JSON file/string (#173)
+
+Minor bugfixes for y-axis ticks(#167) and underline masking (#170)
+
+--------------------
 [0.0.5] - 2025-03-19
 --------------------
 
