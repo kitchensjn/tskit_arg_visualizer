@@ -779,7 +779,7 @@ class D3ARG:
             title=None,
             show_mutations=False,
             ignore_mutation_times=True,
-            include_mutation_labels=False,
+            label_mutations=False,
             condense_mutations=True,
             rotate_tip_labels=False
         ):
@@ -834,7 +834,7 @@ class D3ARG:
             Whether to add mutations to the graph. (default=False)
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-        include_mutation_labels : bool
+        label_mutations : bool
             Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
@@ -1068,7 +1068,7 @@ class D3ARG:
                 "include_underlink":str(bool(include_underlink)).lower()
             },
             "condense_mutations":str(bool(condense_mutations)).lower(),
-            "include_mutation_labels":str(bool(include_mutation_labels)).lower(),
+            "label_mutations":str(bool(label_mutations)).lower(),
             "tree_highlighting":str(bool(tree_highlighting)).lower(),
             "title":str(title),
             "rotate_tip_labels":str(bool(rotate_tip_labels)).lower(),
@@ -1189,7 +1189,7 @@ class D3ARG:
             title=None,
             show_mutations=False,
             ignore_mutation_times=True,
-            include_mutation_labels=False,
+            label_mutations=False,
             condense_mutations=False,
             force_notebook=False,
             rotate_tip_labels=False,
@@ -1234,7 +1234,7 @@ class D3ARG:
             Whether to add mutations to the graph. Only available when `edge_type="line"`. (default=False)
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-        include_mutation_labels : bool
+        label_mutations : bool
             Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
@@ -1271,7 +1271,7 @@ class D3ARG:
             title=title,
             show_mutations=show_mutations,
             ignore_mutation_times=ignore_mutation_times,
-            include_mutation_labels=include_mutation_labels,
+            label_mutations=label_mutations,
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels
         )
@@ -1418,7 +1418,7 @@ class D3ARG:
             title=None,
             show_mutations=False,
             ignore_mutation_times=True,
-            include_mutation_labels=False,
+            label_mutations=False,
             condense_mutations=False,
             return_included_nodes=False,
             force_notebook=False,
@@ -1457,7 +1457,7 @@ class D3ARG:
             Whether to add mutations to the graph. (default=False)
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-        include_mutation_labels : bool
+        label_mutations : bool
             Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
@@ -1489,7 +1489,7 @@ class D3ARG:
             title=title,
             show_mutations=show_mutations,
             ignore_mutation_times=ignore_mutation_times,
-            include_mutation_labels=include_mutation_labels,
+            label_mutations=label_mutations,
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels
         )
@@ -1505,7 +1505,7 @@ class D3ARG:
             self,
             width=500,
             windows=None,
-            include_mutations=False,
+            show_mutations=False,
             force_notebook=False
         ):
         """Draws a genome bar for the D3ARG using D3.js
@@ -1517,7 +1517,7 @@ class D3ARG:
         windows : list of lists
             Each list is are the start and end positions of the windows. Multiple windows can be included.
             (Default is None, ignored)
-        include_mutations : bool
+        show_mutations : bool
             Whether to add ticks for mutations along the genome bar
         force_notebook : bool
             Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
@@ -1542,7 +1542,7 @@ class D3ARG:
                     "width": width_01 * width
                 })
 
-        if include_mutations:
+        if show_mutations:
             transformed_mutations = self.mutations.loc[:,:]
             transformed_mutations["x_pos"] = transformed_mutations["position_01"] * width
             transformed_mutations = transformed_mutations.to_dict("records")
