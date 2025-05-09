@@ -6,7 +6,7 @@ tskit_arg_visualizer.D3ARG.from_ts(ts=ts) converts a tskit.TreeSequence into a D
 
 - Edges are merged together if they fall into either of the two following categories. These are shown as a single graph edge composed of several intervals (see the "bounds" attribute of a link).
     - The edges have the same child node and parent node.
-    - The edges the same child node and the parent nodes are in a recombination node pair (i.e. a pair of corresponding nodes marked with the IS_RE_NODE flag).
+    - The edges the same child node and the parent nodes are in a recombination node pair (i.e. a pair of corresponding nodes marked with the msprime.NODE_IS_RE_EVENT flag).
 - Recombination node pairs are merged into a single node.
     - The ID of the new node is the lesser of the two original node IDs
     - The label is a concatenation of the original node IDs with a "/" in between.
@@ -32,7 +32,7 @@ This is a list of dictionaries, each corresponding to a given node in the graph.
 * **id**: unique identifier of each node
 * **index**: unique identifier of each node (will match id in future update)
 * **label**: string for the node label when plotting (matches the id unless the node is a recombination node when it merges the two tskit node ids together)
-* **flag**: msprime node flag
+* **flags**: msprime node flags
 * **time**: time of the node, pulled directly from tskit.TreeSequence
 * **child_of**: list of parents (recombination node IDs have been merged)
 * **parent_of**: list of children (recombination node IDs have been merged)

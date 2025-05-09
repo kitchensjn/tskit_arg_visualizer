@@ -340,7 +340,7 @@ Below are the two steps for converting the edge and node tables:
 
 - Edges are merged together if they fall into either of the two following categories. These are shown as a single graph edge composed of several intervals (see the "bounds" attribute of a link).
     - The edges have the same child node and parent node.
-    - The edges the same child node and the parent nodes are in a recombination node pair (i.e. a pair of corresponding nodes marked with the IS_RE_NODE flag).
+    - The edges the same child node and the parent nodes are in a recombination node pair (i.e. a pair of corresponding nodes marked with the msprime.NODE_IS_RE_EVENT flag).
 - Recombination node pairs are merged into a single node.
     - The ID of the new node is the lesser of the two original node IDs
     - The label is a concatenation of the original node IDs with a "/" in between.
