@@ -23,7 +23,7 @@ function main_visualizer(
     y_axis,
     edge_styles,
     condense_mutations,
-    include_mutation_labels,
+    label_mutations,
     tree_highlighting,
     title,
     rotate_tip_labels,
@@ -560,7 +560,7 @@ function main_visualizer(
                 .attr("stroke", d => d.stroke)
                 .attr("stroke-width", 2);
 
-        if (include_mutation_labels) {
+        if (label_mutations) {
             var mut_symbol_label = mut_symbol
                 .append("text")
                     .attr("class", "label")
@@ -868,7 +868,7 @@ function main_visualizer(
             mut_symbol_rect
             // Set the rect width / height based on the calculated text width
                 .attr("width", function(d) {
-                    if (include_mutation_labels && d.textWidth) {
+                    if (label_mutations && d.textWidth) {
                         d.computedWidth = d.textWidth + 6; // Add left/right padding
                     } else {
                         d.computedWidth = d.size * 3; // aspect ratio is 3 (3 times wider than tall)
@@ -876,7 +876,7 @@ function main_visualizer(
                     return d.computedWidth;  
                 })
                 .attr("height", function(d) {
-                    if (include_mutation_labels) {
+                    if (label_mutations) {
                         d.computedHeight = (d.size * 2) + 4; // Font size + top/bottom padding
                     }
                     else {
@@ -909,7 +909,7 @@ function main_visualizer(
                 })
                 .attr("y", d => d.y - d.computedHeight/2);
             
-            if (include_mutation_labels) {
+            if (label_mutations) {
                 mut_symbol_label
                     .attr("transform", function(d) {
                         var y = d.y + 1;
@@ -1228,7 +1228,7 @@ function main_visualizer(
         
             mut_text
                 .text(function(d) {
-                    if (include_mutation_labels) {
+                    if (label_mutations) {
                         return String(d.site_id) + ":" + String(d.position);
                     } else {
                         return d.label;
@@ -1259,7 +1259,7 @@ ensureRequire()
     .then(require => {
         require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
         require(["d3"], function(d3) {
-            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $include_mutation_labels, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
+            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
         });
     })
     .catch(err => console.error('Failed to load require.js:', err));
