@@ -1167,13 +1167,14 @@ function main_visualizer(
                 .enter()
                 .append("g")
                 .attr("class", d => "s" + d.site_id + " e" + d.edge)
+                .attr("transform", d => "translate(" + d.x_pos + "," + (height-60) + ")")
                 .style("display", "none");
 
             function createSiteLine(selection) {
                 return selection
                     .append("line")
-                    .attr("y1", height-60-5)
-                    .attr("y2", height-60+40+5)
+                    .attr("y1", -5)
+                    .attr("y2", 40+5)
                     .style("stroke-width", 3)
                     .style("fill", "none");
             }
@@ -1181,8 +1182,8 @@ function main_visualizer(
             function createSiteText(selection) {
                 return selection
                     .append("text")
-                    .attr("y", height-60-8)
-                    .attr("class", "label")
+                    .attr("y", -8)  /* above the tick */
+                    .attr("class", "label");
             }
                   
             site_pos
@@ -1191,20 +1192,14 @@ function main_visualizer(
                         /* d.x_pos is an array of x_pos values */
                         const select = d3.select(this).selectAll("line").data(d.x_pos).enter();
                         createSiteLine(select)
-                            .attr("x1", x => x)
-                            .attr("x2", x => x)
                             .style("stroke", d.fill);
                         createSiteText(select)
-                            .attr("x", x => x)
                             .text((_, i) => String(d.position[i]));
                     } else {
                         const select = d3.select(this);
                         createSiteLine(select)
-                            .attr("x1", d.x_pos)
-                            .attr("x2", d.x_pos)
                             .style("stroke", d.fill);
                         createSiteText(select)
-                            .attr("x", d.x_pos)
                             .text(String(d.position));
                     }
                 });
