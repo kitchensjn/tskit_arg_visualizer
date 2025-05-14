@@ -157,7 +157,7 @@ class D3ARG:
     breakpoints : list
         List of breakpoint dicts that contain info about the breakpoints
     num_samples : int
-        The number of samples in the ARG (with flag=1)
+        The number of samples in the ARG (with (ts_flags & 1) == 1)
     sample_order : list
         Ordered list of sample IDs
 
@@ -265,7 +265,7 @@ class D3ARG:
                 if ignore_unattached_nodes and n not in in_edges:
                     continue
                 samples.append(n)
-        rcnm = np.where(ts.nodes_flags == 131072)[0][1::2]  # NB should probably be (ts.nodes_flags & msprime.NODE_IS_RE_EVENT) != 0
+        rcnm = np.where(ts.nodes_flags & msprime.NODE_IS_RE_EVENT)[0][1::2]
         edges, mutations = cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm, progress=progress)
         nodes = cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, default_node_style=nsd, ignore_unattached_nodes=ignore_unattached_nodes, progress=progress)
         return cls(
@@ -301,7 +301,7 @@ class D3ARG:
         nodes = pd.DataFrame(json["data"]["nodes"])
         nodes["x_pos_01"] = (nodes["x"] - x_shift) / (width-100)
         if json["plot_type"] == "full":
-            samples = nodes.loc[nodes["flag"]==1,["id", "fx"]]
+            samples = nodes.loc[bool(nodes["ts_flags"] & tskit.NODE_IS_SAMPLE),["id", "fx"]]
             num_samples = samples.shape[0]
             sample_order = [sample for _, sample in sorted(zip(samples["fx"], samples["id"]))]
         else:
@@ -360,7 +360,7 @@ class D3ARG:
         nodes = {
             u: (default_node_style | {
                 "id": u,
-                "flag": flags,
+                "ts_flags": flags,
                 "time": time,
                 "child_of": set(),  # will later convert to list
                 "parent_of": set(),  # will later convert to list
@@ -379,7 +379,7 @@ class D3ARG:
             info['child_of'] = sorted(info['child_of'])
             info['parent_of'] = unique_parent_of = sorted(info['parent_of'])
 
-            if info["flag"] == 131072:
+            if info["ts_flags"] == 131072:
                 info["label"] = str(u)+"/"+str(u+1)
                 if (len(unique_parent_of) == 1) and not (nodes_flags[unique_parent_of[0]] & msprime.NODE_IS_RE_EVENT != 0):
                     info["x_pos_reference"] = unique_parent_of[0]
@@ -593,7 +593,7 @@ class D3ARG:
         """Resets node labels to default (based on msprime IDs)"""
 
         for node in self.nodes:
-            if node["flag"] == 131072:
+            if node["ts_flags"] == msprime.NODE_IS_RE_EVENT:
                 node["label"] = str(node["id"]) + "/" + str(node["id"]+1)
             else:
                 node["label"] = str(node["id"])
@@ -719,7 +719,7 @@ class D3ARG:
         """
 
         for node in nodes:
-            found = list(self.nodes.loc[self.nodes["id"] == int(node)]["flag"])
+            found = list(self.nodes.loc[self.nodes["id"] == int(node)]["ts_flags"])
             if len(found) > 0:
                 if len(found) == 1:
                     if found[0] != 1:
@@ -755,7 +755,7 @@ class D3ARG:
             raise ValueError(f"Node '{check_samples[1]}' not a sample and cannot be included in sample order.")
         for node in self.sample_order:
             found = self.nodes.loc[self.nodes["id"] == int(node)].iloc[0]
-            if found["flag"] == 1 and found["id"] not in order:
+            if (found["ts_flags"] & tskit.NODE_IS_SAMPLE) and found["id"] not in order:
                 order.append(found["id"])
         return order
     
@@ -928,7 +928,7 @@ class D3ARG:
         for index, node in nodes.iterrows():
             if "x_pos_01" in node:
                 node["fx"] = node["x_pos_01"] * (width-100) + default_left_spacing + y_axis_left_spacing
-            elif (node["flag"] == 1) and (plot_type == "full"):
+            elif (node["ts_flags"] & tskit.NODE_IS_SAMPLE) and (plot_type == "full"):
                 node["fx"] = sample_positions[sample_order.index(node["id"])]
             else:
                 node["x"] = 0.5 * (width-100) + default_left_spacing + y_axis_left_spacing
@@ -1108,9 +1108,9 @@ class D3ARG:
         for edge in branch_lengths.itertuples():
             if counter >= zoom:
                 break
-            source_flag = self.nodes.loc[self.nodes["id"] == edge.source]["flag"].iloc[0]
-            target_flag = self.nodes.loc[self.nodes["id"] == edge.target]["flag"].iloc[0]
-            if (target_flag != 1): #and (target_flag != msprime.NODE_IS_RE_EVENT) and (source_flag != msprime.NODE_IS_RE_EVENT):
+            source_flags = self.nodes.loc[self.nodes["id"] == edge.source]["ts_flags"].iloc[0]
+            target_flags = self.nodes.loc[self.nodes["id"] == edge.target]["ts_flags"].iloc[0]
+            if (target_flags & tskit.NODE_IS_SAMPLE) == 0: #and (target_flags != msprime.NODE_IS_RE_EVENT) and (source_flags != msprime.NODE_IS_RE_EVENT):
                 source_i = self.nodes[self.nodes["id"] == edge.source].index[0]
                 target_i = self.nodes[self.nodes["id"] == edge.target].index[0]
                 if largest_summary_node[source_i] != largest_summary_node[target_i]:
@@ -1153,7 +1153,7 @@ class D3ARG:
                 else:
                     nodes.append({
                         "id":id,
-                        "flag":99,
+                        "ts_flags":99,
                         "time":mapped_node_times[id],
                         "child_of":[],
                         "parent_of":[],
