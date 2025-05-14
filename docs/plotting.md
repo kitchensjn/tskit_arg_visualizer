@@ -32,7 +32,7 @@ This is a list of dictionaries, each corresponding to a given node in the graph.
 * **id**: unique identifier of each node
 * **index**: unique identifier of each node (will match id in future update)
 * **label**: string for the node label when plotting (matches the id unless the node is a recombination node when it merges the two tskit node ids together)
-* **flags**: msprime node flags
+* **ts_flags**: msprime node flags
 * **time**: time of the node, pulled directly from tskit.TreeSequence
 * **child_of**: list of parents (recombination node IDs have been merged)
 * **parent_of**: list of children (recombination node IDs have been merged)

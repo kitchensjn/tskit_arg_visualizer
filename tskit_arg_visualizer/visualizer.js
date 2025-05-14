@@ -230,7 +230,7 @@ function main_visualizer(
                 if (!event.active) simulation.alphaTarget(0.3).restart();       
                 var order = d3.selectAll(div_selector + " .sample").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
                 d3.selectAll(div_selector + " .node").classed("unfix", function(d) {
-                    if ((d.flags & NODE_IS_SAMPLE) & (d.x_pos_reference == -1)) {
+                    if ((d.ts_flags & NODE_IS_SAMPLE) & (d.x_pos_reference == -1)) {
                         delete d.fx;
                     } else {
                         d.fx = evenly_distributed_positions[order.indexOf(d.id)];
@@ -495,7 +495,7 @@ function main_visualizer(
             .attr("stroke", d => d.stroke)
             .attr("stroke-width", d => d.stroke_width)
             .attr("id", d => String(divnum) + "_node" + d.id)
-            .attr("class", d => "node flag" + d.flags + (d.flags & NODE_IS_SAMPLE ? " sample" : ""))
+            .attr("class", d => "node flag" + d.ts_flags + (d.ts_flags & NODE_IS_SAMPLE ? " sample" : ""))
             .attr("parents", d => d.child_of.toString().replace(",", " "))
             .attr("children", d => d.parent_of.toString().replace(",", " "))
             .call(
@@ -617,7 +617,7 @@ function main_visualizer(
                 var alt_child_x = alt_child.getAttribute("cx");
                 var alt_child_y = alt_child.getAttribute("cy");
             }
-            if (d.source.flags & NODE_IS_RE_EVENT) {
+            if (d.source.ts_flags & NODE_IS_RE_EVENT) {
                 path_type += "r0";
                 start_position_y = d.source.y + vnub;
             } else {
@@ -684,7 +684,7 @@ function main_visualizer(
                 var alt_parent_x = alt_parent.getAttribute("cx");
                 var alt_parent_y = alt_parent.getAttribute("cy");
             }
-            if (d.target.flags & NODE_IS_RE_EVENT) {
+            if (d.target.ts_flags & NODE_IS_RE_EVENT) {
                 if (d.source.y < alt_parent_y) {
                     if (alt_parent_x < d.target.x) {
                         if (d.source.x < d.target.x + 40) {
@@ -942,7 +942,7 @@ function main_visualizer(
             }
 
             function determine_label_positioning(d) {
-                if (d.flags & NODE_IS_RE_EVENT || d.parent_of.length == 0 || d.child_of.length == 0) {
+                if (d.ts_flags & NODE_IS_RE_EVENT || d.parent_of.length == 0 || d.child_of.length == 0) {
                     return "c";
                 } else if (d.child_of.length == 1) {
                     var parent = document.getElementById(String(divnum) + "_node" + d.child_of[0])
