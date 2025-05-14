@@ -72,7 +72,7 @@ def draw(
     title=None,
     show_mutations=False,
     ignore_mutation_times=True,
-    include_mutation_labels=False,
+    label_mutations=False,
     condense_mutations=False,
     force_notebook=False
 ):
@@ -113,7 +113,7 @@ show_mutations : bool
     Whether to add mutations to the graph. Only available when `edge_type="line"`. (default=False)
 ignore_mutation_times : bool
     Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-include_mutation_labels : bool
+label_mutations : bool
     Whether to add the full label (inherited_state + position + derived_state) for each mutation. (default=False)
 condense_mutations : bool
     Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
@@ -148,7 +148,7 @@ def draw_node(
     title=None,
     show_mutations=False,
     ignore_mutation_times=True,
-    include_mutation_labels=False,
+    label_mutations=False,
     condense_mutations=False,
     return_included_nodes=False,
     force_notebook=False
@@ -184,7 +184,7 @@ show_mutations : bool
     Whether to add mutations to the graph. (default=False)
 ignore_mutation_times : bool
     Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-include_mutation_labels : bool
+label_mutations : bool
     Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
 condense_mutations : bool
     Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
@@ -202,7 +202,7 @@ The genome bar displays the chromosome broken down into chunks according to the 
 ```
 d3arg.draw_genome_bar(
     windows=[[0,1000]],
-    include_mutations=True
+    show_mutations=True
 )
 ```
 
@@ -213,7 +213,7 @@ def draw_genome_bar(
     self,
     width=500,
     windows=None,
-    include_mutations=False,
+    show_mutations=False,
     force_notebook=False
 ):
 """Draws a genome bar for the D3ARG using D3.js
@@ -225,7 +225,7 @@ width : int
 windows : list of lists
     Each list is are the start and end positions of the windows. Multiple windows can be included.
     (Default is None, ignored)
-include_mutations : bool
+show_mutations : bool
     Whether to add ticks for mutations along the genome bar
 force_notebook : bool
     Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
