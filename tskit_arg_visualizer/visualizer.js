@@ -166,6 +166,9 @@ function main_visualizer(
     }
 
     function draw_force_diagram() {
+
+        console.log(title);
+        
         var evenly_distributed_positions = graph.evenly_distributed_positions;
         var div_selector = "#arg_" + String(divnum)
         var tip = d3.select(div_selector).append("div")
@@ -1177,11 +1180,10 @@ function main_visualizer(
                     .attr("y", height-60-8)
                     .attr("class", "label")
             }
-                  
+            
             site_pos
                 .each(function(d) {
                     if (typeof(d.x_pos) == "object") {
-                        /* d.x_pos is an array of x_pos values */
                         const select = d3.select(this).selectAll("line").data(d.x_pos).enter();
                         createSiteLine(select)
                             .attr("x1", x => x)
