@@ -635,22 +635,51 @@ class D3ARG:
             self.nodes["stroke"] = stroke
         if stroke_width != None:
             self.nodes["stroke_width"] = stroke_width
-        
+    
+    @staticmethod
+    def _set_styles(dataframe, styles, allowed_keys):
+         # NB: this is very inefficient for lots of nodes. If you want to style e.g.
+        # a set of nodes, it is quicker to use something like
+        # d3arg.nodes.loc[np.isin(self.nodes["id"], node_ids), "size"] = size
+        for item_id, style in styles.items():
+            if 'id' in dataframe.columns:
+                use = dataframe["id"] == item_id
+            else:
+                use = item_id
+            for k in style.keys():
+                if k not in allowed_keys:
+                    raise ValueError(
+                        f"Invalid key '{k}' in styles. Allowed keys are {allowed_keys}.")
+            dataframe.loc[use, list(style.keys())] = list(style.values())
+
     def set_node_styles(self, styles):
         """Individually control the styling of each node.
 
         Parameters
         ----------
-        styles : list
-            List of dicts, one per node, with the styling keys: id, size, symbol, fill, stroke, stroke_width.
-            "id" is the only mandatory key. Only nodes that need styles updated need to be provided.
+        styles : dict
+            A dictionary whose keys are node ids, and whose values are separate dicts
+            containing any of the styling keys: size, symbol, fill, stroke, stroke_width.
+            Only nodes that need styles updated need to be provided, and all styling
+            keys are optional.
         """
+        allowed_keys = {"size", "symbol", "fill", "stroke", "stroke_width"}
+        self._set_styles(self.nodes, styles, allowed_keys)
 
-        for node in styles:
-            for key in node.keys():
-                if key in ["size", "symbol", "fill", "stroke", "stroke_width"]:
-                    self.nodes.loc[self.nodes["id"]==node["id"], key] = node[key]
-        
+    def set_mutation_styles(self, styles):
+        """Individually control the styling of each mutation.
+
+        Parameters
+        ----------
+        styles : dict
+            A dictionary whose keys are mutation ids, and whose values are separate
+            dictionaries containing any of the styling keys: size, fill, stroke.
+            Only mutations that need styles updated need to be provided, and all
+            styling keys are optional.
+        """
+        allowed_keys = {"fill", "stroke", "size"}
+        self._set_styles(self.mutations, styles, allowed_keys)
+
     def set_edge_colors(self, colors):
         """Set the color of each edge in the ARG
 
@@ -660,7 +689,7 @@ class D3ARG:
             ID of the edge and its new color
         """
 
-        for id in colors:
+        for id, val in colors:
             if id in self.edges["id"]:
                 self.edges.loc[self.edges["id"]==id, "stroke"] = colors[id]
             else:
