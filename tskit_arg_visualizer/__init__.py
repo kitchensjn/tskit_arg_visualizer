@@ -958,6 +958,7 @@ class D3ARG:
                             "y": fy,
                             "fy": fy,
                             "site_id": edge,
+                            "position": list(muts["position"]),
                             "x_pos": list(x_pos),
                             "fill": "pink",
                             "stroke": "#053e4e",
@@ -1004,7 +1005,7 @@ class D3ARG:
                         mut["x_pos"] = mut["position_01"] * width + y_axis_left_spacing
                         mut["fy"] = fy
                         mut["y"] = mut["fy"]
-                        mut["position_index"] = mut.site_id
+                        #mut["position_index"] = mut.site_id
                         mut["label"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
                         mut["content"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
                         transformed_muts.append(mut.to_dict())
@@ -1070,7 +1071,7 @@ class D3ARG:
             "condense_mutations":str(bool(condense_mutations)).lower(),
             "label_mutations":str(bool(label_mutations)).lower(),
             "tree_highlighting":str(bool(tree_highlighting)).lower(),
-            "title":str(title),
+            "title":str(title).replace("\n", "\\n"),
             "rotate_tip_labels":str(bool(rotate_tip_labels)).lower(),
             "plot_type":plot_type,
             "default_node_style":self.default_node_style

@@ -168,6 +168,9 @@ function main_visualizer(
     }
 
     function draw_force_diagram() {
+
+        console.log(title);
+        
         var evenly_distributed_positions = graph.evenly_distributed_positions;
         var div_selector = "#arg_" + String(divnum)
         var tip = d3.select(div_selector).append("div")
@@ -273,11 +276,11 @@ function main_visualizer(
             label_text.each(function(d) {
                 d3.select(this).selectAll("*").remove();
                 if (selected == "default") {
-                    multi_line_node_text.call(this, d.label, (d.parent_of.length == 0));
+                    multi_line_text.call(this, d.label, (d.parent_of.length == 0));
                 } else if (selected == "id") {
-                    multi_line_node_text.call(this, "#" + String(d.id));
+                    multi_line_text.call(this, "#" + String(d.id));
                 } else {
-                    multi_line_node_text.call(this, "");
+                    multi_line_text.call(this, "");
                 }
             })
         }
@@ -464,27 +467,20 @@ function main_visualizer(
                 .style("fill", "gray")
                 .text(d => d.not_included_children);
 
-        function multi_line_node_text(text, is_leaf) {
+        function multi_line_text(text, top_align) {
             // Split label text onto separate lines by newline characters, if they exist
-            var lines = text.split("\n");
+            const lines = text.split("\n");
+            const parentX = d3.select(this).attr("x") || "0";  // Get parent text's x position
+            const initialDy = top_align ? "0em" : (-1 * (lines.length - 1)) + "em";
+
+            d3.select(this).text(null); // clear existing text
             d3.select(this).selectAll('tspan')
                 .data(lines)
                 .enter()
                 .append('tspan')
-                .text(function(line) { return line; })
-                .attr('x', 0)
-                .attr('y', function(d, i) { 
-                    if (lines.length > 1) {
-                        if (is_leaf) {
-                            // Positioning multiple lines so top line is always in the same position
-                            return String(i) + "em"
-                        } else {
-                            // Positioning multiple lines so bottom line is always in the same position
-                            return String(i - lines.length + 1) + "em"
-                        }
-                    }
-                    return null
-                });
+                .text(d => d)
+                .attr('x', parentX)  // Use parent's x position
+                .attr('dy', (d, i) => ((i === 0) ? initialDy : "1em"));
         }
 
         var node = node_group
@@ -597,9 +593,9 @@ function main_visualizer(
             .attr("class", d => "label n" + d.id)
             .append("text")
             .each(function(d) {
-                return multi_line_node_text.call(this, d.label, (d.parent_of.length == 0));
+                multi_line_text.call(this, d.label, (d.parent_of.length == 0));
             })
-            //.each(d => multi_line_node_text.call(this, d.label, (d.parent_of.length == 0)))
+            //.each(d => multi_line_text.call(this, d.label, (d.parent_of.length == 0)))
             .attr("transform", rotate_tip);
 
         function determine_path_type(d) {
@@ -1186,11 +1182,10 @@ function main_visualizer(
                     .attr("y", height-60-8)
                     .attr("class", "label")
             }
-                  
+            
             site_pos
                 .each(function(d) {
                     if (typeof(d.x_pos) == "object") {
-                        /* d.x_pos is an array of x_pos values */
                         const select = d3.select(this).selectAll("line").data(d.x_pos).enter();
                         createSiteLine(select)
                             .attr("x1", x => x)
@@ -1242,11 +1237,13 @@ function main_visualizer(
         if (title != "None") {
             svg.append("text")
                 .attr("class", "label")
-                .text(title)
                 .style("font-size", "20px")
                 .attr("x", width / 2)
-                .style("transform", "translate(-50%, 50%)")
-                .attr("y", 30);
+                .attr("text-anchor", "middle")
+                .attr("y", 30)
+                .each(function() { 
+                    multi_line_text.call(this, title, true); 
+                });
         }
     }
 
