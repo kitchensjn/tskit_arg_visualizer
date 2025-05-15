@@ -247,20 +247,18 @@ d3arg.set_node_labels(labels=node_labels)
 Node labels can be changed using the `d3arg.set_node_labels()` function. The example above will change the labels of Nodes 0 and 1 to "alpha" and "", respectively. An empty string is equivalent to removing the label of that specific node. Labels are always converted to strings. You can then redraw `d3arg` with the updated labels.
 
 ```
-node_styles = [
-    {
-        "id":0,
+node_styles = {
+    0: {
         "size":10,
         "symbol":"d3.symbolSquare",
         "fill":"blue",
         "stroke":"purple",
         "stroke_width":5
     },
-    {
-        "id":1,
+    1: {
         "symbol":"d3.symbolStar"
     }
-]
+}
 d3arg.set_node_styles(styles=node_styles)
 
 edge_colors = {
@@ -269,6 +267,15 @@ edge_colors = {
     2:"green"
 }
 d3arg.set_edge_colors(colors=edge_colors)
+
+mutation_styles = {
+    1: {
+        "fill": blue,
+        "stroke": green,
+        "size": 10
+    }
+}
+d3arg.set_mutation_styles(styles=mutation_styles)
 
 block_colors = {
     1:"red",
