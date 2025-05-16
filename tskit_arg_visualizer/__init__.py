@@ -137,25 +137,30 @@ def draw_D3(arg_json, styles=None, force_notebook=False):
     main_text = main_text_template.safe_substitute(arg_json)
     html = JS_text.safe_substitute({'main_text': main_text})
     css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
-    default_styles = css.read()
+    general_styles = css.read()
     css.close()
-    style = ""
+    specific_styles = ""
     if styles is not None:
         if isinstance(styles, str):
             raise ValueError("Styles should be a list of CSS strings, not a single string")
         for s in styles:
-            style += f"#{arg_id} " + s
-        if "<" in style:
+            specific_styles += f"#{arg_id} " + s
+        if "<" in specific_styles:
             # prevent minor footguns e.g. accidentally closing the style tag
             # Note this doesn't stop malicious user code e.g. url() loading
             raise ValueError("Listed styles cannot contain the '<' sign.")
-        style = "<style>"+style+"</style>"
+    styles = f"<style>{general_styles}</style>"
+    if specific_styles:
+        styles += f"<style>{specific_styles}</style>"
+
     if force_notebook or running_in_notebook():
-        display(HTML("<style>"+default_styles+"</style>" + style + html))
+        display(HTML(styles + html))
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
-            f.write("<!DOCTYPE html><html><head><meta charset='utf-8'><style>"+styles+"</style></head><body>" + html + "</body></html>")
+            f.write("<!DOCTYPE html><html>")
+            f.write("<head><meta charset='utf-8'>" + styles + "</head>")
+            f.write("<body>" + html + "</body></html>")
         webbrowser.open(url, new=2)
 
 class D3ARG:
@@ -281,8 +286,17 @@ class D3ARG:
                     continue
                 samples.append(n)
         rcnm = np.where(ts.nodes_flags & msprime.NODE_IS_RE_EVENT)[0][1::2]
-        edges, mutations = cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm, progress=progress)
-        nodes = cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, default_node_style=nsd, ignore_unattached_nodes=ignore_unattached_nodes, progress=progress)
+        edges, mutations = cls._convert_edges_table(
+            ts=ts,
+            recombination_nodes_to_merge=rcnm,
+            progress=progress,
+        )
+        nodes = cls._convert_nodes_table(
+            ts=ts,
+            recombination_nodes_to_merge=rcnm,
+            default_node_style=nsd,
+            ignore_unattached_nodes=ignore_unattached_nodes,
+            progress=progress)
         return cls(
             nodes=nodes,
             edges=edges,
