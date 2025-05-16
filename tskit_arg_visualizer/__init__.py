@@ -316,7 +316,7 @@ class D3ARG:
         nodes = pd.DataFrame(json["data"]["nodes"])
         nodes["x_pos_01"] = (nodes["x"] - x_shift) / (width-100)
         if json["plot_type"] == "full":
-            samples = nodes.loc[bool(nodes["ts_flags"] & tskit.NODE_IS_SAMPLE),["id", "fx"]]
+            samples = nodes.loc[(nodes["ts_flags"] & tskit.NODE_IS_SAMPLE) != 0,["id", "fx"]]
             num_samples = samples.shape[0]
             sample_order = [sample for _, sample in sorted(zip(samples["fx"], samples["id"]))]
         else:
