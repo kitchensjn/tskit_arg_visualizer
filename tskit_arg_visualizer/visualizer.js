@@ -23,7 +23,7 @@ function main_visualizer(
     y_axis,
     edge_styles,
     condense_mutations,
-    include_mutation_labels,
+    label_mutations,
     tree_highlighting,
     title,
     rotate_tip_labels,
@@ -55,7 +55,7 @@ function main_visualizer(
         return xhr.status >= 200 && xhr.status <= 299
     }
     
-    // `a.click()` doesn't work for all browsers (#465)
+    // 'a.click()' doesn't work for all browsers (#465)
     function click (node) {
         try {
             node.dispatchEvent(new MouseEvent('click'))
@@ -97,6 +97,8 @@ function main_visualizer(
         }
     }
 
+    const NODE_IS_SAMPLE = 1;
+    const NODE_IS_RE_EVENT = 131072;
     var line = d3.line();
     var step = d3.line().curve(d3.curveStep);
     var stepAfter = d3.line().curve(d3.curveStepAfter);
@@ -119,7 +121,7 @@ function main_visualizer(
         function getCSSStyles() {
             // Extract CSS Rules
             var extractedCSSText = "";
-            for (var i = 0; i < document.styleSheets.length; i++) {
+            for (var i = 0; i < document.styleSheets.length; i++) { // this could be improved as it loops through all stylings on page
                 var s = document.styleSheets[i];
                 try {
                     if(!s.cssRules) continue;
@@ -129,7 +131,7 @@ function main_visualizer(
                 }
                 var cssRules = s.cssRules;
                 for (var r = 0; r < cssRules.length; r++) {
-                    extractedCSSText += cssRules[r].cssText;
+                    extractedCSSText += cssRules[r].cssText.replace(".d3arg ", ""); // removing reference to d3arg
                 }
             }
             return extractedCSSText;
@@ -166,6 +168,9 @@ function main_visualizer(
     }
 
     function draw_force_diagram() {
+
+        console.log(title);
+        
         var evenly_distributed_positions = graph.evenly_distributed_positions;
         var div_selector = "#arg_" + String(divnum)
         var tip = d3.select(div_selector).append("div")
@@ -182,7 +187,7 @@ function main_visualizer(
             .attr("d", "M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V274.7l-73.4-73.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l128 128c12.5 12.5 32.8 12.5 45.3 0l128-128c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L288 274.7V32zM64 352c-35.3 0-64 28.7-64 64v32c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V416c0-35.3-28.7-64-64-64H346.5l-45.3 45.3c-25 25-65.5 25-90.5 0L165.5 352H64zm368 56a24 24 0 1 1 0 48 24 24 0 1 1 0-48z");
         var saving_methods = saving.append("span").attr("class", "tip desc");
         var methods = saving_methods.append("div").text("Download As:").append("div").attr("class", "savemethods")
-        
+
         methods.append("button").text("JSON")
             .on("click", function() {
                 d3.selectAll(div_selector + " .node").classed("fix", function(d) {
@@ -226,9 +231,9 @@ function main_visualizer(
         var reheat = dashboard.append("button").attr("class", "dashbutton activecolor")
             .on("click", function(event) {
                 if (!event.active) simulation.alphaTarget(0.3).restart();       
-                var order = d3.selectAll(div_selector + " .flag1").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
+                var order = d3.selectAll(div_selector + " .sample").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
                 d3.selectAll(div_selector + " .node").classed("unfix", function(d) {
-                    if ((d.flag != 1) & (d.x_pos_reference == -1)) {
+                    if ((d.ts_flags & NODE_IS_SAMPLE) & (d.x_pos_reference == -1)) {
                         delete d.fx;
                     } else {
                         d.fx = evenly_distributed_positions[order.indexOf(d.id)];
@@ -245,8 +250,8 @@ function main_visualizer(
         if (plot_type == "full") {
             var evenly_distribute = dashboard.append("button").attr("class", "dashbutton activecolor")
                 .on("click", function() {
-                    var order = d3.selectAll(div_selector + " .flag1").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
-                    d3.selectAll(div_selector + " .flag1").classed("distribute", function(d) {
+                    var order = d3.selectAll(div_selector + " .sample").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
+                    d3.selectAll(div_selector + " .sample").classed("distribute", function(d) {
                         d.fx = evenly_distributed_positions[order.indexOf(d.id)];
                     });
                 });
@@ -271,11 +276,11 @@ function main_visualizer(
             label_text.each(function(d) {
                 d3.select(this).selectAll("*").remove();
                 if (selected == "default") {
-                    multi_line_node_text.call(this, d.label, (d.parent_of.length == 0));
+                    multi_line_text.call(this, d.label, (d.parent_of.length == 0));
                 } else if (selected == "id") {
-                    multi_line_node_text.call(this, "#" + String(d.id));
+                    multi_line_text.call(this, "#" + String(d.id));
                 } else {
-                    multi_line_node_text.call(this, "");
+                    multi_line_text.call(this, "");
                 }
             })
         }
@@ -341,9 +346,7 @@ function main_visualizer(
         var simulation = d3
             .forceSimulation(graph.nodes)
             .force("link", d3.forceLink()
-                .id(function(d) {
-                    return d.id;
-                })
+                .id(d => d.id)
                 .links(graph.links)
             )
             //.force("center", d3.forceCenter(275,250).strength(-10))
@@ -357,9 +360,7 @@ function main_visualizer(
             .data(graph.links)
             .enter()
             .append("g")
-            .attr("bounds", function(d) {
-                return d.bounds;
-            });
+            .attr("bounds", d => d.bounds);
 
         if ((edge_styles.type == "ortho") & eval(edge_styles.include_underlink)) {
             var underlink = link_container
@@ -370,15 +371,11 @@ function main_visualizer(
         var link = link_container
             .append("path")
             .attr("class", "link")
-            .attr("stroke", function(d) {
-                return d.stroke;
-            });
+            .attr("stroke", d => d.stroke);
         
         if (eval(edge_styles.variable_width)) {
             link
-                .style("stroke-width", function(d) {
-                    return d.region_fraction * 7 + 1;
-                });
+                .style("stroke-width", d => d.region_fraction * 7 + 1);
         }
 
         if (tree_highlighting) {
@@ -442,74 +439,61 @@ function main_visualizer(
             .append("g");
 
         var missing_edges = node_group
-            .filter(function(d) { return (d.not_included_parents>0) | (d.not_included_children>0); })
+            .filter(d => (d.not_included_parents>0) | (d.not_included_children>0))
             .append("g")
             .attr("class", "missing");
 
         var missing_parents = missing_edges
-            .filter(function(d) { return d.not_included_parents>0; })
+            .filter(d => d.not_included_parents>0)
             .append("g")
             .attr("class", "parents")
             .append("g");
         var missing_parents_paths = missing_parents.append("path");
         var missing_parents_texts = missing_parents
             .append("text")
-                .attr("class", function(d) {
-                    return "label"
-                })
+                .attr("class", "label")
                 .style("fill", "gray")
-                .text(function(d) { return d.not_included_parents;});
+                .text(d => d.not_included_parents);
 
         var missing_children = missing_edges
-            .filter(function(d) { return d.not_included_children>0; })
+            .filter(d => d.not_included_children>0)
             .append("g")
             .attr("class", "children")
             .append("g");
         var missing_children_paths = missing_children.append("path");
         var missing_children_texts = missing_children
             .append("text")
-                .attr("class", function(d) {
-                    return "label"
-                })
+                .attr("class", "label")
                 .style("fill", "gray")
-                .text(function(d) { return d.not_included_children;});
+                .text(d => d.not_included_children);
 
-        function multi_line_node_text(text, is_leaf) {
+        function multi_line_text(text, top_align) {
             // Split label text onto separate lines by newline characters, if they exist
-            var lines = text.split("\n");
+            const lines = text.split("\n");
+            const parentX = d3.select(this).attr("x") || "0";  // Get parent text's x position
+            const initialDy = top_align ? "0em" : (-1 * (lines.length - 1)) + "em";
+
+            d3.select(this).text(null); // clear existing text
             d3.select(this).selectAll('tspan')
                 .data(lines)
                 .enter()
                 .append('tspan')
-                .text(function(line) { return line; })
-                .attr('x', 0)
-                .attr('y', function(d, i) { 
-                    if (lines.length > 1) {
-                        if (is_leaf) {
-                            // Positioning multiple lines so top line is always in the same position
-                            return String(i) + "em"
-                        } else {
-                            // Positioning multiple lines so bottom line is always in the same position
-                            return String(i - lines.length + 1) + "em"
-                        }
-                    }
-                    return null
-                });
+                .text(d => d)
+                .attr('x', parentX)  // Use parent's x position
+                .attr('dy', (d, i) => ((i === 0) ? initialDy : "1em"));
         }
 
         var node = node_group
             .append("path")
-            .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
-            .attr("d", d3.symbol().type(function(d) { return eval(d.symbol); }).size(function(d) { return d.size; }))
-            .attr("fill", function(d) { return d.fill; })
-            .attr("stroke", function(d) { return d.stroke; })
-            .attr("stroke-width", function(d) { return d.stroke_width; })
-            .attr("id", function(d) { return String(divnum) + "_node" + d.id; })
-            .attr("class", function(d) {
-                return "node flag" + d.flag
-            })
-            .attr("parents", function(d) { return d.child_of.toString().replace(",", " "); })
-            .attr("children", function(d) { return d.parent_of.toString().replace(",", " "); })
+            .attr("transform", d => "translate(" + d.x + "," + d.y + ")")
+            .attr("d", d3.symbol().type(d => eval(d.symbol)).size(d => d.size))
+            .attr("fill", d => d.fill)
+            .attr("stroke", d => d.stroke)
+            .attr("stroke-width", d => d.stroke_width)
+            .attr("id", d => String(divnum) + "_node" + d.id)
+            .attr("class", d => "node flag" + d.ts_flags + (d.ts_flags & NODE_IS_SAMPLE ? " sample" : ""))
+            .attr("parents", d => d.child_of.toString().replace(",", " "))
+            .attr("children", d => d.parent_of.toString().replace(",", " "))
             .call(
                 d3
                     .drag()
@@ -555,8 +539,11 @@ function main_visualizer(
                     if (!eval(i.active)) {
                         d3.select(this).style("cursor", "default")
                         d3.selectAll(div_selector + " .mutations .s" + i.site_id + " rect")
-                            .style("stroke", i.stroke)
-                            .style("fill", i.fill);
+                            .each(function(d) {
+                                d3.select(this)
+                                .style("stroke", d.stroke)
+                                .style("fill", d.fill);
+                            });
                         d3.select(div_selector + " .sites .s" + i.site_id).style("display", "none");
                         tip.style("display", "none");
                     }
@@ -571,7 +558,7 @@ function main_visualizer(
                 .attr("stroke", d => d.stroke)
                 .attr("stroke-width", 2);
 
-        if (include_mutation_labels) {
+        if (label_mutations) {
             var mut_symbol_label = mut_symbol
                 .append("text")
                     .attr("class", "label")
@@ -599,15 +586,16 @@ function main_visualizer(
             .selectAll("text")
             .data(graph.nodes)
             .enter()
-            //.filter(function(d) { return eval(d.include_label); })
+            //.filter(d => eval(d.include_label))
             .append("g");
 
         var label_text = label
             .attr("class", d => "label n" + d.id)
             .append("text")
             .each(function(d) {
-                return multi_line_node_text.call(this, d.label, (d.parent_of.length == 0));
+                multi_line_text.call(this, d.label, (d.parent_of.length == 0));
             })
+            //.each(d => multi_line_text.call(this, d.label, (d.parent_of.length == 0)))
             .attr("transform", rotate_tip);
 
         function determine_path_type(d) {
@@ -625,7 +613,7 @@ function main_visualizer(
                 var alt_child_x = alt_child.getAttribute("cx");
                 var alt_child_y = alt_child.getAttribute("cy");
             }
-            if (d.source.flag == 131072) {
+            if (d.source.ts_flags & NODE_IS_RE_EVENT) {
                 path_type += "r0";
                 start_position_y = d.source.y + vnub;
             } else {
@@ -692,7 +680,7 @@ function main_visualizer(
                 var alt_parent_x = alt_parent.getAttribute("cx");
                 var alt_parent_y = alt_parent.getAttribute("cy");
             }
-            if (d.target.flag == 131072) {
+            if (d.target.ts_flags & NODE_IS_RE_EVENT) {
                 if (d.source.y < alt_parent_y) {
                     if (alt_parent_x < d.target.x) {
                         if (d.source.x < d.target.x + 40) {
@@ -828,9 +816,7 @@ function main_visualizer(
                         return d.x = Math.max(50, Math.min(width-50, d.x));
                     }
                 })
-                .attr("cy", function(d) {
-                    return d.y;
-                });
+                .attr("cy", d => d.y);
             
             link_container.each(function(d) {
                 var path_info = determine_path_type(d);
@@ -880,7 +866,7 @@ function main_visualizer(
             mut_symbol_rect
             // Set the rect width / height based on the calculated text width
                 .attr("width", function(d) {
-                    if (include_mutation_labels && d.textWidth) {
+                    if (label_mutations && d.textWidth) {
                         d.computedWidth = d.textWidth + 6; // Add left/right padding
                     } else {
                         d.computedWidth = d.size * 3; // aspect ratio is 3 (3 times wider than tall)
@@ -888,8 +874,7 @@ function main_visualizer(
                     return d.computedWidth;  
                 })
                 .attr("height", function(d) {
-                    console.log(d.size);
-                    if (include_mutation_labels) {
+                    if (label_mutations) {
                         d.computedHeight = (d.size * 2) + 4; // Font size + top/bottom padding
                     }
                     else {
@@ -920,9 +905,9 @@ function main_visualizer(
                         return 0;
                     }
                 })
-                .attr("y", function(d) { return d.y - d.computedHeight/2;});
+                .attr("y", d => d.y - d.computedHeight/2);
             
-            if (include_mutation_labels) {
+            if (label_mutations) {
                 mut_symbol_label
                     .attr("transform", function(d) {
                         var y = d.y + 1;
@@ -953,7 +938,7 @@ function main_visualizer(
             }
 
             function determine_label_positioning(d) {
-                if (d.flag == 131072 || d.parent_of.length == 0 || d.child_of.length == 0) {
+                if (d.ts_flags & NODE_IS_RE_EVENT || d.parent_of.length == 0 || d.child_of.length == 0) {
                     return "c";
                 } else if (d.child_of.length == 1) {
                     var parent = document.getElementById(String(divnum) + "_node" + d.child_of[0])
@@ -1149,9 +1134,7 @@ function main_visualizer(
                             d3.selectAll(div_selector + " .endpoints")
                                 .style('display', 'block');
                             d3.selectAll(div_selector + " .link")
-                                .style("stroke", function(d) {
-                                    return d.stroke;
-                                });
+                                .style("stroke", d => d.stroke);
                         }
                     }
                 });
@@ -1181,14 +1164,15 @@ function main_visualizer(
                 .data(graph.mutations)
                 .enter()
                 .append("g")
-                .attr("class", function(d) {return "s" + d.site_id + " e" + d.edge;})
+                .attr("class", d => "s" + d.site_id + " e" + d.edge)
+                .attr("transform", d => "translate(" + d.x_pos + "," + (height-60) + ")")
                 .style("display", "none");
 
             function createSiteLine(selection) {
                 return selection
                     .append("line")
-                    .attr("y1", height-60-5)
-                    .attr("y2", height-60+40+5)
+                    .attr("y1", -5)
+                    .attr("y2", 40+5)
                     .style("stroke-width", 3)
                     .style("fill", "none");
             }
@@ -1196,30 +1180,23 @@ function main_visualizer(
             function createSiteText(selection) {
                 return selection
                     .append("text")
-                    .attr("y", height-60-8)
-                    .attr("class", "label")
+                    .attr("y", -8)  /* above the tick */
+                    .attr("class", "label");
             }
-                  
+            
             site_pos
                 .each(function(d) {
                     if (typeof(d.x_pos) == "object") {
-                        /* d.x_pos is an array of x_pos values */
                         const select = d3.select(this).selectAll("line").data(d.x_pos).enter();
                         createSiteLine(select)
-                            .attr("x1", x => x)
-                            .attr("x2", x => x)
                             .style("stroke", d.fill);
                         createSiteText(select)
-                            .attr("x", x => x)
                             .text((_, i) => String(d.position[i]));
                     } else {
                         const select = d3.select(this);
                         createSiteLine(select)
-                            .attr("x1", d.x_pos)
-                            .attr("x2", d.x_pos)
                             .style("stroke", d.fill);
                         createSiteText(select)
-                            .attr("x", d.x_pos)
                             .text(String(d.position));
                     }
                 });
@@ -1238,14 +1215,12 @@ function main_visualizer(
                 })
                 .style("font-size", "10px")
                 .style("font-family", "Arial")
-                .attr("fill", function(d) { return d.fill; })
-                .attr("transform", function(d) {
-                    return "translate(" + String(d.x_pos) + "," + String(height-60-10) + ")";
-                });
+                .attr("fill", d => d.fill)
+                .attr("transform", d => "translate(" + String(d.x_pos) + "," + String(height-60-10) + ")");
         
             mut_text
                 .text(function(d) {
-                    if (include_mutation_labels) {
+                    if (label_mutations) {
                         return String(d.site_id) + ":" + String(d.position);
                     } else {
                         return d.label;
@@ -1257,11 +1232,13 @@ function main_visualizer(
         if (title != "None") {
             svg.append("text")
                 .attr("class", "label")
-                .text(title)
                 .style("font-size", "20px")
                 .attr("x", width / 2)
-                .style("transform", "translate(-50%, 50%)")
-                .attr("y", 30);
+                .attr("text-anchor", "middle")
+                .attr("y", 30)
+                .each(function() { 
+                    multi_line_text.call(this, title, true); 
+                });
         }
     }
 
@@ -1276,7 +1253,7 @@ ensureRequire()
     .then(require => {
         require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
         require(["d3"], function(d3) {
-            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $include_mutation_labels, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
+            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
         });
     })
     .catch(err => console.error('Failed to load require.js:', err));

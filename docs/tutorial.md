@@ -72,7 +72,7 @@ def draw(
     title=None,
     show_mutations=False,
     ignore_mutation_times=True,
-    include_mutation_labels=False,
+    label_mutations=False,
     condense_mutations=False,
     force_notebook=False
 ):
@@ -113,7 +113,7 @@ show_mutations : bool
     Whether to add mutations to the graph. Only available when `edge_type="line"`. (default=False)
 ignore_mutation_times : bool
     Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-include_mutation_labels : bool
+label_mutations : bool
     Whether to add the full label (inherited_state + position + derived_state) for each mutation. (default=False)
 condense_mutations : bool
     Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
@@ -148,7 +148,7 @@ def draw_node(
     title=None,
     show_mutations=False,
     ignore_mutation_times=True,
-    include_mutation_labels=False,
+    label_mutations=False,
     condense_mutations=False,
     return_included_nodes=False,
     force_notebook=False
@@ -184,7 +184,7 @@ show_mutations : bool
     Whether to add mutations to the graph. (default=False)
 ignore_mutation_times : bool
     Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-include_mutation_labels : bool
+label_mutations : bool
     Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
 condense_mutations : bool
     Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
@@ -202,7 +202,7 @@ The genome bar displays the chromosome broken down into chunks according to the 
 ```
 d3arg.draw_genome_bar(
     windows=[[0,1000]],
-    include_mutations=True
+    show_mutations=True
 )
 ```
 
@@ -213,7 +213,7 @@ def draw_genome_bar(
     self,
     width=500,
     windows=None,
-    include_mutations=False,
+    show_mutations=False,
     force_notebook=False
 ):
 """Draws a genome bar for the D3ARG using D3.js
@@ -225,7 +225,7 @@ width : int
 windows : list of lists
     Each list is are the start and end positions of the windows. Multiple windows can be included.
     (Default is None, ignored)
-include_mutations : bool
+show_mutations : bool
     Whether to add ticks for mutations along the genome bar
 force_notebook : bool
     Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
@@ -247,20 +247,18 @@ d3arg.set_node_labels(labels=node_labels)
 Node labels can be changed using the `d3arg.set_node_labels()` function. The example above will change the labels of Nodes 0 and 1 to "alpha" and "", respectively. An empty string is equivalent to removing the label of that specific node. Labels are always converted to strings. You can then redraw `d3arg` with the updated labels.
 
 ```
-node_styles = [
-    {
-        "id":0,
+node_styles = {
+    0: {
         "size":10,
         "symbol":"d3.symbolSquare",
         "fill":"blue",
         "stroke":"purple",
         "stroke_width":5
     },
-    {
-        "id":1,
+    1: {
         "symbol":"d3.symbolStar"
     }
-]
+}
 d3arg.set_node_styles(styles=node_styles)
 
 edge_colors = {
@@ -269,6 +267,15 @@ edge_colors = {
     2:"green"
 }
 d3arg.set_edge_colors(colors=edge_colors)
+
+mutation_styles = {
+    1: {
+        "fill": blue,
+        "stroke": green,
+        "size": 10
+    }
+}
+d3arg.set_mutation_styles(styles=mutation_styles)
 
 block_colors = {
     1:"red",
@@ -340,7 +347,7 @@ Below are the two steps for converting the edge and node tables:
 
 - Edges are merged together if they fall into either of the two following categories. These are shown as a single graph edge composed of several intervals (see the "bounds" attribute of a link).
     - The edges have the same child node and parent node.
-    - The edges the same child node and the parent nodes are in a recombination node pair (i.e. a pair of corresponding nodes marked with the IS_RE_NODE flag).
+    - The edges the same child node and the parent nodes are in a recombination node pair (i.e. a pair of corresponding nodes marked with the msprime.NODE_IS_RE_EVENT flag).
 - Recombination node pairs are merged into a single node.
     - The ID of the new node is the lesser of the two original node IDs
     - The label is a concatenation of the original node IDs with a "/" in between.

@@ -124,20 +124,35 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
     return (1-(t-min_time)/time_range) * (height-100) + y_shift
 
 
-def draw_D3(arg_json, force_notebook=False):
+def draw_D3(arg_json, styles=None, force_notebook=False):
     arg_json["source"] = arg_json.copy()
     arg_json["divnum"] = str(random.randint(0,9999999999))
-    JS_text = Template("<div id='arg_" + arg_json['divnum'] + "'class='d3arg' style='min-width:" + str(arg_json["width"]+40) + "px; min-height:" + str(arg_json["height"]+80) + "px;'></div><script>$main_text</script>")
+    arg_id = "arg_" + arg_json['divnum']
+    JS_text = Template((
+        '<div id="{}" class="d3arg" style="min-width:{}px; min-height:{}px;"></div>'
+        '<script>$main_text</script>'
+    ).format(arg_id, arg_json["width"]+40, arg_json["height"]+80))
     visualizerjs = open(os.path.dirname(__file__) + "/visualizer.js", "r")
     main_text_template = Template(visualizerjs.read())
     visualizerjs.close()
     main_text = main_text_template.safe_substitute(arg_json)
     html = JS_text.safe_substitute({'main_text': main_text})
     css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
-    styles = css.read()
+    default_styles = css.read()
     css.close()
+    style = ""
+    if styles is not None:
+        if isinstance(styles, str):
+            raise ValueError("Styles should be a list of CSS strings, not a single string")
+        for s in styles:
+            style += f"#{arg_id} " + s
+        if "<" in style:
+            # prevent minor footguns e.g. accidentally closing the style tag
+            # Note this doesn't stop malicious user code e.g. url() loading
+            raise ValueError("Listed styles cannot contain the '<' sign.")
+        style = "<style>"+style+"</style>"
     if force_notebook or running_in_notebook():
-        display(HTML("<style>"+styles+"</style>" + html))
+        display(HTML("<style>"+default_styles+"</style>" + style + html))
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
@@ -158,7 +173,7 @@ class D3ARG:
     breakpoints : list
         List of breakpoint dicts that contain info about the breakpoints
     num_samples : int
-        The number of samples in the ARG (with flag=1)
+        The number of samples in the ARG (with (ts_flags & 1) == 1)
     sample_order : list
         Ordered list of sample IDs
 
@@ -266,7 +281,7 @@ class D3ARG:
                 if ignore_unattached_nodes and n not in in_edges:
                     continue
                 samples.append(n)
-        rcnm = np.where(ts.nodes_flags == 131072)[0][1::2]  # NB should probably be (ts.nodes_flags & msprime.NODE_IS_RE_EVENT) != 0
+        rcnm = np.where(ts.nodes_flags & msprime.NODE_IS_RE_EVENT)[0][1::2]
         edges, mutations = cls._convert_edges_table(ts=ts, recombination_nodes_to_merge=rcnm, progress=progress)
         nodes = cls._convert_nodes_table(ts=ts, recombination_nodes_to_merge=rcnm, default_node_style=nsd, ignore_unattached_nodes=ignore_unattached_nodes, progress=progress)
         return cls(
@@ -302,7 +317,7 @@ class D3ARG:
         nodes = pd.DataFrame(json["data"]["nodes"])
         nodes["x_pos_01"] = (nodes["x"] - x_shift) / (width-100)
         if json["plot_type"] == "full":
-            samples = nodes.loc[nodes["flag"]==1,["id", "fx"]]
+            samples = nodes.loc[(nodes["ts_flags"] & tskit.NODE_IS_SAMPLE) != 0,["id", "fx"]]
             num_samples = samples.shape[0]
             sample_order = [sample for _, sample in sorted(zip(samples["fx"], samples["id"]))]
         else:
@@ -361,7 +376,7 @@ class D3ARG:
         nodes = {
             u: (default_node_style | {
                 "id": u,
-                "flag": flags,
+                "ts_flags": flags,
                 "time": time,
                 "child_of": set(),  # will later convert to list
                 "parent_of": set(),  # will later convert to list
@@ -380,7 +395,7 @@ class D3ARG:
             info['child_of'] = sorted(info['child_of'])
             info['parent_of'] = unique_parent_of = sorted(info['parent_of'])
 
-            if info["flag"] == 131072:
+            if info["ts_flags"] == 131072:
                 info["label"] = str(u)+"/"+str(u+1)
                 if (len(unique_parent_of) == 1) and not (nodes_flags[unique_parent_of[0]] & msprime.NODE_IS_RE_EVENT != 0):
                     info["x_pos_reference"] = unique_parent_of[0]
@@ -594,7 +609,7 @@ class D3ARG:
         """Resets node labels to default (based on msprime IDs)"""
 
         for node in self.nodes:
-            if node["flag"] == 131072:
+            if node["ts_flags"] == msprime.NODE_IS_RE_EVENT:
                 node["label"] = str(node["id"]) + "/" + str(node["id"]+1)
             else:
                 node["label"] = str(node["id"])
@@ -636,22 +651,51 @@ class D3ARG:
             self.nodes["stroke"] = stroke
         if stroke_width != None:
             self.nodes["stroke_width"] = stroke_width
-        
+    
+    @staticmethod
+    def _set_styles(dataframe, styles, allowed_keys):
+         # NB: this is very inefficient for lots of nodes. If you want to style e.g.
+        # a set of nodes, it is quicker to use something like
+        # d3arg.nodes.loc[np.isin(self.nodes["id"], node_ids), "size"] = size
+        for item_id, style in styles.items():
+            if 'id' in dataframe.columns:
+                use = dataframe["id"] == item_id
+            else:
+                use = item_id
+            for k in style.keys():
+                if k not in allowed_keys:
+                    raise ValueError(
+                        f"Invalid key '{k}' in styles. Allowed keys are {allowed_keys}.")
+            dataframe.loc[use, list(style.keys())] = list(style.values())
+
     def set_node_styles(self, styles):
         """Individually control the styling of each node.
 
         Parameters
         ----------
-        styles : list
-            List of dicts, one per node, with the styling keys: id, size, symbol, fill, stroke, stroke_width.
-            "id" is the only mandatory key. Only nodes that need styles updated need to be provided.
+        styles : dict
+            A dictionary whose keys are node ids, and whose values are separate dicts
+            containing any of the styling keys: size, symbol, fill, stroke, stroke_width.
+            Only nodes that need styles updated need to be provided, and all styling
+            keys are optional.
         """
+        allowed_keys = {"size", "symbol", "fill", "stroke", "stroke_width"}
+        self._set_styles(self.nodes, styles, allowed_keys)
 
-        for node in styles:
-            for key in node.keys():
-                if key in ["size", "symbol", "fill", "stroke", "stroke_width"]:
-                    self.nodes.loc[self.nodes["id"]==node["id"], key] = node[key]
-        
+    def set_mutation_styles(self, styles):
+        """Individually control the styling of each mutation.
+
+        Parameters
+        ----------
+        styles : dict
+            A dictionary whose keys are mutation ids, and whose values are separate
+            dictionaries containing any of the styling keys: size, fill, stroke.
+            Only mutations that need styles updated need to be provided, and all
+            styling keys are optional.
+        """
+        allowed_keys = {"fill", "stroke", "size"}
+        self._set_styles(self.mutations, styles, allowed_keys)
+
     def set_edge_colors(self, colors):
         """Set the color of each edge in the ARG
 
@@ -661,7 +705,7 @@ class D3ARG:
             ID of the edge and its new color
         """
 
-        for id in colors:
+        for id, val in colors:
             if id in self.edges["id"]:
                 self.edges.loc[self.edges["id"]==id, "stroke"] = colors[id]
             else:
@@ -720,7 +764,7 @@ class D3ARG:
         """
 
         for node in nodes:
-            found = list(self.nodes.loc[self.nodes["id"] == int(node)]["flag"])
+            found = list(self.nodes.loc[self.nodes["id"] == int(node)]["ts_flags"])
             if len(found) > 0:
                 if len(found) == 1:
                     if found[0] != 1:
@@ -756,7 +800,7 @@ class D3ARG:
             raise ValueError(f"Node '{check_samples[1]}' not a sample and cannot be included in sample order.")
         for node in self.sample_order:
             found = self.nodes.loc[self.nodes["id"] == int(node)].iloc[0]
-            if found["flag"] == 1 and found["id"] not in order:
+            if (found["ts_flags"] & tskit.NODE_IS_SAMPLE) and found["id"] not in order:
                 order.append(found["id"])
         return order
     
@@ -780,7 +824,7 @@ class D3ARG:
             title=None,
             show_mutations=False,
             ignore_mutation_times=True,
-            include_mutation_labels=False,
+            label_mutations=False,
             condense_mutations=True,
             rotate_tip_labels=False
         ):
@@ -835,7 +879,7 @@ class D3ARG:
             Whether to add mutations to the graph. (default=False)
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-        include_mutation_labels : bool
+        label_mutations : bool
             Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
@@ -929,7 +973,7 @@ class D3ARG:
         for index, node in nodes.iterrows():
             if "x_pos_01" in node:
                 node["fx"] = node["x_pos_01"] * (width-100) + default_left_spacing + y_axis_left_spacing
-            elif (node["flag"] == 1) and (plot_type == "full"):
+            elif (node["ts_flags"] & tskit.NODE_IS_SAMPLE) and (plot_type == "full"):
                 node["fx"] = sample_positions[sample_order.index(node["id"])]
             else:
                 node["x"] = 0.5 * (width-100) + default_left_spacing + y_axis_left_spacing
@@ -959,6 +1003,7 @@ class D3ARG:
                             "y": fy,
                             "fy": fy,
                             "site_id": edge,
+                            "position": list(muts["position"]),
                             "x_pos": list(x_pos),
                             "fill": "pink",
                             "stroke": "#053e4e",
@@ -1005,7 +1050,7 @@ class D3ARG:
                         mut["x_pos"] = mut["position_01"] * width + y_axis_left_spacing
                         mut["fy"] = fy
                         mut["y"] = mut["fy"]
-                        mut["position_index"] = mut.site_id
+                        #mut["position_index"] = mut.site_id
                         mut["label"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
                         mut["content"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
                         transformed_muts.append(mut.to_dict())
@@ -1069,9 +1114,9 @@ class D3ARG:
                 "include_underlink":str(bool(include_underlink)).lower()
             },
             "condense_mutations":str(bool(condense_mutations)).lower(),
-            "include_mutation_labels":str(bool(include_mutation_labels)).lower(),
+            "label_mutations":str(bool(label_mutations)).lower(),
             "tree_highlighting":str(bool(tree_highlighting)).lower(),
-            "title":str(title),
+            "title":str(title).replace("\n", "\\n"),
             "rotate_tip_labels":str(bool(rotate_tip_labels)).lower(),
             "plot_type":plot_type,
             "default_node_style":self.default_node_style
@@ -1109,9 +1154,9 @@ class D3ARG:
         for edge in branch_lengths.itertuples():
             if counter >= zoom:
                 break
-            source_flag = self.nodes.loc[self.nodes["id"] == edge.source]["flag"].iloc[0]
-            target_flag = self.nodes.loc[self.nodes["id"] == edge.target]["flag"].iloc[0]
-            if (target_flag != 1): #and (target_flag != msprime.NODE_IS_RE_EVENT) and (source_flag != msprime.NODE_IS_RE_EVENT):
+            source_flags = self.nodes.loc[self.nodes["id"] == edge.source]["ts_flags"].iloc[0]
+            target_flags = self.nodes.loc[self.nodes["id"] == edge.target]["ts_flags"].iloc[0]
+            if (target_flags & tskit.NODE_IS_SAMPLE) == 0: #and (target_flags != msprime.NODE_IS_RE_EVENT) and (source_flags != msprime.NODE_IS_RE_EVENT):
                 source_i = self.nodes[self.nodes["id"] == edge.source].index[0]
                 target_i = self.nodes[self.nodes["id"] == edge.target].index[0]
                 if largest_summary_node[source_i] != largest_summary_node[target_i]:
@@ -1154,7 +1199,7 @@ class D3ARG:
                 else:
                     nodes.append({
                         "id":id,
-                        "flag":99,
+                        "ts_flags":99,
                         "time":mapped_node_times[id],
                         "child_of":[],
                         "parent_of":[],
@@ -1190,11 +1235,12 @@ class D3ARG:
             title=None,
             show_mutations=False,
             ignore_mutation_times=True,
-            include_mutation_labels=False,
+            label_mutations=False,
             condense_mutations=False,
             force_notebook=False,
             rotate_tip_labels=False,
-            zoom=0
+            zoom=0,
+            styles=None,
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -1235,7 +1281,7 @@ class D3ARG:
             Whether to add mutations to the graph. Only available when `edge_type="line"`. (default=False)
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-        include_mutation_labels : bool
+        label_mutations : bool
             Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
@@ -1245,6 +1291,12 @@ class D3ARG:
             Rotates tip labels by 90 degrees. (default=False)
         zoom : int
             The level of detail that you want. Larger numbers equate to less detail/more collapsing
+        styles : list
+            A list of css strings, one per selector. The ID of the current drawing will be
+            appended to each string, so that the styles are unique to the current drawing.
+            For example, [".labels {font-family: Times}"] will change the font of all the
+            labels. Note that some styles are set from values in the dataframes stored in the
+            D3ARG object, and cannot be altered using the 'styles' parameter. (default=None)
         """
         
         if condense_mutations:
@@ -1272,11 +1324,11 @@ class D3ARG:
             title=title,
             show_mutations=show_mutations,
             ignore_mutation_times=ignore_mutation_times,
-            include_mutation_labels=include_mutation_labels,
+            label_mutations=label_mutations,
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels
         )
-        draw_D3(arg_json=arg, force_notebook=force_notebook)
+        draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
 
     def subset_graph(self, node, degree):
         """Subsets the graph to focus around a specific node
@@ -1419,11 +1471,12 @@ class D3ARG:
             title=None,
             show_mutations=False,
             ignore_mutation_times=True,
-            include_mutation_labels=False,
+            label_mutations=False,
             condense_mutations=False,
             return_included_nodes=False,
             force_notebook=False,
-            rotate_tip_labels=False
+            rotate_tip_labels=False,
+            styles=None,
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -1458,7 +1511,7 @@ class D3ARG:
             Whether to add mutations to the graph. (default=False)
         ignore_mutation_times : bool
             Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
-        include_mutation_labels : bool
+        label_mutations : bool
             Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
@@ -1468,6 +1521,12 @@ class D3ARG:
             Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
         rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
+        styles : list
+            A list of css strings, one per selector. The ID of the current drawing will be
+            appended to each string, so that the styles are unique to the current drawing.
+            For example, [".labels {font-family: Times}"] will change the font of all the
+            labels. Note that some styles are set from values in the dataframes stored in the
+            D3ARG object, and cannot be altered using the 'styles' parameter. (default=None)
         """
 
         if condense_mutations:
@@ -1490,11 +1549,11 @@ class D3ARG:
             title=title,
             show_mutations=show_mutations,
             ignore_mutation_times=ignore_mutation_times,
-            include_mutation_labels=include_mutation_labels,
+            label_mutations=label_mutations,
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels
         )
-        draw_D3(arg_json=arg, force_notebook=force_notebook)
+        draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
         if return_included_nodes:
             return list(included_nodes["id"])
         
@@ -1506,7 +1565,7 @@ class D3ARG:
             self,
             width=500,
             windows=None,
-            include_mutations=False,
+            show_mutations=False,
             force_notebook=False
         ):
         """Draws a genome bar for the D3ARG using D3.js
@@ -1518,7 +1577,7 @@ class D3ARG:
         windows : list of lists
             Each list is are the start and end positions of the windows. Multiple windows can be included.
             (Default is None, ignored)
-        include_mutations : bool
+        show_mutations : bool
             Whether to add ticks for mutations along the genome bar
         force_notebook : bool
             Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
@@ -1543,7 +1602,7 @@ class D3ARG:
                     "width": width_01 * width
                 })
 
-        if include_mutations:
+        if show_mutations:
             transformed_mutations = self.mutations.loc[:,:]
             transformed_mutations["x_pos"] = transformed_mutations["position_01"] * width
             transformed_mutations = transformed_mutations.to_dict("records")
@@ -1578,6 +1637,7 @@ class D3ARG:
                 f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script></head><body>" + html + "</body></html>")
             webbrowser.open(url, new=2)
 
+<<<<<<< HEAD
     def set_x_from_json_file(self, json_path):
         """
         Set the x_pos_01 attribute of nodes from a saved JSON file. The
@@ -1621,3 +1681,6 @@ class D3ARG:
         x_pos_01 = {k: (v-mn)/(mx-mn) for k, v in x_pos.items()}
         self.nodes["x_pos_01"] = self.nodes.id.map(x_pos_01)
         return x_pos  # Just for debugging
+=======
+    
+>>>>>>> main
