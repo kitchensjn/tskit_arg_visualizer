@@ -301,7 +301,7 @@ class D3ARG:
         nodes = pd.DataFrame(json["data"]["nodes"])
         nodes["x_pos_01"] = (nodes["x"] - x_shift) / (width-100)
         if json["plot_type"] == "full":
-            samples = nodes.loc[bool(nodes["ts_flags"] & tskit.NODE_IS_SAMPLE),["id", "fx"]]
+            samples = nodes.loc[(nodes["ts_flags"] & tskit.NODE_IS_SAMPLE) != 0,["id", "fx"]]
             num_samples = samples.shape[0]
             sample_order = [sample for _, sample in sorted(zip(samples["fx"], samples["id"]))]
         else:
@@ -309,7 +309,10 @@ class D3ARG:
             sample_order = []
         return cls(
             nodes=nodes,
-            edges=pd.DataFrame(json["data"]["links"]),
+            edges=pd.DataFrame(
+                json["data"]["links"]["data"],
+                columns=json["data"]["links"]["columns"],
+            ),
             mutations=pd.DataFrame(json["data"]["mutations"]),
             breakpoints=pd.DataFrame(json["data"]["breakpoints"]),
             num_samples=num_samples,
@@ -1065,7 +1068,6 @@ class D3ARG:
         transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width + y_axis_left_spacing
         transformed_bps["width"] = transformed_bps["width_01"] * width
         transformed_bps["included"] = "true"
-        transformed_bps = transformed_bps.to_dict("records")
 
         if shift_for_y_axis:
             width += 50
@@ -1078,9 +1080,9 @@ class D3ARG:
         arg = {
             "data":{
                 "nodes":transformed_nodes,
-                "links":edges.to_dict("records"),
+                "links":edges.to_dict("split"),
                 "mutations":transformed_muts,
-                "breakpoints":transformed_bps,
+                "breakpoints":transformed_bps.to_dict("records"),
                 "evenly_distributed_positions":sample_positions,
             },
             "width":width,
