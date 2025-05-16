@@ -104,6 +104,12 @@ function main_visualizer(
     var stepAfter = d3.line().curve(d3.curveStepAfter);
     var stepBefore = d3.line().curve(d3.curveStepBefore);
 
+    // Convert the graph data to the format expected by d3
+    var links = graph.links.data.map(array => {
+        let obj = {};
+        graph.links.columns.forEach((colName, index) => {obj[colName] = array[index];});
+        return obj;
+    });
 
     // https://gist.github.com/Rokotyan/0556f8facbaf344507cdc45dc3622177
     // Below are the functions that handle actual exporting:
@@ -347,7 +353,7 @@ function main_visualizer(
             .forceSimulation(graph.nodes)
             .force("link", d3.forceLink()
                 .id(d => d.id)
-                .links(graph.links)
+                .links(links)
             )
             //.force("center", d3.forceCenter(275,250).strength(-10))
             .force("charge", d3.forceManyBody().strength(-100))
@@ -357,7 +363,7 @@ function main_visualizer(
             .append("g")
             .attr("class", "links")
             .selectAll("path")
-            .data(graph.links)
+            .data(links)
             .enter()
             .append("g")
             .attr("bounds", d => d.bounds);
