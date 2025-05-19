@@ -15,6 +15,10 @@ import tskit
 from IPython.display import HTML, display
 from tqdm.auto import tqdm
 
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "unknown"
 
 def running_in_notebook():
     """Checks whether the code is being executed within a Jupyter Notebook.
