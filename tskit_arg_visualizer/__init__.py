@@ -402,7 +402,7 @@ class D3ARG:
             for u, (flags, time) in enumerate(zip(nodes_flags, ts.nodes_time))
             if not (ignore_unattached_nodes and omit_nodes[u]) and not merge_with_prev_node[u]
         }
-        
+
         for child, parent in zip(ts.edges_child, ts.edges_parent):
             nodes[node_lookup[child]]['child_of'].add(int(node_lookup[parent]))
             nodes[node_lookup[parent]]['parent_of'].add(int(node_lookup[child]))
@@ -1374,21 +1374,17 @@ class D3ARG:
         """
 
         if type(node) == int:
-            if node not in self.nodes.id.values:
-                raise ValueError(f"Node '{node}' not in the graph.")
             node = [node]
-        else:
-            for n in node:
-                if n not in self.nodes.id.values:
-                    raise ValueError(f"Node '{n}' not in the graph.")
+        for n in node:
+            if n not in self.nodes.id.values:
+                raise ValueError(f"Node '{n}' not in the graph.")
 
-        try:
-            older_degree = degree[0]
-            younger_degree = degree[-1]
-        except TypeError:
-            older_degree = younger_degree = degree
+        if type(degree) == int:
+            degree = [degree]
+        older_degree = degree[0]
+        younger_degree = degree[-1]
 
-        nodes = node[:]
+        node_set = set(node)
         first = True
 
         # Inefficient loop, doesn't acknowledge that some edges could be shared
@@ -1396,41 +1392,41 @@ class D3ARG:
         # a better function would not add them to start.
         for focal in node:
             
-            above = [focal]
-            below = [focal]
+            above = {focal}
+            below = {focal}
 
             for od in range(older_degree+1):
-                new_above = []
+                new_above = set()
                 for n in above:
                     to_add = self.edges.loc[self.edges["target"] == n, :]
                     if od == older_degree:
-                        to_add = to_add.loc[to_add["source"].isin(nodes), :]
+                        to_add = to_add.loc[to_add["source"].isin(node_set), :]
                     if first:
                         included_edges = to_add
                         first = False
                     else:
                         included_edges = pd.concat([included_edges, to_add], ignore_index=True)
-                    new_above.extend(list(to_add["source"]))
+                    new_above.update(to_add["source"])
                 above = new_above
-                nodes.extend(new_above)
+                node_set.update(new_above)
 
             for yd in range(younger_degree+1):
-                new_below = []
+                new_below = set()
                 for n in below:
                     to_add = self.edges.loc[self.edges["source"] == n, :]
                     if yd == younger_degree:
-                        to_add = to_add.loc[to_add["target"].isin(nodes), :]
+                        to_add = to_add.loc[to_add["target"].isin(node_set), :]
                     if first:
                         included_edges = to_add
                         first = False
                     else:
                         included_edges = pd.concat([included_edges, to_add], ignore_index=True)
-                    new_below.extend(list(to_add["target"]))
+                    new_below.update(to_add["target"])
                 below = new_below
-                nodes.extend(new_below)
+                node_set.update(new_below)
 
         included_edges = included_edges.drop_duplicates()
-        included_nodes = self.nodes.loc[self.nodes["id"].isin(list(set(nodes))), :]
+        included_nodes = self.nodes.loc[self.nodes["id"].isin(node_set), :]
 
         ni_child, ni_parent = [], []
         for n in included_nodes["id"]:
@@ -1552,13 +1548,13 @@ class D3ARG:
                 print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
                 ignore_mutation_times = True
 
-        included_nodes, included_edges, included_mutations, included_breakpoints = self.subset_graph(node=node, degree=degree)
+        included = self.subset_graph(node=node, degree=degree)
         arg = self._prepare_json(
             plot_type="node",
-            nodes=included_nodes,
-            edges=included_edges,
-            mutations=included_mutations,
-            breakpoints=included_breakpoints,
+            nodes=included.nodes,
+            edges=included.edges,
+            mutations=included.mutations,
+            breakpoints=included.breakpoints,
             width=width,
             height=height,
             tree_highlighting=tree_highlighting,
