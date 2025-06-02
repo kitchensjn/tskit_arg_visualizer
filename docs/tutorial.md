@@ -129,7 +129,7 @@ Visualizing large ARGs can be quite difficult due to the shear number of nodes a
 ```
 d3arg.draw_node(
     node=12,
-    degree=[2,5]
+    depth=[2,5]
 )
 ```
 
@@ -141,7 +141,7 @@ def draw_node(
     node,
     width=500,
     height=500,
-    degree=1,
+    depth=1,
     y_axis_labels=True,
     y_axis_scale="rank",
     tree_highlighting=True,
@@ -163,11 +163,11 @@ width : int
     Width of the force layout graph plot in pixels (default=500)
 height : int
     Height of the force layout graph plot in pixels (default=500)
-degree : int or list(int, int)
-    Number of degrees above (older than) and below (younger than) the central
+depth : int or list(int, int)
+    Number of nodes above (older than) and below (younger than) the central
     node to include in the subgraph (default=1). If this is a list, the
-    number of degrees above is taken from the first element and
-    the number of degrees below from the last element.
+    number of nodes above is taken from the first element and
+    the number of nodes below from the last element.
 y_axis_labels : bool
     Includes labelled y-axis on the left of the figure (default=True)
 y_axis_scale : string
