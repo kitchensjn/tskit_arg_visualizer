@@ -74,7 +74,10 @@ def draw(
     ignore_mutation_times=True,
     label_mutations=False,
     condense_mutations=False,
-    force_notebook=False
+    force_notebook=False,
+    rotate_tip_labels=False,
+    zoom=0,
+    styles=None,
 ):
 """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -87,8 +90,10 @@ height : int
 tree_highlighting : bool
     Include the interactive chromosome at the bottom of the figure to
     to let users highlight trees in the ARG (default=True)
-y_axis_labels : bool
-    Includes labelled y-axis on the left of the figure (default=True)
+y_axis_labels : bool, list, or dict
+    Whether to include the y-axis on the left of the figure. By default, tick marks will be automatically
+    chosen. You can specify a list of tick marks to use instead. You can also set custom text for tick marks
+    using a dictionary where key is the time and value is the text. (default=True)
 y_axis_scale : string
     Scale used for the positioning nodes along the y-axis. Options:
         "rank" (default) - equal vertical spacing between nodes
@@ -114,11 +119,21 @@ show_mutations : bool
 ignore_mutation_times : bool
     Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
 label_mutations : bool
-    Whether to add the full label (inherited_state + position + derived_state) for each mutation. (default=False)
+    Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
 condense_mutations : bool
     Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
 force_notebook : bool
     Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
+rotate_tip_labels : bool
+    Rotates tip labels by 90 degrees. (default=False)
+zoom : int
+    The level of detail that you want. Larger numbers equate to less detail/more collapsing
+styles : list
+    A list of css strings, one per selector. The ID of the current drawing will be
+    appended to each string, so that the styles are unique to the current drawing.
+    For example, [".labels {font-family: Times}"] will change the font of all the
+    labels. Note that some styles are set from values in the dataframes stored in the
+    D3ARG object, and cannot be altered using the 'styles' parameter. (default=None)
 """
 ```
 
@@ -138,7 +153,7 @@ This function is very similar to the standard `draw()`, but you need to provide 
 ```
 def draw_node(
     self,
-    node,
+    seed_nodes,
     width=500,
     height=500,
     depth=1,
@@ -151,14 +166,16 @@ def draw_node(
     label_mutations=False,
     condense_mutations=False,
     return_included_nodes=False,
-    force_notebook=False
+    force_notebook=False,
+    rotate_tip_labels=False,
+    styles=None,
 ):
 """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
 Parameters
 ----------
-node : int
-    Node ID that will be central to the subgraph
+seed_nodes : int or list
+    Node ID or list of node IDs that will be central to the subgraph
 width : int
     Width of the force layout graph plot in pixels (default=500)
 height : int
@@ -168,8 +185,10 @@ depth : int or list(int, int)
     node to include in the subgraph (default=1). If this is a list, the
     number of nodes above is taken from the first element and
     the number of nodes below from the last element.
-y_axis_labels : bool
-    Includes labelled y-axis on the left of the figure (default=True)
+y_axis_labels : bool, list, or dict
+    Whether to include the y-axis on the left of the figure. By default, tick marks will be automatically
+    chosen. You can specify a list of tick marks to use instead. You can also set custom text for tick marks
+    using a dictionary where key is the time and value is the text. (default=True)
 y_axis_scale : string
     Scale used for the positioning nodes along the y-axis. Options:
         "rank" (default) - equal vertical spacing between nodes
@@ -185,13 +204,21 @@ show_mutations : bool
 ignore_mutation_times : bool
     Whether to plot mutations evenly on edge (True) or at there specified times (False). (default=True, ignored)
 label_mutations : bool
-    Whether to add the full label (position_index:ancestral:derived) for each mutation. (default=False)
+    Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
 condense_mutations : bool
     Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
 return_included_nodes : bool
     Returns a list of nodes plotted in the subgraph. (default=False)
 force_notebook : bool
     Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
+rotate_tip_labels : bool
+    Rotates tip labels by 90 degrees. (default=False)
+styles : list
+    A list of css strings, one per selector. The ID of the current drawing will be
+    appended to each string, so that the styles are unique to the current drawing.
+    For example, [".labels {font-family: Times}"] will change the font of all the
+    labels. Note that some styles are set from values in the dataframes stored in the
+    D3ARG object, and cannot be altered using the 'styles' parameter. (default=None)
 """
 ```
 

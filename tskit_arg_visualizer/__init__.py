@@ -1391,12 +1391,12 @@ class D3ARG:
         )
         draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
 
-    def subset_graph(self, node, depth):
+    def subset_graph(self, seed_nodes, depth):
         """Subsets the graph to focus around a specific node
 
         Parameters
         ----------
-        node : int or list
+        seed_nodes : int or list
             Node ID or list of node IDs that will be central to the subgraph
         depth : int or list(int, int)
             Number of nodes above (older than) and below (younger than) the central
@@ -1416,9 +1416,9 @@ class D3ARG:
             The breakpoints to be plotted, potentially subset of original graph
         """
 
-        if type(node) == int:
-            node = [node]
-        for n in node:
+        if type(seed_nodes) == int:
+            seed_nodes = [seed_nodes]
+        for n in seed_nodes:
             if n not in self.nodes.id.values:
                 raise ValueError(f"Node '{n}' not in the graph.")
 
@@ -1427,13 +1427,13 @@ class D3ARG:
         older_depth = depth[0]
         younger_depth = depth[-1]
 
-        node_set = set(node)
+        node_set = set(seed_nodes)
         first = True
 
         # Inefficient loop, doesn't acknowledge that some edges could be shared
         # between focal nodes. These duplicates are dropped eventually, but
         # a better function would not add them to start.
-        for focal in node:
+        for focal in seed_nodes:
             
             above = {focal}
             below = {focal}
@@ -1518,7 +1518,7 @@ class D3ARG:
 
     def draw_node(
             self,
-            node,   # may want to change this parameter name if it's confusing that it can take multiple nodes.
+            seed_nodes,
             width=500,
             height=500,
             depth=1,
@@ -1539,7 +1539,7 @@ class D3ARG:
 
         Parameters
         ----------
-        node : int or list
+        seed_nodes : int or list
             Node ID or list of node IDs that will be central to the subgraph
         width : int
             Width of the force layout graph plot in pixels (default=500)
@@ -1591,7 +1591,7 @@ class D3ARG:
                 print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
                 ignore_mutation_times = True
 
-        included = self.subset_graph(node=node, depth=depth)
+        included = self.subset_graph(seed_nodes=seed_nodes, depth=depth)
         arg = self._prepare_json(
             plot_type="node",
             nodes=included.nodes,
