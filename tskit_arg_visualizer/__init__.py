@@ -1348,18 +1348,18 @@ class D3ARG:
         )
         draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
 
-    def subset_graph(self, node, degree):
+    def subset_graph(self, node, depth):
         """Subsets the graph to focus around a specific node
 
         Parameters
         ----------
         node : int or list
             Node ID or list of node IDs that will be central to the subgraph
-        degree : int or list(int, int)
-            Number of degrees above (older than) and below (younger than) the central
+        depth : int or list(int, int)
+            Number of nodes above (older than) and below (younger than) the central
             node to include in the subgraph (default=1). If this is a list, the
-            number of degrees above is taken from the first element and
-            the number of degrees below from the last element.
+            number of nodes above is taken from the first element and
+            the number of nodes below from the last element.
 
         Returns
         -------
@@ -1383,10 +1383,10 @@ class D3ARG:
                     raise ValueError(f"Node '{n}' not in the graph.")
 
         try:
-            older_degree = degree[0]
-            younger_degree = degree[-1]
+            older_depth = depth[0]
+            younger_depth = depth[-1]
         except TypeError:
-            older_degree = younger_degree = degree
+            older_depth = younger_depth = depth
 
         nodes = node[:]
         first = True
@@ -1399,11 +1399,11 @@ class D3ARG:
             above = [focal]
             below = [focal]
 
-            for od in range(older_degree+1):
+            for od in range(older_depth+1):
                 new_above = []
                 for n in above:
                     to_add = self.edges.loc[self.edges["target"] == n, :]
-                    if od == older_degree:
+                    if od == older_depth:
                         to_add = to_add.loc[to_add["source"].isin(nodes), :]
                     if first:
                         included_edges = to_add
@@ -1414,11 +1414,11 @@ class D3ARG:
                 above = new_above
                 nodes.extend(new_above)
 
-            for yd in range(younger_degree+1):
+            for yd in range(younger_depth+1):
                 new_below = []
                 for n in below:
                     to_add = self.edges.loc[self.edges["source"] == n, :]
-                    if yd == younger_degree:
+                    if yd == younger_depth:
                         to_add = to_add.loc[to_add["target"].isin(nodes), :]
                     if first:
                         included_edges = to_add
@@ -1482,7 +1482,7 @@ class D3ARG:
             node,   # may want to change this parameter name if it's confusing that it can take multiple nodes.
             width=500,
             height=500,
-            degree=1,
+            depth=1,
             y_axis_labels=True,
             y_axis_scale="rank",
             tree_highlighting=True,
@@ -1506,11 +1506,11 @@ class D3ARG:
             Width of the force layout graph plot in pixels (default=500)
         height : int
             Height of the force layout graph plot in pixels (default=500)
-        degree : int or list(int, int)
-            Number of degrees above (older than) and below (younger than) the central
+        depth : int or list(int, int)
+            Number of nodes above (older than) and below (younger than) the central
             node to include in the subgraph (default=1). If this is a list, the
-            number of degrees above is taken from the first element and
-            the number of degrees below from the last element.
+            number of nodes above is taken from the first element and
+            the number of nodes below from the last element.
         y_axis_labels : bool, list, or dict
             Whether to include the y-axis on the left of the figure. By default, tick marks will be automatically
             chosen. You can specify a list of tick marks to use instead. You can also set custom text for tick marks
@@ -1552,7 +1552,7 @@ class D3ARG:
                 print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
                 ignore_mutation_times = True
 
-        included_nodes, included_edges, included_mutations, included_breakpoints = self.subset_graph(node=node, degree=degree)
+        included_nodes, included_edges, included_mutations, included_breakpoints = self.subset_graph(node=node, depth=depth)
         arg = self._prepare_json(
             plot_type="node",
             nodes=included_nodes,
