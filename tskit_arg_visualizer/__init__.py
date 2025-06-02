@@ -167,6 +167,29 @@ def draw_D3(arg_json, styles=None, force_notebook=False):
             f.write("<body>" + html + "</body></html>")
         webbrowser.open(url, new=2)
 
+def extract_x_positions_from_json(arg_json):
+    """Extracts the x position of nodes from json loaded from a saved ARG
+
+    Parameters
+    ----------
+    arg_json : json
+        The loaded json from the saved ARG
+
+    Returns
+    -------
+    x_pos_01 : dict
+        Nodes' x-axis positions scaled between 0 and 1
+    """
+
+    width = arg_json["width"]
+    x_shift = 50
+    if arg_json["y_axis"]["include_labels"]:
+        x_shift = 100
+        width -= 50
+    x_pos_01 = {node["id"]: (node["x"] - x_shift) / (width-100) for node in arg_json["data"]["nodes"]}
+    return x_pos_01
+
+
 class D3ARG:
     """Stores the ARG in a D3.js friendly format ready for plotting
 
@@ -762,6 +785,27 @@ class D3ARG:
                 self.breakpoints.loc[self.breakpoints["id"]==id, "fill"] = colors[id]
             else:
                 raise ValueError(f"Breakpoint '{id}' not in the graph. Cannot update the breakpoint fill. Make sure all IDs are integers.")
+            
+    def set_node_x_positions(self, pos):
+        """Sets the x-axis positions of nodes
+
+        Positions must be between 0 and 1
+
+        Parameters
+        ----------
+        pos : dict
+            ID of the node and its x-axis position (scaled between 0 and 1)
+        """
+
+        for id in pos:
+            if id in self.nodes["id"]:
+                if (pos[id] >= 0) and (pos[id] <= 1):
+                    self.nodes.loc[self.nodes["id"]==id, "x_pos_01"] = pos[id]
+                else:
+                    raise ValueError(f"Node '{id}' position of {pos[id]} ]is out of range. Value must be between 0 and 1.")
+            else:
+                raise ValueError(f"Node '{id}' not in the graph. Cannot set its x-axis position. Make sure all IDs are integers.")
+        self.nodes.loc[self.nodes.x_pos_01.isna(), "x_pos_01"] = -1
 
     def _check_all_nodes_are_samples(self, nodes):
         """Checks whether the list of nodes includes only samples
@@ -820,7 +864,6 @@ class D3ARG:
             if (found["ts_flags"] & tskit.NODE_IS_SAMPLE) and found["id"] not in order:
                 order.append(found["id"])
         return order
-    
     
     def _prepare_json(
             self,

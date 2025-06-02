@@ -4,6 +4,8 @@
 
 `degree` parameter in `draw_node()` changed to `depth`
 
+Setting and extracting x-axis node positions (#137)
+
 --------------------
 [0.0.5] - 2025-03-19
 --------------------
