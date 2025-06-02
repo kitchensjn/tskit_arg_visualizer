@@ -746,7 +746,7 @@ class D3ARG:
         """
 
         for id, val in colors:
-            if id in self.edges["id"]:
+            if id in self.edges["id"].values:
                 self.edges.loc[self.edges["id"]==id, "stroke"] = colors[id]
             else:
                 raise ValueError(f"Edge '{id}' not in the graph. Cannot update the edge stroke. Make sure all IDs are integers.")
@@ -781,7 +781,7 @@ class D3ARG:
         """
 
         for id in colors:
-            if id in self.breakpoints["id"]:
+            if id in self.breakpoints["id"].values:
                 self.breakpoints.loc[self.breakpoints["id"]==id, "fill"] = colors[id]
             else:
                 raise ValueError(f"Breakpoint '{id}' not in the graph. Cannot update the breakpoint fill. Make sure all IDs are integers.")
@@ -798,7 +798,7 @@ class D3ARG:
         """
 
         for id in pos:
-            if id in self.nodes["id"]:
+            if id in self.nodes["id"].values:
                 if (pos[id] >= 0) and (pos[id] <= 1):
                     self.nodes.loc[self.nodes["id"]==id, "x_pos_01"] = pos[id]
                 else:
