@@ -172,7 +172,7 @@ function main_visualizer(
         console.log(title);
         
         var evenly_distributed_positions = graph.evenly_distributed_positions;
-        var div_selector = "#arg_" + String(divnum)
+        var div_selector = "#arg_" + String(divnum);
         var tip = d3.select(div_selector).append("div")
             .attr("class", "tooltip")
             .style("display", "none");
@@ -1253,7 +1253,7 @@ ensureRequire()
     .then(require => {
         require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
         require(["d3"], function(d3) {
-            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
+            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, $title, $rotate_tip_labels, $plot_type, $source)
         });
     })
     .catch(err => console.error('Failed to load require.js:', err));

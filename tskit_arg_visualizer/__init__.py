@@ -1,5 +1,6 @@
 import collections
 import itertools
+import json
 import math
 import operator
 import os
@@ -128,13 +129,14 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
 
 
 def draw_D3(arg_json, styles=None, force_notebook=False):
-    arg_json["source"] = arg_json.copy()
+    arg_json = {k: json.dumps(v) for k, v in arg_json.items()}
+    arg_json["source"] = json.dumps(arg_json.copy())
     arg_json["divnum"] = str(random.randint(0,9999999999))
     arg_id = "arg_" + arg_json['divnum']
     JS_text = Template((
         '<div id="{}" class="d3arg" style="min-width:{}px; min-height:{}px;"></div>'
         '<script>$main_text</script>'
-    ).format(arg_id, arg_json["width"]+40, arg_json["height"]+80))
+    ).format(arg_id, float(arg_json["width"]) + 40, float(arg_json["height"]) + 80))
     visualizerjs = open(os.path.dirname(__file__) + "/visualizer.js", "r")
     main_text_template = Template(visualizerjs.read())
     visualizerjs.close()
@@ -886,7 +888,7 @@ class D3ARG:
             ignore_mutation_times=True,
             label_mutations=False,
             condense_mutations=True,
-            rotate_tip_labels=False
+            rotate_tip_labels=False,
         ):
         """Creates the required JSON for both draw() and draw_node()
 
@@ -951,9 +953,9 @@ class D3ARG:
         """
 
         y_shift = 50
-        if title:
+        if title is not None:
+            title = str(title)
             y_shift = 100
-
         if not show_mutations:
             tick_times = nodes["time"]
         elif ignore_mutation_times:
@@ -1149,38 +1151,38 @@ class D3ARG:
 
         if tree_highlighting:
             height += 75
-        if title:
+        if title is not None:
             height += 50
 
         arg = {
             "data":{
-                "nodes":transformed_nodes,
-                "links":edges.to_dict("records"),
-                "mutations":transformed_muts,
-                "breakpoints":transformed_bps,
-                "evenly_distributed_positions":sample_positions,
+                "nodes": transformed_nodes,
+                "links": edges.to_dict("records"),
+                "mutations": transformed_muts,
+                "breakpoints": transformed_bps,
+                "evenly_distributed_positions": sample_positions,
             },
-            "width":width,
-            "height":height,
+            "width": width,
+            "height": height,
             "y_axis":{
                 "include_labels":str(shift_for_y_axis).lower(),
-                "ticks":list(y_axis_final.keys()),
-                "text":list(y_axis_final.values()),
-                "max_min":[max(y_axis_final.keys()),min(y_axis_final.keys())],
-                "scale":y_axis_scale,
+                "ticks": list(y_axis_final.keys()),
+                "text": list(y_axis_final.values()),
+                "max_min": [max(y_axis_final.keys()),min(y_axis_final.keys())],
+                "scale": str(y_axis_scale),
             },
             "edges":{
-                "type":edge_type,
-                "variable_width":str(bool(variable_edge_width)).lower(),
-                "include_underlink":str(bool(include_underlink)).lower()
+                "type": str(edge_type),
+                "variable_width": bool(variable_edge_width),
+                "include_underlink": bool(include_underlink)
             },
-            "condense_mutations":str(bool(condense_mutations)).lower(),
-            "label_mutations":str(bool(label_mutations)).lower(),
-            "tree_highlighting":str(bool(tree_highlighting)).lower(),
-            "title":str(title).replace("\n", "\\n"),
-            "rotate_tip_labels":str(bool(rotate_tip_labels)).lower(),
-            "plot_type":plot_type,
-            "default_node_style":self.default_node_style
+            "condense_mutations": bool(condense_mutations),
+            "label_mutations": bool(label_mutations),
+            "tree_highlighting": bool(tree_highlighting),
+            "rotate_tip_labels": bool(rotate_tip_labels),
+            "plot_type": str(plot_type),
+            "default_node_style": self.default_node_style,
+            "title": title,
         }
         return arg
 
@@ -1387,7 +1389,7 @@ class D3ARG:
             ignore_mutation_times=ignore_mutation_times,
             label_mutations=label_mutations,
             condense_mutations=condense_mutations,
-            rotate_tip_labels=rotate_tip_labels
+            rotate_tip_labels=rotate_tip_labels,
         )
         draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
 
