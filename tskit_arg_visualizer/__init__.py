@@ -889,6 +889,7 @@ class D3ARG:
             label_mutations=False,
             condense_mutations=True,
             rotate_tip_labels=False,
+            preamble=None,
         ):
         """Creates the required JSON for both draw() and draw_node()
 
@@ -945,6 +946,8 @@ class D3ARG:
             Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
+        preamble : str
+            The preamble. (default="")
             
         Returns
         -------
@@ -956,6 +959,8 @@ class D3ARG:
         if title is not None:
             title = str(title)
             y_shift = 100
+        if preamble is not None:
+            preamble = str(preamble)
         if not show_mutations:
             tick_times = nodes["time"]
         elif ignore_mutation_times:
@@ -1183,6 +1188,7 @@ class D3ARG:
             "plot_type": str(plot_type),
             "default_node_style": self.default_node_style,
             "title": title,
+            "preamble": preamble,
         }
         return arg
 
@@ -1304,6 +1310,7 @@ class D3ARG:
             rotate_tip_labels=False,
             zoom=0,
             styles=None,
+            preamble=None,
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -1360,6 +1367,13 @@ class D3ARG:
             For example, [".labels {font-family: Times}"] will change the font of all the
             labels. Note that some styles are set from values in the dataframes stored in the
             D3ARG object, and cannot be altered using the 'styles' parameter. (default=None)
+        preamble : str
+            Extra HTML to be added to the D3ARG visualization. This can be used to add
+            additional information, such as a legend, to the visualization. To overlay this
+            on top of the plot, you may wish to wrap the preamble in a tag which has 
+            the "position: absolute" and "z-index: 1" styles set, e.g.
+            `preamble='<div style="position:absolute; z-index:1; right:2em">My text</div>'`
+            (default="")
         """
         
         if condense_mutations:
@@ -1390,6 +1404,7 @@ class D3ARG:
             label_mutations=label_mutations,
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels,
+            preamble=preamble,
         )
         draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
 
@@ -1536,6 +1551,7 @@ class D3ARG:
             force_notebook=False,
             rotate_tip_labels=False,
             styles=None,
+            preamble=None,
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -1586,6 +1602,13 @@ class D3ARG:
             For example, [".labels {font-family: Times}"] will change the font of all the
             labels. Note that some styles are set from values in the dataframes stored in the
             D3ARG object, and cannot be altered using the 'styles' parameter. (default=None)
+        preamble : str
+            Extra HTML to be added to the D3ARG visualization. This can be used to add
+            additional information, such as a legend, to the visualization. To overlay this
+            on top of the plot, you may wish to wrap the preamble in a tag which has 
+            the "position: absolute" and "z-index: 1" styles set, e.g.
+            `preamble='<div style="position:absolute; z-index:1; right:2em">My text</div>'`
+            (default="")
         """
 
         if condense_mutations:
@@ -1610,7 +1633,8 @@ class D3ARG:
             ignore_mutation_times=ignore_mutation_times,
             label_mutations=label_mutations,
             condense_mutations=condense_mutations,
-            rotate_tip_labels=rotate_tip_labels
+            rotate_tip_labels=rotate_tip_labels,
+            preamble=preamble,
         )
         draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
         if return_included_nodes:
