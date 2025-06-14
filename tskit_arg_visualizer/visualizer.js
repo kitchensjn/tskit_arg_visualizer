@@ -28,6 +28,7 @@ function main_visualizer(
     title,
     rotate_tip_labels,
     plot_type,
+    preamble,
     source
 ) {
     /*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
@@ -170,6 +171,9 @@ function main_visualizer(
     function draw_force_diagram() {
         var evenly_distributed_positions = graph.evenly_distributed_positions;
         var div_selector = "#arg_" + String(divnum);
+        if (preamble) {
+            d3.select(div_selector).html(preamble);
+        }
         var tip = d3.select(div_selector).append("div")
             .attr("class", "tooltip")
             .style("display", "none");
@@ -1345,7 +1349,7 @@ ensureRequire()
     .then(require => {
         require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
         require(["d3"], function(d3) {
-            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, $title, $rotate_tip_labels, $plot_type, $source)
+            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, $title, $rotate_tip_labels, $plot_type, $preamble, $source)
         });
     })
     .catch(err => console.error('Failed to load require.js:', err));
