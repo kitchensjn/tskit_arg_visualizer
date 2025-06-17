@@ -21,24 +21,11 @@ print(ts)
 
 d3arg = tskit_arg_visualizer.D3ARG.from_ts(ts=ts, progress=True)
 
-#d3arg.set_breakpoint_fill(colors={1:"red"})
-
-#d3arg.draw_genome_bar(
-#    width=1000,
-#    windows=[[1000,20000]]
-#)
-
-#d3arg.draw(
-#    width=1000,
-#    height=1000,
-#    edge_type="ortho",
-#    rotate_tip_labels=True
-#)
-
-d3arg.draw_node(
-    node=20,
-    degree=5,
+print(d3arg.draw_node(
+    seed_nodes=20,
+    depth=5,
     rotate_tip_labels=True,
     show_mutations=True,
-    condense_mutations=True
-)
+    condense_mutations=True,
+    return_included_nodes=True
+))

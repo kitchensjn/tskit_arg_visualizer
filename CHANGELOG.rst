@@ -1,10 +1,12 @@
 --------------------
-[0.0.6] - 2025-XX-XX
+[0.0.6] - 2025-06-04
 --------------------
 
 `degree` parameter in `draw_node()` changed to `depth`
 
 Setting and extracting x-axis node positions (#137)
+
+`node` parameter in `draw_node()` and `subset_graph()` changed to `seed_nodes`
 
 --------------------
 [0.0.5] - 2025-03-19
