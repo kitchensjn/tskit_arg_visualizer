@@ -5,6 +5,7 @@ import operator
 import os
 import random
 import tempfile
+import warnings
 import webbrowser
 from string import Template
 
@@ -797,14 +798,18 @@ class D3ARG:
             ID of the node and its x-axis position (scaled between 0 and 1)
         """
 
-        for id in pos:
+        for id, value in pos.items():
             if id in self.nodes["id"].values:
-                if (pos[id] >= 0) and (pos[id] <= 1):
-                    self.nodes.loc[self.nodes["id"]==id, "x_pos_01"] = pos[id]
-                else:
-                    raise ValueError(f"Node '{id}' position of {pos[id]} ]is out of range. Value must be between 0 and 1.")
+                if (value < 0):
+                    value = 0
+                    warnings.warn(f"Node '{id}' position of {value} clipped to 0.")
+                elif (value > 1):
+                    value = 1
+                    warnings.warn(f"Node '{id}' position of {value} clipped to 1.")
             else:
-                raise ValueError(f"Node '{id}' not in the graph. Cannot set its x-axis position. Make sure all IDs are integers.")
+                value = -1
+                warnings.warn(f"Node '{id}' not in the graph: node unpositioned")
+            self.nodes.loc[self.nodes["id"]==id, "x_pos_01"] = value
         self.nodes.loc[self.nodes.x_pos_01.isna(), "x_pos_01"] = -1
 
     def _check_all_nodes_are_samples(self, nodes):
