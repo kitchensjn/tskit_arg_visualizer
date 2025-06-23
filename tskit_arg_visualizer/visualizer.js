@@ -1231,7 +1231,6 @@ function main_visualizer(
 
         if (title != "None") {
             svg.append("text")
-                .attr("class", "label")
                 .style("font-size", "20px")
                 .attr("x", width / 2)
                 .attr("text-anchor", "middle")
