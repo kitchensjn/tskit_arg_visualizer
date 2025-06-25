@@ -554,23 +554,23 @@ function main_visualizer(
 
         var mut_symbol_rect = mut_symbol
             .append("rect")
-                .attr("class", "symbol")
-                .attr("fill", d => d.fill)
-                .attr("stroke", d => d.stroke)
-                .attr("stroke-width", 2);
+            .attr("class", "symbol")
+            .attr("fill", d => d.fill)
+            .attr("stroke", d => d.stroke)
+            .attr("stroke-width", 2);
 
         if (label_mutations) {
             var mut_symbol_label = mut_symbol
                 .append("text")
-                    .attr("class", "label")
-                    .style("font-size", d => (d.size * 2 + "px"))
-                    .attr("text-anchor", "middle")
-                    .attr("alignment-baseline", "middle")
-                    .text(d => d.label)
-                    .each(function(d) {
-                        // Store the text width on the data object
-                        d.textWidth = this.getComputedTextLength();
-                    });
+                .attr("class", "label")
+                .style("font-size", d => (d.size * 2 + "px"))
+                .attr("text-anchor", "middle")
+                .attr("alignment-baseline", "middle")
+                .text(d => d.label)
+                .each(function(d) {
+                    // Store the text width on the data object
+                    d.textWidth = this.getComputedTextLength();
+                });
             }
 
         function rotate_tip(d) {
