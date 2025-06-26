@@ -523,6 +523,23 @@ function main_visualizer(
             d3.select(div_selector + " .sites .m" + mutation_id).style("display", "none");
         }
 
+        function highlight_mut(mutation_id, site_id, fill) {
+            /* other mutations at the same site on the tree */
+            d3.selectAll(div_selector + " .mutations .s" + site_id + " rect").style("stroke", fill);
+            /* highlight only this mutation in the bar */
+            d3.select(div_selector + " .sites .m" + mutation_id).style("display", "block");
+        }
+
+        function dehighlight_mut(mutation_id, site_id) {
+            d3.selectAll(div_selector + " .mutations .s" + site_id + " rect")
+                .each(function(d) {
+                    d3.select(this)
+                        .style("stroke", d.stroke)
+                        .style("fill", d.fill);
+                    });
+            d3.select(div_selector + " .sites .m" + mutation_id).style("display", "none");
+        }
+
         var mut_symbol = svg
             .append("g")
             .attr("class", "mutations")
@@ -530,6 +547,16 @@ function main_visualizer(
             .data(graph.mutations)
             .enter()
             .append("g")
+            .attr("class", d => {
+                if (condense_mutations) {
+                    return (
+                        d.site_id.map(id => "s" + id).join(" ") + " " +
+                        d.mutation_id.map(id => "m" + id).join(" ")
+                    )
+                } else {
+                    return "s" + d.site_id + " " + "m" + d.mutation_id;
+                }}
+            )
             .attr("class", d => {
                 if (condense_mutations) {
                     return (
@@ -551,19 +578,31 @@ function main_visualizer(
                     } else {
                         highlight_mut(d.mutation_id, d.site_id, d.fill)
                     }
+                    if (condense_mutations) {
+                        d.mutation_id.forEach((id, i) => highlight_mut(id, d.site_id[i], d.fill));
+                    } else {
+                        highlight_mut(d.mutation_id, d.site_id, d.fill)
+                    }
                     /* Show a tooltip with the mutation information */
                     var rect = d3.select(div_selector).node().getBoundingClientRect();
                     tip
                         .style("display", "block")
                         .html("<p style='margin: 0px;'>" + d.content + "</p>")
                         .style("border", d.fill + " solid 2px")
-                        .style("left", (d.pageX - rect.x) + "px")
-                        .style("top", (d.pageY - rect.y + 25) + "px")
+                        .style("left", (event.pageX - rect.x) + "px")
+                        .style("top", (event.pageY - rect.y + 25) + "px")
                         .style("transform", "translateX(-50%)");
                 }
             })
             .on("mouseout", function(event, d) {
                 if (!d3.select(div_selector + ">svg").classed("no-hover")) {
+                    if (!eval(d.active)) {
+                        d3.select(this).style("cursor", "default");
+                        if (condense_mutations) {
+                            d.mutation_id.forEach((id, i) => dehighlight_mut(id, d.site_id[i]));
+                        } else {
+                            dehighlight_mut(d.mutation_id, d.site_id);
+                        } 
                     if (!eval(d.active)) {
                         d3.select(this).style("cursor", "default");
                         if (condense_mutations) {
@@ -1200,13 +1239,32 @@ function main_visualizer(
                 });
             };
 
+            var mutation_data = graph.mutations;
+            if (condense_mutations) { /* explode the graph.mutations df into one row per mut */
+                mutation_data = [];
+                graph.mutations.forEach(function(d) {
+                    d.mutation_id.forEach(function(x, i) {
+                        mutation_data.push({
+                            mutation_id: x,
+                            site_id: d.site_id[i],
+                            edge: d.edge,
+                            fill: d.fill,
+                            x_pos: d.x_pos[i], 
+                            position: d.position[i]
+                        });
+                    });
+                });
+            };
+
             var site_pos = th_group
                 .append("g")
                 .attr("class", "sites")
                 .selectAll("line")
                 .data(mutation_data)  /* NB: one per mutation to allow different line colors */
+                .data(mutation_data)  /* NB: one per mutation to allow different line colors */
                 .enter()
                 .append("g")
+                .attr("class", d => "s" + d.site_id + " " + "e" + d.edge + " " + "m" + d.mutation_id)
                 .attr("class", d => "s" + d.site_id + " " + "e" + d.edge + " " + "m" + d.mutation_id)
                 .attr("transform", d => "translate(" + d.x_pos + "," + (height-60) + ")")
                 .style("display", "none");
@@ -1229,6 +1287,11 @@ function main_visualizer(
             
             site_pos
                 .each(function(d) {
+                    const select = d3.select(this);
+                    createSiteLine(select)
+                        .style("stroke", d.fill);
+                    createSiteText(select)
+                        .text(String(d.position));
                     const select = d3.select(this);
                     createSiteLine(select)
                         .style("stroke", d.fill);
@@ -1266,7 +1329,6 @@ function main_visualizer(
 
         if (title != "None") {
             svg.append("text")
-                .attr("class", "label")
                 .style("font-size", "20px")
                 .attr("x", width / 2)
                 .attr("text-anchor", "middle")
