@@ -1071,8 +1071,9 @@ class D3ARG:
                             "target": target,
                             "y": fy,
                             "fy": fy,
-                            "site_id": edge,
                             "position": list(muts["position"]),
+                            "site_id": list(muts["site_id"]),
+                            "mutation_id": list(muts.index),
                             "x_pos": list(x_pos),
                             "fill": "pink",
                             "stroke": "#053e4e",
@@ -1085,10 +1086,10 @@ class D3ARG:
                     for index, edge in edges.iterrows():
                         source_y = node_y_pos[edge["source"]]
                         target_y = node_y_pos[edge["target"]]
-                        muts = mutations.loc[mutations["edge"] == edge["id"]].reset_index()
+                        muts = mutations.loc[mutations["edge"] == edge["id"]]
                         mutation_count = len(muts.index)
-                        for m, mut in muts.iterrows():
-                            fy = source_y - (source_y - target_y)/(mutation_count+1)*(m+1)# - 10*(m-((mutation_count-1)/2))
+                        for i, (mutation_id, mut) in enumerate(muts.iterrows()):
+                            fy = source_y - (source_y - target_y)/(mutation_count+1)*(i+1)# - 10*(m-((mutation_count-1)/2))
                             x_pos = mut["position_01"] * width + y_axis_left_spacing
                             label = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
                             content = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
@@ -1100,6 +1101,7 @@ class D3ARG:
                                 "y": fy,
                                 "fy": fy,
                                 "site_id": mut.site_id,
+                                "mutation_id": mutation_id,
                                 "position_01": mut.position_01,
                                 "position": mut.position,
                                 "x_pos": x_pos,
