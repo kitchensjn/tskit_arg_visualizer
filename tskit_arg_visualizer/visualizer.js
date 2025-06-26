@@ -168,9 +168,6 @@ function main_visualizer(
     }
 
     function draw_force_diagram() {
-
-        console.log(title);
-        
         var evenly_distributed_positions = graph.evenly_distributed_positions;
         var div_selector = "#arg_" + String(divnum);
         var tip = d3.select(div_selector).append("div")
@@ -469,21 +466,22 @@ function main_visualizer(
                 .text(d => d.not_included_children);
 
         function multi_line_text(text, top_align) {
-            // Split label text onto separate lines by newline characters, if they exist
-            const lines = text.split("\n");
-            const parentX = d3.select(this).attr("x") || "0";  // Get parent text's x position
-            const initialDy = top_align ? "0em" : (-1 * (lines.length - 1)) + "em";
+            if (text != null) {
+                // Split label text onto separate lines by newline characters, if they exist
+                const lines = text.split("\n");
+                const parentX = d3.select(this).attr("x") || "0";  // Get parent text's x position
+                const initialDy = top_align ? "0em" : (-1 * (lines.length - 1)) + "em";
 
-            d3.select(this).text(null); // clear existing text
-            d3.select(this).selectAll('tspan')
-                .data(lines)
-                .enter()
-                .append('tspan')
-                .text(d => d)
-                .attr('x', parentX)  // Use parent's x position
-                .attr('dy', (d, i) => ((i === 0) ? initialDy : "1em"));
+                d3.select(this).text(null); // clear existing text
+                d3.select(this).selectAll('tspan')
+                    .data(lines)
+                    .enter()
+                    .append('tspan')
+                    .text(d => d)
+                    .attr('x', parentX)  // Use parent's x position
+                    .attr('dy', (d, i) => ((i === 0) ? initialDy : "1em"));
+            }
         }
-
         var node = node_group
             .append("path")
             .attr("transform", d => "translate(" + d.x + "," + d.y + ")")
