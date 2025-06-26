@@ -602,7 +602,8 @@ function main_visualizer(
                             d.mutation_id.forEach((id, i) => dehighlight_mut(id, d.site_id[i]));
                         } else {
                             dehighlight_mut(d.mutation_id, d.site_id);
-                        } 
+                        }
+                    }
                     if (!eval(d.active)) {
                         d3.select(this).style("cursor", "default");
                         if (condense_mutations) {
@@ -905,7 +906,7 @@ function main_visualizer(
                 var l = d3.select(this).select(".link");
                 l.attr("path_type", path_info[0]);
                 l.attr("d", path);
-            })
+            });
 
             mut_symbol
                 .attr("transform", function(d) {
@@ -1287,11 +1288,6 @@ function main_visualizer(
             
             site_pos
                 .each(function(d) {
-                    const select = d3.select(this);
-                    createSiteLine(select)
-                        .style("stroke", d.fill);
-                    createSiteText(select)
-                        .text(String(d.position));
                     const select = d3.select(this);
                     createSiteLine(select)
                         .style("stroke", d.fill);
