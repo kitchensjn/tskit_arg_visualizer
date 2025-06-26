@@ -139,7 +139,6 @@ def draw_D3(arg_json, styles=None, force_notebook=False):
         '<div id="{}" class="d3arg" style="min-width:{}px; min-height:{}px;"></div>'
         '<script>$main_text</script>'
     ).format(arg_id, float(arg_json["width"]) + 40, float(arg_json["height"]) + 80))
-    ).format(arg_id, float(arg_json["width"]) + 40, float(arg_json["height"]) + 80))
     visualizerjs = open(os.path.dirname(__file__) + "/visualizer.js", "r")
     main_text_template = Template(visualizerjs.read())
     visualizerjs.close()
