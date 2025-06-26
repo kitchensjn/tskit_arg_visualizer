@@ -172,7 +172,7 @@ function main_visualizer(
         console.log(title);
         
         var evenly_distributed_positions = graph.evenly_distributed_positions;
-        var div_selector = "#arg_" + String(divnum)
+        var div_selector = "#arg_" + String(divnum);
         var tip = d3.select(div_selector).append("div")
             .attr("class", "tooltip")
             .style("display", "none");
@@ -193,8 +193,9 @@ function main_visualizer(
                 d3.selectAll(div_selector + " .node").classed("fix", function(d) {
                     d.fx = d.x;
                 });
-                src = source.replace(/\n/g, "\\n");
-                var textBlob = new Blob([src.replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"')], {type: "text/plain"});
+                src = JSON.parse(source);
+                src.data.nodes = graph.nodes;
+                var textBlob = new Blob([JSON.stringify(src)], {type: "text/plain"});
                 saveAs(textBlob, "tskit_arg_visualizer.json");
             });
         methods.append("button").text("SVG")
@@ -619,23 +620,23 @@ function main_visualizer(
 
         var mut_symbol_rect = mut_symbol
             .append("rect")
-                .attr("class", "symbol")
-                .attr("fill", d => d.fill)
-                .attr("stroke", d => d.stroke)
-                .attr("stroke-width", 2);
+            .attr("class", "symbol")
+            .attr("fill", d => d.fill)
+            .attr("stroke", d => d.stroke)
+            .attr("stroke-width", 2);
 
         if (label_mutations) {
             var mut_symbol_label = mut_symbol
                 .append("text")
-                    .attr("class", "label")
-                    .style("font-size", d => (d.size * 2 + "px"))
-                    .attr("text-anchor", "middle")
-                    .attr("alignment-baseline", "middle")
-                    .text(d => d.label)
-                    .each(function(d) {
-                        // Store the text width on the data object
-                        d.textWidth = this.getComputedTextLength();
-                    });
+                .attr("class", "label")
+                .style("font-size", d => (d.size * 2 + "px"))
+                .attr("text-anchor", "middle")
+                .attr("alignment-baseline", "middle")
+                .text(d => d.label)
+                .each(function(d) {
+                    // Store the text width on the data object
+                    d.textWidth = this.getComputedTextLength();
+                });
             }
 
         function rotate_tip(d) {
@@ -1346,7 +1347,7 @@ ensureRequire()
     .then(require => {
         require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
         require(["d3"], function(d3) {
-            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, "$title", $rotate_tip_labels, "$plot_type", "$source")
+            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, $title, $rotate_tip_labels, $plot_type, $source)
         });
     })
     .catch(err => console.error('Failed to load require.js:', err));
