@@ -1,11 +1,13 @@
 import collections
 import itertools
 import json
+import json
 import math
 import operator
 import os
 import random
 import tempfile
+import warnings
 import webbrowser
 from string import Template
 
@@ -129,13 +131,14 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
 
 
 def draw_D3(arg_json, styles=None, force_notebook=False):
-    arg_json = {k: json.dumps(v) for k, v in arg_json.items()}
-    arg_json["source"] = json.dumps(arg_json.copy())
+    arg_json["source"] = json.dumps(arg_json.copy())  # first escape the plain json data
+    arg_json = {k: json.dumps(v) for k, v in arg_json.items()}  # now escape all
     arg_json["divnum"] = str(random.randint(0,9999999999))
     arg_id = "arg_" + arg_json['divnum']
     JS_text = Template((
         '<div id="{}" class="d3arg" style="min-width:{}px; min-height:{}px;"></div>'
         '<script>$main_text</script>'
+    ).format(arg_id, float(arg_json["width"]) + 40, float(arg_json["height"]) + 80))
     ).format(arg_id, float(arg_json["width"]) + 40, float(arg_json["height"]) + 80))
     visualizerjs = open(os.path.dirname(__file__) + "/visualizer.js", "r")
     main_text_template = Template(visualizerjs.read())
@@ -799,14 +802,18 @@ class D3ARG:
             ID of the node and its x-axis position (scaled between 0 and 1)
         """
 
-        for id in pos:
+        for id, value in pos.items():
             if id in self.nodes["id"].values:
-                if (pos[id] >= 0) and (pos[id] <= 1):
-                    self.nodes.loc[self.nodes["id"]==id, "x_pos_01"] = pos[id]
-                else:
-                    raise ValueError(f"Node '{id}' position of {pos[id]} ]is out of range. Value must be between 0 and 1.")
+                if (value < 0):
+                    value = 0
+                    warnings.warn(f"Node '{id}' position of {value} clipped to 0.")
+                elif (value > 1):
+                    value = 1
+                    warnings.warn(f"Node '{id}' position of {value} clipped to 1.")
             else:
-                raise ValueError(f"Node '{id}' not in the graph. Cannot set its x-axis position. Make sure all IDs are integers.")
+                value = -1
+                warnings.warn(f"Node '{id}' not in the graph: node unpositioned")
+            self.nodes.loc[self.nodes["id"]==id, "x_pos_01"] = value
         self.nodes.loc[self.nodes.x_pos_01.isna(), "x_pos_01"] = -1
 
     def _check_all_nodes_are_samples(self, nodes):

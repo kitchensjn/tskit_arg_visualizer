@@ -193,8 +193,9 @@ function main_visualizer(
                 d3.selectAll(div_selector + " .node").classed("fix", function(d) {
                     d.fx = d.x;
                 });
-                src = source.replace(/\n/g, "\\n");
-                var textBlob = new Blob([src.replace(/'nodes': .*'links'/, "'nodes': " + JSON.stringify(graph.nodes) + ", 'links'").replaceAll("'", '"')], {type: "text/plain"});
+                src = JSON.parse(source);
+                src.data.nodes = graph.nodes;
+                var textBlob = new Blob([JSON.stringify(src)], {type: "text/plain"});
                 saveAs(textBlob, "tskit_arg_visualizer.json");
             });
         methods.append("button").text("SVG")
@@ -553,23 +554,23 @@ function main_visualizer(
 
         var mut_symbol_rect = mut_symbol
             .append("rect")
-                .attr("class", "symbol")
-                .attr("fill", d => d.fill)
-                .attr("stroke", d => d.stroke)
-                .attr("stroke-width", 2);
+            .attr("class", "symbol")
+            .attr("fill", d => d.fill)
+            .attr("stroke", d => d.stroke)
+            .attr("stroke-width", 2);
 
         if (label_mutations) {
             var mut_symbol_label = mut_symbol
                 .append("text")
-                    .attr("class", "label")
-                    .style("font-size", d => (d.size * 2 + "px"))
-                    .attr("text-anchor", "middle")
-                    .attr("alignment-baseline", "middle")
-                    .text(d => d.label)
-                    .each(function(d) {
-                        // Store the text width on the data object
-                        d.textWidth = this.getComputedTextLength();
-                    });
+                .attr("class", "label")
+                .style("font-size", d => (d.size * 2 + "px"))
+                .attr("text-anchor", "middle")
+                .attr("alignment-baseline", "middle")
+                .text(d => d.label)
+                .each(function(d) {
+                    // Store the text width on the data object
+                    d.textWidth = this.getComputedTextLength();
+                });
             }
 
         function rotate_tip(d) {
@@ -1231,7 +1232,6 @@ function main_visualizer(
 
         if (title != "None") {
             svg.append("text")
-                .attr("class", "label")
                 .style("font-size", "20px")
                 .attr("x", width / 2)
                 .attr("text-anchor", "middle")

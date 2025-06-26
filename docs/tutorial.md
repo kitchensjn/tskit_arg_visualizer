@@ -143,7 +143,7 @@ Visualizing large ARGs can be quite difficult due to the shear number of nodes a
 
 ```
 d3arg.draw_node(
-    node=12,
+    seed_nodes=12,
     depth=[2,5]
 )
 ```
