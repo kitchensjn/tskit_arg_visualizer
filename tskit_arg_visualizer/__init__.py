@@ -367,10 +367,14 @@ class D3ARG:
         else:
             num_samples = -1
             sample_order = []
+        mutations = pd.DataFrame(json["data"]["mutations"])
+        # ensure the time column is float (in case it is full of None values)
+        mutations["time"] = mutations["time"].astype(float)
+
         return cls(
             nodes=nodes,
             edges=pd.DataFrame(json["data"]["links"]),
-            mutations=pd.DataFrame(json["data"]["mutations"]),
+            mutations=mutations,
             breakpoints=pd.DataFrame(json["data"]["breakpoints"]),
             num_samples=num_samples,
             sample_order=sample_order,
@@ -558,7 +562,7 @@ class D3ARG:
             disable=(not progress) or (ts.num_sites == 0)
         ):
             for mut in site.mutations:
-                if mut.edge != -1:  # mutations e.g. above a root are currently not plotted
+                if mut.edge != tskit.NULL:  # mutations e.g. above a root are currently not plotted
                     new_edge = edge_id_reference[mut.edge]
                     mut_time = mut.time
                     if (tskit.is_unknown_time(mut_time)):
@@ -568,7 +572,6 @@ class D3ARG:
                         plot_time = middle + random.uniform(-(new_edge[3]-middle),(new_edge[3]-middle))
                         fill = "gold"
                         stroke = "#053e4e"
-                        mut_time = -1
                     else:
                         plot_time = mut.time
                         fill = "orange"
@@ -1102,7 +1105,7 @@ class D3ARG:
                                 "edge": edge["id"],
                                 "source": edge["source"],
                                 "target": edge["target"],
-                                "time": mut.time,
+                                "time": None if tskit.is_unknown_time(mut.time) else mut.time,
                                 "y": fy,
                                 "fy": fy,
                                 "site_id": mut.site_id,
