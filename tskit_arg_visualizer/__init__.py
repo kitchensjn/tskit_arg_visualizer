@@ -23,6 +23,25 @@ try:
 except ImportError:
     __version__ = "unknown"
 
+
+default_mutation_styles = {
+    "size": 5,
+    "unknown_time": {
+        "fill": "gold",
+        "stroke": "#053e4e",
+    },
+    "known_time": {
+        "fill": "orange",
+        "stroke": "#053e4e",
+    },
+    "condensed": {
+        # NB: condensed mutation colour cannot be overridden by the user
+        # because the base mutation table contains one colour per mutation
+        "fill": "pink",
+        "stroke": "#053e4e",
+    },
+}
+
 def running_in_notebook():
     """Checks whether the code is being executed within a Jupyter Notebook.
 
@@ -367,10 +386,17 @@ class D3ARG:
         else:
             num_samples = -1
             sample_order = []
+        mutations = pd.DataFrame(json["data"]["mutations"])
+        # ensure the time column is float (in case it is full of None values)
+        mutations["time"] = mutations["time"].astype(np.float64)
+        # ensure that NaNs are set to the special unknown time value. This requires
+        # some care to ensure that the NaNs are not cast before setting (e.g. can't use fillna)
+        unknown = np.isnan(mutations.time)
+        mutations.loc[unknown, "time"] = np.full_like(len(unknown), tskit.UNKNOWN_TIME, dtype=np.float64)
         return cls(
             nodes=nodes,
             edges=pd.DataFrame(json["data"]["links"]),
-            mutations=pd.DataFrame(json["data"]["mutations"]),
+            mutations=mutations,
             breakpoints=pd.DataFrame(json["data"]["breakpoints"]),
             num_samples=num_samples,
             sample_order=sample_order,
@@ -558,7 +584,7 @@ class D3ARG:
             disable=(not progress) or (ts.num_sites == 0)
         ):
             for mut in site.mutations:
-                if mut.edge != -1:  # mutations e.g. above a root are currently not plotted
+                if mut.edge != tskit.NULL:  # mutations e.g. above a root are currently not plotted
                     new_edge = edge_id_reference[mut.edge]
                     mut_time = mut.time
                     if (tskit.is_unknown_time(mut_time)):
@@ -566,13 +592,12 @@ class D3ARG:
                         # an edge. Essentially, giving them a false time just for plotting.
                         middle = (new_edge[3] + new_edge[4]) / 2
                         plot_time = middle + random.uniform(-(new_edge[3]-middle),(new_edge[3]-middle))
-                        fill = "gold"
-                        stroke = "#053e4e"
-                        mut_time = -1
+                        fill = default_mutation_styles["unknown_time"]["fill"]
+                        stroke = default_mutation_styles["unknown_time"]["stroke"]
                     else:
                         plot_time = mut.time
-                        fill = "orange"
-                        stroke = "#053e4e"
+                        fill = default_mutation_styles["known_time"]["fill"]
+                        stroke = default_mutation_styles["known_time"]["stroke"]
                     inherited_state = site.ancestral_state if mut.parent == tskit.NULL else ts.mutation(mut.parent).derived_state
                     mutations.append({
                         "edge": new_edge[0],
@@ -588,7 +613,7 @@ class D3ARG:
                         "derived": mut.derived_state,
                         "fill": fill,
                         "stroke": stroke,
-                        "size": 5,
+                        "size": default_mutation_styles["size"],
                     })
         mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","inherited","derived","fill","stroke","size"])
         return edges_output, mutations_output
@@ -725,6 +750,27 @@ class D3ARG:
         """
         allowed_keys = {"size", "symbol", "fill", "stroke", "stroke_width"}
         self._set_styles(self.nodes, styles, allowed_keys)
+
+    def set_all_mutation_styles(self, *, size=None, fill=None, stroke=None):
+        """
+        Set all at once
+        """
+        if size is not None:
+            self.mutations["size"] = size
+        if fill is not None:
+            self.mutations["fill"] = fill
+        if stroke is not None:
+            self.mutations["stroke"] = stroke
+
+    def reset_all_mutation_styles(self):
+        """Resets mutation styles to default
+        """
+        is_unknown = tskit.is_unknown_time(self.mutations.time)
+        self.mutations["size"] = default_mutation_styles["size"]
+        self.mutations["fill"] = default_mutation_styles["known_time"]["fill"]
+        self.mutations["stroke"] = default_mutation_styles["known_time"]["stroke"]
+        self.mutations.loc[is_unknown, "fill"] = default_mutation_styles["unknown_time"]["fill"]
+        self.mutations.loc[is_unknown, "stroke"] = default_mutation_styles["unknown_time"]["stroke"]
 
     def set_mutation_styles(self, styles):
         """Individually control the styling of each mutation.
@@ -1080,8 +1126,8 @@ class D3ARG:
                             "site_id": list(muts["site_id"]),
                             "mutation_id": list(muts.index),
                             "x_pos": list(x_pos),
-                            "fill": "pink",
-                            "stroke": "#053e4e",
+                            "fill": default_mutation_styles["condensed"]["fill"],
+                            "stroke": default_mutation_styles["condensed"]["stroke"],
                             "active": "false",
                             "label": "⨉"+str(muts.shape[0]),
                             "content": "<br>".join(muts.content),
@@ -1102,7 +1148,7 @@ class D3ARG:
                                 "edge": edge["id"],
                                 "source": edge["source"],
                                 "target": edge["target"],
-                                "time": mut.time,
+                                "time": None if tskit.is_unknown_time(mut.time) else mut.time,
                                 "y": fy,
                                 "fy": fy,
                                 "site_id": mut.site_id,
