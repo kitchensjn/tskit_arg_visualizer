@@ -26,6 +26,6 @@ print(d3arg.draw_node(
     depth=5,
     rotate_tip_labels=True,
     show_mutations=True,
-    condense_mutations=True,
+    condense_mutations=False,
     return_included_nodes=True
 ))

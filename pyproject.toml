@@ -1,6 +1,6 @@
 [project]
 name = "tskit_arg_visualizer"
-version = "0.0.6"
+version = "0.1.0"
 authors = [{name="James Kitchens",email="kitchensjn@gmail.com"}]
 description = "Interactive visualization method for ancestral recombination graphs"
 readme = "README.md"
