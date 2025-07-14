@@ -1,0 +1,1 @@
+Running `view.py` simulates the small ARG from Figure 1A with `msprime` and draws it with `tskit_arg_visualizer`. `start.svg` was created by preventing the force-directed simulation from updating the node positions and saving the resulting ARG as an SVG. `end.svg` was saved after the force-directed simulation had settled into an optimum.
