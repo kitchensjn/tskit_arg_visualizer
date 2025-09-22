@@ -942,6 +942,7 @@ class D3ARG:
             condense_mutations=True,
             rotate_tip_labels=False,
             preamble=None,
+            save_filename=None,
         ):
         """Creates the required JSON for both draw() and draw_node()
 
@@ -1000,7 +1001,9 @@ class D3ARG:
             Rotates tip labels by 90 degrees. (default=False)
         preamble : str
             The preamble. (default="")
-            
+        save_filename : str
+            Filename to use when selecting "Download as" in the visualization
+            (default=None, treated as "tskit_arg_visualizer")
         Returns
         -------
         arg : list
@@ -1013,6 +1016,8 @@ class D3ARG:
             y_shift = 100
         if preamble is not None:
             preamble = str(preamble)
+        if save_filename is None:
+            save_filename = "tskit_arg_visualizer"
         if not show_mutations:
             tick_times = nodes["time"]
         elif ignore_mutation_times:
@@ -1243,6 +1248,7 @@ class D3ARG:
             "default_node_style": self.default_node_style,
             "title": title,
             "preamble": preamble,
+            "save_filename": save_filename,
         }
         return arg
 
@@ -1365,6 +1371,7 @@ class D3ARG:
             zoom=0,
             styles=None,
             preamble=None,
+            save_filename=None,
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -1429,6 +1436,9 @@ class D3ARG:
             tag which has the "position: absolute" and "z-index: 1" styles set, e.g.
             `preamble='<div style="position:absolute; z-index:1; right:2em">My text</div>'`
             (default="")
+        save_filename : str
+            Filename to use when selecting "Download as" in the visualization
+            (default=None, treated as "tskit_arg_visualizer")
         """
         
         if condense_mutations:
@@ -1460,6 +1470,7 @@ class D3ARG:
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels,
             preamble=preamble,
+            save_filename=save_filename,
         )
         draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
 
@@ -1607,6 +1618,7 @@ class D3ARG:
             rotate_tip_labels=False,
             styles=None,
             preamble=None,
+            save_filename=None,
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
 
@@ -1665,6 +1677,9 @@ class D3ARG:
             tag which has the "position: absolute" and "z-index: 1" styles set, e.g.
             `preamble='<div style="position:absolute; z-index:1; right:2em">My text</div>'`
             (default="")
+        save_filename : str
+            Filename to use when selecting "Download as" in the visualization
+            (default=None, treated as "tskit_arg_visualizer")
         """
 
         if condense_mutations:
@@ -1691,6 +1706,7 @@ class D3ARG:
             condense_mutations=condense_mutations,
             rotate_tip_labels=rotate_tip_labels,
             preamble=preamble,
+            save_filename=save_filename,
         )
         draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
         if return_included_nodes:
