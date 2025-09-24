@@ -341,8 +341,20 @@ function main_visualizer(
             var y_axis_labels = svg
                 .append("g")
                 .attr("class", "yaxis")
-                .attr("transform", "translate(5,0)")
+                .attr("transform", "translate(25,0)")
                 .call(d3_y_axis);
+            
+            if (y_axis.title != "None") {
+                y_axis_labels.append("text")
+                .attr("x", -15)
+                .attr("y", (y_axis.max_min[0]+y_axis.max_min[1])/2)
+                .attr("fill", "black")
+                .attr("text-anchor", "middle")
+                .attr("alignment-baseline", "middle")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90, -15, " + (y_axis.max_min[0]+y_axis.max_min[1])/2 + ")")
+                .text(y_axis.title);
+            }
         }
 
         var simulation = d3
@@ -867,7 +879,7 @@ function main_visualizer(
             node
                 .attr("transform", function(d) {
                     if (eval(y_axis.include_labels)) {
-                        return "translate(" + Math.max(100, Math.min(width-50, d.x)) + "," + d.y + ")";
+                        return "translate(" + Math.max(150, Math.min(width-50, d.x)) + "," + d.y + ")";
                     } else {
                         return "translate(" + Math.max(50, Math.min(width-50, d.x)) + "," + d.y + ")";
                     }
@@ -880,7 +892,7 @@ function main_visualizer(
                         }
                     }
                     if (eval(y_axis.include_labels)) {
-                        return d.x = Math.max(100, Math.min(width-50, d.x));
+                        return d.x = Math.max(150, Math.min(width-50, d.x));
                     } else {
                         return d.x = Math.max(50, Math.min(width-50, d.x));
                     }

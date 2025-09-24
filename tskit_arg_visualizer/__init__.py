@@ -261,7 +261,7 @@ class D3ARG:
 
     """
 
-    def __init__(self, nodes, edges, mutations, breakpoints, num_samples, sample_order, default_node_style):
+    def __init__(self, nodes, edges, mutations, breakpoints, num_samples, sample_order, default_node_style, time_units):
         """Initializes a D3ARG object
 
         This is the generalized function for initializing a D3ARG object. It is most
@@ -280,6 +280,9 @@ class D3ARG:
             Number of samples in the ARG. Useful for various calculations when plotting
         sample_order : list or np.array
             Order of the sample ID from left to right when plotting
+        default_node_style : dict
+        time_units : string
+            Time units for the node times (example is "generations").
         """
 
         self.nodes = nodes
@@ -289,6 +292,7 @@ class D3ARG:
         self.num_samples = num_samples
         self.sample_order = sample_order
         self.default_node_style = default_node_style
+        self.time_units = time_units
 
     def __str__(self):
         """Prints attributes of D3ARG object"""
@@ -347,6 +351,7 @@ class D3ARG:
             default_node_style=nsd,
             ignore_unattached_nodes=ignore_unattached_nodes,
             progress=progress)
+        time_units = ts.time_units
         return cls(
             nodes=nodes,
             edges=edges,
@@ -354,7 +359,8 @@ class D3ARG:
             breakpoints=cls._identify_breakpoints(ts=ts),
             num_samples=len(samples),
             sample_order=samples,
-            default_node_style=nsd
+            default_node_style=nsd,
+            time_units=time_units
         )
     
     @classmethod
@@ -393,6 +399,11 @@ class D3ARG:
         # some care to ensure that the NaNs are not cast before setting (e.g. can't use fillna)
         unknown = np.isnan(mutations.time)
         mutations.loc[unknown, "time"] = np.full_like(len(unknown), tskit.UNKNOWN_TIME, dtype=np.float64)
+        if "units" in json["y_axis"]:
+            time_units = json["y_axis"]["units"]
+        else:
+            print("WARNING: This JSON file was created with an earlier version of `tskit_arg_visualizer`. Some incompatibilities may occur.")
+            time_units = None
         return cls(
             nodes=nodes,
             edges=pd.DataFrame(json["data"]["links"]),
@@ -400,7 +411,8 @@ class D3ARG:
             breakpoints=pd.DataFrame(json["data"]["breakpoints"]),
             num_samples=num_samples,
             sample_order=sample_order,
-            default_node_style=json["default_node_style"]
+            default_node_style=json["default_node_style"],
+            time_units=time_units
         )
 
     def _convert_nodes_table(ts, recombination_nodes_to_merge, default_node_style, ignore_unattached_nodes, progress=None):
@@ -930,6 +942,7 @@ class D3ARG:
             height=500,
             tree_highlighting=True,
             y_axis_labels=True,
+            y_axis_title=None,
             y_axis_scale="rank",
             edge_type="line",
             variable_edge_width=False,
@@ -970,6 +983,9 @@ class D3ARG:
             Whether to include the y-axis on the left of the figure. By default, tick marks will be automatically
             chosen. You can specify a list of tick marks to use instead. You can also set custom text for tick marks
             using a dictionary where key is the time and value is the text. (default=True)
+        y_axis_title : string
+            Title of the y-axis that will be plotted on the left hand side of the figure. (default=None, uses
+            `D3ARG.time_units` attribute)
         y_axis_scale : string
             Scale used for the positioning nodes along the y-axis. Options:
                 "rank" (default) - equal vertical spacing between nodes
@@ -1080,7 +1096,7 @@ class D3ARG:
         default_left_spacing = 50
         y_axis_left_spacing = 0
         if shift_for_y_axis:
-            y_axis_left_spacing = 50
+            y_axis_left_spacing = 100
         
         if plot_type == "full":
             sample_positions = calculate_evenly_distributed_positions(num_elements=self.num_samples, start=default_left_spacing+y_axis_left_spacing, end=(width-100)+default_left_spacing+y_axis_left_spacing)
@@ -1206,12 +1222,15 @@ class D3ARG:
         transformed_bps = transformed_bps.to_dict("records")
 
         if shift_for_y_axis:
-            width += 50
+            width += 100
 
         if tree_highlighting:
             height += 75
         if title is not None:
             height += 50
+
+        if y_axis_title == None:
+            y_axis_title = str(self.time_units).title()
 
         arg = {
             "data":{
@@ -1224,6 +1243,8 @@ class D3ARG:
             "width": width,
             "height": height,
             "y_axis":{
+                "title":str(y_axis_title),
+                "units":self.time_units,
                 "include_labels":str(shift_for_y_axis).lower(),
                 "ticks": list(y_axis_final.keys()),
                 "text": list(y_axis_final.values()),
@@ -1350,6 +1371,7 @@ class D3ARG:
             height=500,
             tree_highlighting=True,
             y_axis_labels=True,
+            y_axis_title=None,
             y_axis_scale="rank",
             edge_type="line",
             variable_edge_width=False,
@@ -1381,6 +1403,9 @@ class D3ARG:
             Whether to include the y-axis on the left of the figure. By default, tick marks will be automatically
             chosen. You can specify a list of tick marks to use instead. You can also set custom text for tick marks
             using a dictionary where key is the time and value is the text. (default=True)
+        y_axis_title : string
+            Title of the y-axis that will be plotted on the left hand side of the figure. (default=None, uses
+            `D3ARG.time_units` attribute)
         y_axis_scale : string
             Scale used for the positioning nodes along the y-axis. Options:
                 "rank" (default) - equal vertical spacing between nodes
@@ -1448,6 +1473,7 @@ class D3ARG:
             height=height,
             tree_highlighting=tree_highlighting,
             y_axis_labels=y_axis_labels,
+            y_axis_title=y_axis_title,
             y_axis_scale=y_axis_scale,
             edge_type=edge_type,
             variable_edge_width=variable_edge_width,
@@ -1595,6 +1621,7 @@ class D3ARG:
             height=500,
             depth=1,
             y_axis_labels=True,
+            y_axis_title=None,
             y_axis_scale="rank",
             tree_highlighting=True,
             title=None,
@@ -1627,6 +1654,9 @@ class D3ARG:
             Whether to include the y-axis on the left of the figure. By default, tick marks will be automatically
             chosen. You can specify a list of tick marks to use instead. You can also set custom text for tick marks
             using a dictionary where key is the time and value is the text. (default=True)
+        y_axis_title : string
+            Title of the y-axis that will be plotted on the left hand side of the figure. (default=None, uses
+            `D3ARG.time_units` attribute)
         y_axis_scale : string
             Scale used for the positioning nodes along the y-axis. Options:
                 "rank" (default) - equal vertical spacing between nodes
@@ -1683,6 +1713,7 @@ class D3ARG:
             height=height,
             tree_highlighting=tree_highlighting,
             y_axis_labels=y_axis_labels,
+            y_axis_title=y_axis_title,
             y_axis_scale=y_axis_scale,
             title=title,
             show_mutations=show_mutations,
