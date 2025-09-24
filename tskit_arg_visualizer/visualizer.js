@@ -29,7 +29,8 @@ function main_visualizer(
     rotate_tip_labels,
     plot_type,
     preamble,
-    source
+    source,
+    filename_for_saving,
 ) {
     /*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
     
@@ -198,13 +199,13 @@ function main_visualizer(
                 src = JSON.parse(source);
                 src.data.nodes = graph.nodes;
                 var textBlob = new Blob([JSON.stringify(src)], {type: "text/plain"});
-                saveAs(textBlob, "tskit_arg_visualizer.json");
+                saveAs(textBlob, filename_for_saving + ".json");
             });
         methods.append("button").text("SVG")
             .on('click', function(){
                 var svgString = getSVGString(svg.node());
                 var svgBlob = new Blob([svgString], {type:"image/svg+xml;charset=utf-8"});
-                saveAs(svgBlob, "tskit_arg_visualizer");
+                saveAs(svgBlob, filename_for_saving);
             });
         methods.append("button").text("PNG")
             .on('click', function(){
@@ -212,7 +213,7 @@ function main_visualizer(
                 svgString2Image(svgString, 2*width, 2*height, 'png', save); // passes Blob and filesize String to the callback
             
                 function save(dataBlob){
-                    saveAs(dataBlob, "tskit_arg_visualizer"); // FileSaver.js function
+                    saveAs(dataBlob, filename_for_saving); // FileSaver.js function
                 }
             });
         
@@ -1362,7 +1363,7 @@ ensureRequire()
     .then(require => {
         require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
         require(["d3"], function(d3) {
-            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, $title, $rotate_tip_labels, $plot_type, $preamble, $source)
+            main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, $title, $rotate_tip_labels, $plot_type, $preamble, $source, $save_filename)
         });
     })
     .catch(err => console.error('Failed to load require.js:', err));
