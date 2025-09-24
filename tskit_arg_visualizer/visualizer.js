@@ -169,6 +169,7 @@ function main_visualizer(
     }
 
     function draw_force_diagram() {
+        var counter = 0;
         var evenly_distributed_positions = graph.evenly_distributed_positions;
         var div_selector = "#arg_" + String(divnum);
         if (preamble) {
@@ -385,7 +386,8 @@ function main_visualizer(
         var link = link_container
             .append("path")
             .attr("class", "link")
-            .attr("stroke", d => d.stroke);
+            .attr("stroke", d => d.stroke)
+            .attr("stroke-width", "4px");
         
         if (eval(edge_styles.variable_width)) {
             link
@@ -582,8 +584,6 @@ function main_visualizer(
                     return "s" + d.site_id + " " + "m" + d.mutation_id;
                 }}
             )
-            .style("transform-box", "fill-box")
-            .style("transform-origin", "center")
             .on("mouseover", function(event, d) {
                 if (!d3.select(div_selector + ">svg").classed("no-hover")) {
                     d3.select(this).style("cursor", "pointer");
@@ -637,7 +637,25 @@ function main_visualizer(
             .attr("class", "symbol")
             .attr("fill", d => d.fill)
             .attr("stroke", d => d.stroke)
-            .attr("stroke-width", 2);
+            .attr("stroke-width", 2)
+            // Set the rect width / height based on the calculated text width
+            .attr("width", function(d) {
+                if (label_mutations && d.textWidth) {
+                    d.computedWidth = d.textWidth + 6; // Add left/right padding
+                } else {
+                    d.computedWidth = d.size * 3; // aspect ratio is 3 (3 times wider than tall)
+                }
+                return d.computedWidth;  
+            })
+            .attr("height", function(d) {
+                if (label_mutations) {
+                    d.computedHeight = (d.size * 2) + 4; // Font size + top/bottom padding
+                }
+                else {
+                    d.computedHeight = d.size;
+                }
+                return d.computedHeight;
+            })
 
         if (label_mutations) {
             var mut_symbol_label = mut_symbol
@@ -923,46 +941,7 @@ function main_visualizer(
                 l.attr("d", path);
             });
 
-            mut_symbol
-                .attr("transform", function(d) {
-                    var parent = document.getElementById(String(divnum) + "_node" + d.source);
-                    if (parent != null) {
-                        var parent_x = parseFloat(parent.getAttribute("cx"));
-                        var parent_y = parseFloat(parent.getAttribute("cy"));
-                        var child = document.getElementById(String(divnum) + "_node" + d.target);
-                        if (child != null) {
-                            var child_x = parseFloat(child.getAttribute("cx"));
-                            var child_y = parseFloat(child.getAttribute("cy"));
-                            var slope = (parent_y - child_y) / (parent_x - child_x);
-                            var intercept = parent_y - slope * parent_x;
-                            return "rotate(" + String(-Math.atan((child_x-parent_x)/(child_y-parent_y))*180/Math.PI) + ")";
-                        } else {
-                            return "rotate(0)";
-                        }
-                    } else {
-                        return "rotate(0)";
-                    }
-                });
-
             mut_symbol_rect
-            // Set the rect width / height based on the calculated text width
-                .attr("width", function(d) {
-                    if (label_mutations && d.textWidth) {
-                        d.computedWidth = d.textWidth + 6; // Add left/right padding
-                    } else {
-                        d.computedWidth = d.size * 3; // aspect ratio is 3 (3 times wider than tall)
-                    }
-                    return d.computedWidth;  
-                })
-                .attr("height", function(d) {
-                    if (label_mutations) {
-                        d.computedHeight = (d.size * 2) + 4; // Font size + top/bottom padding
-                    }
-                    else {
-                        d.computedHeight = d.size;
-                    }
-                    return d.computedHeight;
-                })
                 .attr("x", function(d) {
                     var parent = document.getElementById(String(divnum) + "_node" + d.source);
                     if (parent != null) {
@@ -987,6 +966,28 @@ function main_visualizer(
                     }
                 })
                 .attr("y", d => d.y - d.computedHeight/2);
+
+            mut_symbol
+                .attr("transform", function(d) {
+                    var parent = document.getElementById(String(divnum) + "_node" + d.source);
+                    if (parent != null) {
+                        var parent_x = parseFloat(parent.getAttribute("cx"));
+                        var parent_y = parseFloat(parent.getAttribute("cy"));
+                        var child = document.getElementById(String(divnum) + "_node" + d.target);
+                        if (child != null) {
+                            var child_x = parseFloat(child.getAttribute("cx"));
+                            var child_y = parseFloat(child.getAttribute("cy"));
+                            var slope = (parent_y - child_y) / (parent_x - child_x);
+                            var intercept = parent_y - slope * parent_x;
+                            var rect = this.children[0];
+                            return "rotate(" + String(-Math.atan((child_x-parent_x)/(child_y-parent_y))*180/Math.PI) + ", " + String(parseFloat(rect.getAttribute("x"))+parseFloat(rect.getAttribute("width"))/2) + ", " + String(parseFloat(rect.getAttribute("y"))+parseFloat(rect.getAttribute("height"))/2) + ")";
+                        } else {
+                            return "rotate(0)";
+                        }
+                    } else {
+                        return "rotate(0)";
+                    }
+                });
             
             if (label_mutations) {
                 mut_symbol_label

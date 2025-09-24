@@ -108,11 +108,6 @@
     fill: none;
 }
 
-.d3arg .link {
-    stroke-width: 4px;
-    fill: none;
-}
-
 .d3arg .hiddenlink {
     stroke: lightgrey;
     stroke-width: 4px;

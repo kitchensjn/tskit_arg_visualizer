@@ -1121,77 +1121,80 @@ class D3ARG:
 
         transformed_muts = []
         if show_mutations:
-            if (edge_type == "line") and (len(mutations.index) > 0):
-                if condense_mutations:
-                    for edge, muts in mutations.sort_values(["time"],ascending=False).groupby("edge"):
-                        muts["content"] = muts["inherited"] + muts["position"].astype(int).astype(str) + muts["derived"] #+ ":" + muts["time"].astype(int).astype(str)
-                        x_pos = muts["position_01"] * width + y_axis_left_spacing
-                        source = int(muts.iloc[0]["source"])
-                        target = int(muts.iloc[0]["target"])
-                        size = float(muts["size"].mean())  # average size of all symbols on this edge
-                        source_y = node_y_pos[source]
-                        target_y = node_y_pos[target]
-                        fy = (source_y + target_y) / 2
-                        transformed_muts.append({
-                            "edge": edge,
-                            "source": source,
-                            "target": target,
-                            "y": fy,
-                            "fy": fy,
-                            "position": list(muts["position"]),
-                            "site_id": list(muts["site_id"]),
-                            "mutation_id": list(muts.index),
-                            "x_pos": list(x_pos),
-                            "fill": default_mutation_styles["condensed"]["fill"],
-                            "stroke": default_mutation_styles["condensed"]["stroke"],
-                            "active": "false",
-                            "label": "⨉"+str(muts.shape[0]),
-                            "content": "<br>".join(muts.content),
-                            "size": size,
-                        })
-                elif ignore_mutation_times:
-                    for index, edge in edges.iterrows():
-                        source_y = node_y_pos[edge["source"]]
-                        target_y = node_y_pos[edge["target"]]
-                        muts = mutations.loc[mutations["edge"] == edge["id"]]
-                        mutation_count = len(muts.index)
-                        for i, (mutation_id, mut) in enumerate(muts.iterrows()):
-                            fy = source_y - (source_y - target_y)/(mutation_count+1)*(i+1)# - 10*(m-((mutation_count-1)/2))
-                            x_pos = mut["position_01"] * width + y_axis_left_spacing
-                            label = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
-                            content = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
+            if (edge_type == "line"):
+                if (len(mutations.index) > 0):
+                    if condense_mutations:
+                        for edge, muts in mutations.sort_values(["time"],ascending=False).groupby("edge"):
+                            muts["content"] = muts["inherited"] + muts["position"].astype(int).astype(str) + muts["derived"] #+ ":" + muts["time"].astype(int).astype(str)
+                            x_pos = muts["position_01"] * width + y_axis_left_spacing
+                            source = int(muts.iloc[0]["source"])
+                            target = int(muts.iloc[0]["target"])
+                            size = float(muts["size"].mean())  # average size of all symbols on this edge
+                            source_y = node_y_pos[source]
+                            target_y = node_y_pos[target]
+                            fy = (source_y + target_y) / 2
                             transformed_muts.append({
-                                "edge": edge["id"],
-                                "source": edge["source"],
-                                "target": edge["target"],
-                                "time": None if tskit.is_unknown_time(mut.time) else mut.time,
+                                "edge": edge,
+                                "source": source,
+                                "target": target,
                                 "y": fy,
                                 "fy": fy,
-                                "site_id": mut.site_id,
-                                "mutation_id": mutation_id,
-                                "position_01": mut.position_01,
-                                "position": mut.position,
-                                "x_pos": x_pos,
-                                "ancestral": mut.ancestral,
-                                "inherited": mut.inherited,
-                                "derived": mut.derived,
-                                "fill": mut.fill,
-                                "stroke": mut.stroke,
+                                "position": list(muts["position"]),
+                                "site_id": list(muts["site_id"]),
+                                "mutation_id": list(muts.index),
+                                "x_pos": list(x_pos),
+                                "fill": default_mutation_styles["condensed"]["fill"],
+                                "stroke": default_mutation_styles["condensed"]["stroke"],
                                 "active": "false",
-                                "label": label,
-                                "content": content,
-                                "size": mut['size'],  # can't use attribute access as "size" already exists
+                                "label": "⨉"+str(muts.shape[0]),
+                                "content": "<br>".join(muts.content),
+                                "size": size,
                             })
-                else:
-                    for index, mut in mutations.iterrows():
-                        fy = time_to_pos[mut["plot_time"]]
-                        mut["x_pos"] = mut["position_01"] * width + y_axis_left_spacing
-                        mut["fy"] = fy
-                        mut["y"] = mut["fy"]
-                        #mut["position_index"] = mut.site_id
-                        mut["label"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
-                        mut["content"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
-                        transformed_muts.append(mut.to_dict())
+                    elif ignore_mutation_times:
+                        for index, edge in edges.iterrows():
+                            source_y = node_y_pos[edge["source"]]
+                            target_y = node_y_pos[edge["target"]]
+                            muts = mutations.loc[mutations["edge"] == edge["id"]]
+                            mutation_count = len(muts.index)
+                            for i, (mutation_id, mut) in enumerate(muts.iterrows()):
+                                fy = source_y - (source_y - target_y)/(mutation_count+1)*(i+1)# - 10*(m-((mutation_count-1)/2))
+                                x_pos = mut["position_01"] * width + y_axis_left_spacing
+                                label = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
+                                content = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
+                                transformed_muts.append({
+                                    "edge": edge["id"],
+                                    "source": edge["source"],
+                                    "target": edge["target"],
+                                    "time": None if tskit.is_unknown_time(mut.time) else mut.time,
+                                    "y": fy,
+                                    "fy": fy,
+                                    "site_id": mut.site_id,
+                                    "mutation_id": mutation_id,
+                                    "position_01": mut.position_01,
+                                    "position": mut.position,
+                                    "x_pos": x_pos,
+                                    "ancestral": mut.ancestral,
+                                    "inherited": mut.inherited,
+                                    "derived": mut.derived,
+                                    "fill": mut.fill,
+                                    "stroke": mut.stroke,
+                                    "active": "false",
+                                    "label": label,
+                                    "content": content,
+                                    "size": mut['size'],  # can't use attribute access as "size" already exists
+                                })
+                    else:
+                        for index, mut in mutations.iterrows():
+                            fy = time_to_pos[mut["plot_time"]]
+                            mut["x_pos"] = mut["position_01"] * width + y_axis_left_spacing
+                            mut["fy"] = fy
+                            mut["y"] = mut["fy"]
+                            #mut["position_index"] = mut.site_id
+                            mut["label"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"]
+                            mut["content"] = mut["inherited"] + str(int(mut["position"])) + mut["derived"] #+ ":" + str(int(mut["time"]))
+                            transformed_muts.append(mut.to_dict())
+            else:
+                print("WARNING: `show_mutations=True` is not compatible with `edge_type='ortho'`. Please use `edge_type='line'` instead. Ignoring mutations in current plot.")
 
         if y_axis_scale == "time":
             best_dp = math.log10(time_range/10)
