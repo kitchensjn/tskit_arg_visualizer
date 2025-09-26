@@ -1237,8 +1237,8 @@ class D3ARG:
         if title is not None:
             height += 50
 
-        if y_axis_title == None:
-            y_axis_title = str(self.time_units).title()
+        if y_axis_title is None:
+            y_axis_title = "Time ago (" + str(self.time_units) +")"
 
         arg = {
             "data":{
