@@ -939,7 +939,8 @@ function main_visualizer(
                 }
                 var l = d3.select(this).select(".link");
                 l.attr("path_type", path_info[0]);
-                l.attr("d", path);
+                l.attr("d", path)
+                l.attr("fill", "none");
             });
 
             mut_symbol_rect
