@@ -1,3 +1,15 @@
+function parseRgbString(rgbString) {
+  const match = rgbString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d*\.?\d+))?\)/);
+  if (match) {
+    const r = parseInt(match[1]);
+    const g = parseInt(match[2]);
+    const b = parseInt(match[3]);
+    const a = match[4] ? parseFloat(match[4]) : 1; // Default alpha to 1 if not present
+    return { r, g, b, a };
+  }
+  return null; // Or throw an error for invalid format
+}
+
 function ensureRequire() {
     // Needed e.g. in Jupyter notebooks: if require is already available, return resolved promise
     if (typeof require !== 'undefined') {
@@ -170,7 +182,6 @@ function main_visualizer(
     }
 
     function draw_force_diagram() {
-        var counter = 0;
         var evenly_distributed_positions = graph.evenly_distributed_positions;
         var div_selector = "#arg_" + String(divnum);
         if (preamble) {
@@ -632,6 +643,31 @@ function main_visualizer(
                 }
             });
 
+        if (label_mutations) {
+            var mut_symbol_label = mut_symbol
+                .append("text")
+                //.attr("class", "label")
+                .style("font-size", d => (d.size * 2 + "px"))
+                .attr("text-anchor", "middle")
+                .attr("alignment-baseline", "middle")
+                .attr("fill", d => {
+                    var box = document.createElement("div");
+                    box.style.color = d.fill;
+                    document.body.appendChild(box);
+                    var rgb = parseRgbString(window.getComputedStyle(box).color);
+                    document.body.removeChild(box);
+                    var lightness = 0.2126*rgb["r"] + 0.7152*rgb["g"] + 0.0722*rgb["b"];
+                    if (lightness > 0.5) {
+                        return "#053e4e"
+                    }
+                    return "white"
+                })
+                .text(d => d.label)
+                .each(function(d) {
+                    // Store the text width on the data object
+                    d.textWidth = this.getComputedTextLength();
+                });
+        }
 
         var mut_symbol_rect = mut_symbol
             .append("rect")
@@ -657,20 +693,7 @@ function main_visualizer(
                 }
                 return d.computedHeight;
             })
-
-        if (label_mutations) {
-            var mut_symbol_label = mut_symbol
-                .append("text")
-                .attr("class", "label")
-                .style("font-size", d => (d.size * 2 + "px"))
-                .attr("text-anchor", "middle")
-                .attr("alignment-baseline", "middle")
-                .text(d => d.label)
-                .each(function(d) {
-                    // Store the text width on the data object
-                    d.textWidth = this.getComputedTextLength();
-                });
-            }
+            .lower();
 
         function rotate_tip(d) {
             /* NB: why is there an "eval" here? */
