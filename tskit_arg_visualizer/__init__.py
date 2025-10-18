@@ -149,7 +149,9 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
     return (1-(t-min_time)/time_range) * (height-100) + y_shift
 
 
-def draw_D3(arg_json, styles=None, force_notebook=False):
+def draw_D3(arg_json, styles=None, is_notebook=None):
+    if is_notebook is None:
+        is_notebook = running_in_notebook()
     arg_json["source"] = json.dumps(arg_json.copy())  # first escape the plain json data
     arg_json = {k: json.dumps(v) for k, v in arg_json.items()}  # now escape all
     arg_json["divnum"] = str(random.randint(0,9999999999))
@@ -180,7 +182,7 @@ def draw_D3(arg_json, styles=None, force_notebook=False):
     if specific_styles:
         styles += f"<style>{specific_styles}</style>"
 
-    if force_notebook or running_in_notebook():
+    if is_notebook:
         display(HTML(styles + html))
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
@@ -1391,7 +1393,7 @@ class D3ARG:
             ignore_mutation_times=True,
             label_mutations=False,
             condense_mutations=False,
-            force_notebook=False,
+            is_notebook=None,
             rotate_tip_labels=False,
             zoom=0,
             styles=None,
@@ -1444,9 +1446,13 @@ class D3ARG:
             Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
-        force_notebook : bool
-            Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
-        rotate_tip_labels : bool
+        is_notebook : bool
+            Should the visualizer assume a notebook environment or show the visualization
+            in a standalone HTML page? By default, the function will attempt to autodetect
+            whether it is being called in a notebook environment. This may not work in
+            some untested environments, in which case you may wish to set this explicitly
+            to True (to force a notebook display) or False (to force a standalone HTML page).
+       rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
         zoom : int
             The level of detail that you want. Larger numbers equate to less detail/more collapsing
@@ -1501,7 +1507,7 @@ class D3ARG:
             preamble=preamble,
             save_filename=save_filename,
         )
-        draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
+        draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook)
 
     def subset_graph(self, seed_nodes, depth):
         """Subsets the graph to focus around a specific node
@@ -1644,7 +1650,7 @@ class D3ARG:
             label_mutations=False,
             condense_mutations=False,
             return_included_nodes=False,
-            force_notebook=False,
+            is_notebook=None,
             rotate_tip_labels=False,
             styles=None,
             preamble=None,
@@ -1692,8 +1698,12 @@ class D3ARG:
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
         return_included_nodes : bool
             Returns a list of nodes plotted in the subgraph. (default=False)
-        force_notebook : bool
-            Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
+        is_notebook : bool
+            Should the visualizer assume a notebook environment or show the visualization
+            in a standalone HTML page? By default, the function will attempt to autodetect
+            whether it is being called in a notebook environment. This may not work in
+            some untested environments, in which case you may wish to set this explicitly
+            to True (to force a notebook display) or False (to force a standalone HTML page).
         rotate_tip_labels : bool
             Rotates tip labels by 90 degrees. (default=False)
         styles : list
@@ -1742,7 +1752,7 @@ class D3ARG:
             preamble=preamble,
             save_filename=save_filename,
         )
-        draw_D3(arg_json=arg, styles=styles, force_notebook=force_notebook)
+        draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook)
         if return_included_nodes:
             return list(included.nodes["id"])
         
@@ -1755,7 +1765,7 @@ class D3ARG:
             width=500,
             windows=None,
             show_mutations=False,
-            force_notebook=False
+            is_notebook=None,
         ):
         """Draws a genome bar for the D3ARG using D3.js
 
@@ -1768,9 +1778,15 @@ class D3ARG:
             (Default is None, ignored)
         show_mutations : bool
             Whether to add ticks for mutations along the genome bar
-        force_notebook : bool
-            Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
+        is_notebook : bool
+            Should the visualizer assume a notebook environment or show the visualization
+            in a standalone HTML page? By default, the function will attempt to autodetect
+            whether it is being called in a notebook environment. This may not work in
+            some untested environments, in which case you may wish to set this explicitly
+            to True (to force a notebook display) or False (to force a standalone HTML page).
         """
+        if is_notebook is None:
+            is_notebook = running_in_notebook()
 
         transformed_bps = self.breakpoints.loc[:,:]
         transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
@@ -1818,7 +1834,7 @@ class D3ARG:
         css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
         styles = css.read()
         css.close()
-        if force_notebook or running_in_notebook():
+        if is_notebook:
             display(HTML("<style>"+styles+"</style>" + html))
         else:
             with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
