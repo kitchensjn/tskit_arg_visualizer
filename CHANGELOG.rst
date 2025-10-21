@@ -1,4 +1,17 @@
 --------------------
+[0.1.1] - 2025-10-21
+--------------------
+
+Remove significant amounts of CSS styling and replace with SVG styling to solve a variety of issues (#127, #155, #219)
+
+`force_notebook` to `is_notebook` (#220)
+
+Dynamic mutation box text color based on fill lightness (#218)
+
+Y-axis titles (#213)
+
+
+--------------------
 [0.1.0] - 2025-07-03
 --------------------
 
