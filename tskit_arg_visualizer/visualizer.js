@@ -1303,10 +1303,8 @@ function main_visualizer(
                 .attr("class", "sites")
                 .selectAll("line")
                 .data(mutation_data)  /* NB: one per mutation to allow different line colors */
-                .data(mutation_data)  /* NB: one per mutation to allow different line colors */
                 .enter()
                 .append("g")
-                .attr("class", d => "s" + d.site_id + " " + "e" + d.edge + " " + "m" + d.mutation_id)
                 .attr("class", d => "s" + d.site_id + " " + "e" + d.edge + " " + "m" + d.mutation_id)
                 .attr("transform", d => "translate(" + d.x_pos + "," + (height-60) + ")")
                 .style("display", "none");
