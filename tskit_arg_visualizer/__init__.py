@@ -1255,7 +1255,7 @@ class D3ARG:
             "y_axis":{
                 "title":str(y_axis_title),
                 "units":self.time_units,
-                "include_labels":str(shift_for_y_axis).lower(),
+                "include_labels":bool(shift_for_y_axis),
                 "ticks": list(y_axis_final.keys()),
                 "text": list(y_axis_final.values()),
                 "max_min": [max(y_axis_final.keys()),min(y_axis_final.keys())],

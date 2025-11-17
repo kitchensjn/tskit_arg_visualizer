@@ -332,7 +332,7 @@ function main_visualizer(
             return parseInt(x, 10); 
         });
 
-        if (eval(y_axis.include_labels)) {
+        if (y_axis.include_labels) {
             var bottom = height - 50;
             if (tree_highlighting) {
                 bottom = height - 125;
@@ -389,7 +389,7 @@ function main_visualizer(
             .append("g")
             .attr("bounds", d => d.bounds);
 
-        if ((edge_styles.type == "ortho") & eval(edge_styles.include_underlink)) {
+        if ((edge_styles.type == "ortho") & edge_styles.include_underlink) {
             var underlink = link_container
                 .append("path")
                 .attr("class", "underlink");
@@ -401,7 +401,7 @@ function main_visualizer(
             .attr("stroke", d => d.stroke)
             .attr("stroke-width", "4px");
         
-        if (eval(edge_styles.variable_width)) {
+        if (edge_styles.variable_width) {
             link
                 .style("stroke-width", d => d.region_fraction * 7 + 1);
         }
@@ -515,6 +515,7 @@ function main_visualizer(
         var node = node_group
             .append("path")
             .attr("transform", d => "translate(" + d.x + "," + d.y + ")")
+            /* d.symbol is a string like "d3.symbolCircle" that we need to evaluate */
             .attr("d", d3.symbol().type(d => eval(d.symbol)).size(d => d.size))
             .attr("fill", d => d.fill)
             .attr("stroke", d => d.stroke)
@@ -696,8 +697,7 @@ function main_visualizer(
             .lower();
 
         function rotate_tip(d) {
-            /* NB: why is there an "eval" here? */
-            if ((d.parent_of.length == 0) & (eval(rotate_tip_labels))) {
+            if ((d.parent_of.length == 0) & (rotate_tip_labels)) {
                 return "translate(-4, 0) rotate(90)"
             }
             return null
@@ -709,7 +709,7 @@ function main_visualizer(
             .selectAll("text")
             .data(graph.nodes)
             .enter()
-            //.filter(d => eval(d.include_label))
+            //.filter(d => d.include_label)
             .append("g");
 
         var label_text = label
@@ -920,7 +920,7 @@ function main_visualizer(
         function ticked() {
             node
                 .attr("transform", function(d) {
-                    if (eval(y_axis.include_labels)) {
+                    if (y_axis.include_labels) {
                         return "translate(" + Math.max(150, Math.min(width-50, d.x)) + "," + d.y + ")";
                     } else {
                         return "translate(" + Math.max(50, Math.min(width-50, d.x)) + "," + d.y + ")";
@@ -933,7 +933,7 @@ function main_visualizer(
                             d.fx = ref.getAttribute("cx");
                         }
                     }
-                    if (eval(y_axis.include_labels)) {
+                    if (y_axis.include_labels) {
                         return d.x = Math.max(150, Math.min(width-50, d.x));
                     } else {
                         return d.x = Math.max(50, Math.min(width-50, d.x));
@@ -956,7 +956,7 @@ function main_visualizer(
                 } else {
                     path = line([[d.source.x, d.source.y], [d.target.x, d.target.y]]);
                 }
-                if ((edge_styles.type == "ortho") & eval(edge_styles.include_underlink)) {
+                if ((edge_styles.type == "ortho") & edge_styles.include_underlink) {
                     var u = d3.select(this).select(".underlink");
                     u.attr("d", underlink_path);
                 }
