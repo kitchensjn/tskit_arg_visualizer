@@ -1152,7 +1152,7 @@ class D3ARG:
                                 "x_pos": list(x_pos),
                                 "fill": default_mutation_styles["condensed"]["fill"],
                                 "stroke": default_mutation_styles["condensed"]["stroke"],
-                                "active": "false",
+                                "active": False,
                                 "label": "⨉"+str(muts.shape[0]),
                                 "content": "<br>".join(muts.content),
                                 "size": size,
@@ -1185,7 +1185,7 @@ class D3ARG:
                                     "derived": mut.derived,
                                     "fill": mut.fill,
                                     "stroke": mut.stroke,
-                                    "active": "false",
+                                    "active": False,
                                     "label": label,
                                     "content": content,
                                     "size": mut['size'],  # can't use attribute access as "size" already exists
@@ -1228,7 +1228,7 @@ class D3ARG:
         transformed_bps = breakpoints.loc[:,:]
         transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width + y_axis_left_spacing
         transformed_bps["width"] = transformed_bps["width_01"] * width
-        transformed_bps["included"] = "true"
+        transformed_bps["included"] = True
         transformed_bps = transformed_bps.to_dict("records")
 
         if shift_for_y_axis:
@@ -1606,7 +1606,7 @@ class D3ARG:
             if j == 0:
                 current_region = bp
             important_bp = False
-            bp["included"] = "false"
+            bp["included"] = False
             for i,edge in included_edges.iterrows():
                 bounds = edge["bounds"].split(" ")
                 for b in bounds:
@@ -1615,10 +1615,10 @@ class D3ARG:
                     stop = float(b[1])
                     # assumes edge lengths are always larger than breakpoints which should be true here
                     if (start <= bp["start"]) and (stop >= bp["stop"]):
-                        bp["included"] = "true"
+                        bp["included"] = True
                     if (start == bp["start"]) or (stop == bp["start"]):
                         important_bp = True
-            if (bp["included"] == "false") and (current_region["included"] == "true"):
+            if (not bp["included"]) and current_region["included"]:
                 important_bp = True
             if j > 0:
                 if important_bp:
@@ -1791,7 +1791,7 @@ class D3ARG:
         transformed_bps = self.breakpoints.loc[:,:]
         transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
         transformed_bps["width"] = transformed_bps["width_01"] * width
-        transformed_bps["included"] = "true"
+        transformed_bps["included"] = True
         transformed_bps = transformed_bps.to_dict("records")
 
         start = float(self.breakpoints["start"].min())

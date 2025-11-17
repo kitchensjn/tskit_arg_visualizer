@@ -624,7 +624,7 @@ function main_visualizer(
             })
             .on("mouseout", function(event, d) {
                 if (!d3.select(div_selector + ">svg").classed("no-hover")) {
-                    if (!eval(d.active)) {
+                    if (!d.active) {
                         d3.select(this).style("cursor", "default");
                         if (condense_mutations) {
                             d.mutation_id.forEach((id, i) => dehighlight_mut(id, d.site_id[i]));
@@ -632,7 +632,7 @@ function main_visualizer(
                             dehighlight_mut(d.mutation_id, d.site_id);
                         }
                     }
-                    if (!eval(d.active)) {
+                    if (!d.active) {
                         d3.select(this).style("cursor", "default");
                         if (condense_mutations) {
                             d.mutation_id.forEach((id, i) => dehighlight_mut(id, d.site_id[i]));
@@ -1174,7 +1174,7 @@ function main_visualizer(
                 .data(graph.breakpoints)
                 .enter()
                 .append("g")
-                .attr("class", d => eval(d.included) ? "included" : null)
+                .attr("class", d => (d.included) ? "included" : null)
                 .attr("start", d => d.start)
                 .attr("stop", d => d.stop);
 
@@ -1186,7 +1186,7 @@ function main_visualizer(
                 .attr("height", 40)
                 .attr("stroke", "#FFFFFF")
                 .attr("stroke-width", 1)
-                .attr("fill", d => eval(d.included) ? d.fill : "gray");
+                .attr("fill", d => (d.included) ? d.fill : "gray");
 
             breakpoint_regions
                 .append("text")
@@ -1207,7 +1207,7 @@ function main_visualizer(
             breakpoint_regions
                 .on('mouseover', function (event, d) {
                     if (!d3.select(div_selector + ">svg").classed("no-hover")) {
-                        if (eval(d.included)) {
+                        if (d.included) {
                             d3.select(this).selectAll("rect")
                                 .style('fill', '#1eebb1')
                                 .style("cursor", "pointer");
@@ -1232,7 +1232,7 @@ function main_visualizer(
                 })
                 .on('mouseout', function (event, d) {
                     if (!d3.select(div_selector + ">svg").classed("no-hover")) {
-                        if (eval(d.included)) {
+                        if (d.included) {
                             d3.select(this).selectAll("rect")
                                 .style('fill', d.fill)
                                 .style("cursor", "default");
