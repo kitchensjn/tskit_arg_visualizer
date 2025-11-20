@@ -16,7 +16,6 @@ import numpy as np
 import pandas as pd
 import tskit
 from IPython.display import HTML, display
-from tqdm.auto import tqdm
 
 try:
     from ._version import version as __version__
@@ -321,6 +320,11 @@ class D3ARG:
         -------
         D3ARG : a corresponding D3ARG object ready to be plotted
         """
+        if progress:
+            from tqdm.auto import tqdm  # import here to avoid TqdmMonitorWarning on JLite
+            progressbar = tqdm
+        else:
+            progressbar = None
 
         nsd = {
             "size": 150,
@@ -345,14 +349,14 @@ class D3ARG:
         edges, mutations = cls._convert_edges_table(
             ts=ts,
             recombination_nodes_to_merge=rcnm,
-            progress=progress,
+            progressbar=progressbar,
         )
         nodes = cls._convert_nodes_table(
             ts=ts,
             recombination_nodes_to_merge=rcnm,
             default_node_style=nsd,
             ignore_unattached_nodes=ignore_unattached_nodes,
-            progress=progress)
+            progressbar=progressbar)
         time_units = ts.time_units
         return cls(
             nodes=nodes,
@@ -417,7 +421,7 @@ class D3ARG:
             time_units=time_units
         )
 
-    def _convert_nodes_table(ts, recombination_nodes_to_merge, default_node_style, ignore_unattached_nodes, progress=None):
+    def _convert_nodes_table(ts, recombination_nodes_to_merge, default_node_style, ignore_unattached_nodes, progressbar=None):
         """Creates nodes JSON from the tskit.TreeSequence nodes table
         
         A "reference" is the id of another node that is used to determine a property in the
@@ -437,14 +441,16 @@ class D3ARG:
         ignore_unattached_nodes : bool
             Whether to include all nodes or ignore nodes that are completely
             unattached
-        progress : bool
-            Show progress bars during conversion
+        progressbar : 
+            A function like tqdm.auto.tqdm for showing progress bars.
 
         Returns
         -------
         nodes : list
             List of dictionaries containing information about a given node
         """
+        if not progressbar:
+            progressbar = lambda x, **kwargs: x
         nodes_flags = ts.nodes_flags
         node_lookup = np.arange(ts.num_nodes)  # maps original node IDs to the plotted node ID
         merge_with_prev_node = np.zeros(ts.num_nodes, dtype=bool)
@@ -474,7 +480,7 @@ class D3ARG:
             nodes[node_lookup[child]]['child_of'].add(int(node_lookup[parent]))
             nodes[node_lookup[parent]]['parent_of'].add(int(node_lookup[child]))
 
-        for u in tqdm(nodes.keys(), desc="Nodes", disable=not progress):
+        for u in progressbar(nodes.keys(), desc="Nodes"):
             info = nodes[u]
             info['child_of'] = sorted(info['child_of'])
             info['parent_of'] = unique_parent_of = sorted(info['parent_of'])
@@ -490,7 +496,7 @@ class D3ARG:
                     info["x_pos_reference"] = unique_parent_of[0]
         return pd.DataFrame(nodes.values())
 
-    def _convert_edges_table(ts, recombination_nodes_to_merge, progress=None):
+    def _convert_edges_table(ts, recombination_nodes_to_merge, progressbar=None):
         """Creates edges JSON from the tskit.TreeSequence edges table
 
         Merges the recombination nodes, identified by the smaller of the two IDs. The direction
@@ -505,24 +511,31 @@ class D3ARG:
             msprime.sim_ancestry(...,record_full_arg=True)
         recombination_nodes_to_merge : list or numpy.Array
             IDs of recombination nodes that need to be converted to their alternate ID
-
+        progressbar :
+            A function like tqdm.auto.tqdm for showing progress bars.
+            
         Returns
         -------
         links : list
             List of dictionaries containing information about a given link
         """
+        if not progressbar:
+            progressbar = lambda x, **kwargs: x
         ID = 0
         edge_id_reference = {}
         links = []  # a list of parent_links (will be flattened and returned as a pandas array)
-        # iterate over unique parent/child combos. Take advantage of the fact that edges
-        # in a tree sequence are always ordered by parent ID.
-        t = tqdm(total=ts.num_edges, desc="Edges", disable=not progress)
         nodes_time = ts.nodes_time
         nodes_flags = ts.nodes_flags
         edges_child = ts.edges_child
         edges_parent = ts.edges_parent
+        # iterate over unique parent/child combos. Take advantage of the fact that edges
+        # in a tree sequence are always ordered by parent ID.
 
-        for parent, edges in itertools.groupby(ts.edges(), operator.attrgetter("parent")):
+        for parent, edges in progressbar(
+            itertools.groupby(ts.edges(), operator.attrgetter("parent")),
+            total=len(set(edges_parent)),
+            desc="Edge parents",
+        ):
             parent_time = nodes_time[parent]
             parent_links = []  # all links for this parent
             if parent in recombination_nodes_to_merge:
@@ -531,7 +544,6 @@ class D3ARG:
             else:
                 edges_for_child = {}  # This is a new parent: make a new array
             for edge in edges:
-                t.update(1)
                 if edge.child not in edges_for_child:
                     edges_for_child[edge.child] = [edge]
                 else:
@@ -588,14 +600,13 @@ class D3ARG:
                 links[-1] = parent_links
             else:
                 links.append(parent_links)
-        t.close()
         edges_output = pd.DataFrame(l for parent_links in links for l in parent_links)
         mutations = []
-        for site in tqdm(
+        for site in progressbar(
             ts.sites(),
             total=ts.num_sites,
             desc="Sites",
-            disable=(not progress) or (ts.num_sites == 0)
+            disable=ts.num_sites == 0
         ):
             for mut in site.mutations:
                 if mut.edge != tskit.NULL:  # mutations e.g. above a root are currently not plotted
