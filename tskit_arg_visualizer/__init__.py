@@ -159,14 +159,12 @@ def draw_D3(arg_json, styles=None, is_notebook=None):
         '<div id="{}" class="d3arg" style="min-width:{}px; min-height:{}px;"></div>'
         '<script>$main_text</script>'
     ).format(arg_id, float(arg_json["width"]) + 40, float(arg_json["height"]) + 80))
-    visualizerjs = open(os.path.dirname(__file__) + "/visualizer.js", "r")
-    main_text_template = Template(visualizerjs.read())
-    visualizerjs.close()
+    with open(os.path.dirname(__file__) + "/visualizer.js", "r") as visualizerjs:
+        main_text_template = Template(visualizerjs.read())
     main_text = main_text_template.safe_substitute(arg_json)
     html = JS_text.safe_substitute({'main_text': main_text})
-    css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
-    general_styles = css.read()
-    css.close()
+    with open(os.path.dirname(__file__) + "/visualizer.css", "r") as css:
+        general_styles = css.read()
     specific_styles = ""
     if styles is not None:
         if isinstance(styles, str):
