@@ -9,6 +9,7 @@ import random
 import tempfile
 import warnings
 import webbrowser
+from dataclasses import dataclass
 from string import Template
 
 import msprime
@@ -41,6 +42,37 @@ default_mutation_styles = {
     },
 }
 
+@dataclass
+class IncludedObjects:
+    """Stores the IDs of the various objects included in a drawing."""
+    nodes: list[int] | None = None
+
+@dataclass
+class DrawInfo:
+    """Stores information returned by drawing an ARG."""
+    # Todo: add other attributes here as needed - perhaps the x and y node
+    # positions, or the underlying drawing tables?
+    width: int
+    """Width of the drawing area."""
+    height: int
+    """Height of the drawing area."""
+    uid: str
+    """
+    Unique identifier for the drawing, used as the `id` attribute of the <div>
+    in which the SVG is rendered. If there are multiple tskit_arg_visualizer
+    drawings in the same document, the UID can be used to differentiate them.
+    For example, a stylesheet could specify f"#{UID} .node {{ ... }}".
+    """
+    is_notebook: bool
+    """
+    Whether the drawing was treated as being rendered in a Jupyter Notebook.
+    """
+    included: IncludedObjects
+    """
+    Lists of objects included in the plot. At the moment this
+    simply consists of included.nodes.
+    """
+    
 def running_in_notebook():
     """Checks whether the code is being executed within a Jupyter Notebook.
 
@@ -188,6 +220,13 @@ def draw_D3(arg_json, styles=None, is_notebook=None):
             f.write("<head><meta charset='utf-8'>" + styles + "</head>")
             f.write("<body>" + html + "</body></html>")
         webbrowser.open(url, new=2)
+    return DrawInfo(
+        width=arg_json["width"],
+        height=arg_json["height"],
+        uid=arg_id,
+        is_notebook=is_notebook,
+        included=IncludedObjects(),
+    )
 
 def extract_x_positions_from_json(arg_json):
     """Extracts the x position of nodes from json loaded from a saved ARG
@@ -1516,7 +1555,9 @@ class D3ARG:
             preamble=preamble,
             save_filename=save_filename,
         )
-        draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook)
+        info = draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook)
+        info.included.nodes = included_nodes["id"].tolist()
+        return info
 
     def subset_graph(self, seed_nodes, depth):
         """Subsets the graph to focus around a specific node
@@ -1658,7 +1699,6 @@ class D3ARG:
             ignore_mutation_times=True,
             label_mutations=False,
             condense_mutations=False,
-            return_included_nodes=False,
             is_notebook=None,
             rotate_tip_labels=False,
             styles=None,
@@ -1761,10 +1801,10 @@ class D3ARG:
             preamble=preamble,
             save_filename=save_filename,
         )
-        draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook)
-        if return_included_nodes:
-            return list(included.nodes["id"])
-        
+        info = draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook)
+        info.included.nodes = included.nodes["id"].tolist()
+        return info
+
     # Alias of draw_node that users may be more likely to use when
     # there are multiple focal nodes.
     draw_nodes = draw_node
