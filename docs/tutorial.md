@@ -49,7 +49,7 @@ d3arg.draw(edge_type="line")
 d3arg.draw(edge_type="ortho")
 ```
 
-The `tree_highlighting` parameter of `draw()` and `draw_node()` (active by default) adds a genome bar to the bottom of your plot. Hovering over the chunks highlights the edges of the ARG that are found within that region. Alternatively, you can hover over an edge in the ARG and it will highlight the chunks in which that edge is present. This is helpful for seeing how the trees along the chromosome weave together to form the ARG.
+The `tree_highlighting` parameter of `draw()` and `draw_node()` (active by default) adds a genome bar to the bottom of your plot. Hovering over the chunks highlights the edges of the ARG that are found within that region. Alternatively, you can hover over an edge in the ARG and it will highlight the chunks in which that edge is present. This is helpful for seeing how the trees along the chromosome weave together to form the ARG. If mutations are drawn on the ARG, mutations that are within the selected region will also be highlighted on the ARG (other mutations will appear faded).
 
 A quick note about line_type="ortho" (more details can be found within [pathing.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/pathing.md)) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags and where nodes have a maximum of two parents or children. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" edge_type.
 

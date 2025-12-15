@@ -387,6 +387,7 @@ function main_visualizer(
             .data(graph.links)
             .enter()
             .append("g")
+            .attr("edge_id", d => d.id) /* this is the ARGviz edge ID, not the tskit edge ID */
             .attr("bounds", d => d.bounds);
 
         if ((edge_styles.type == "ortho") & edge_styles.include_underlink) {
@@ -553,23 +554,6 @@ function main_visualizer(
             d3.select(div_selector + " .sites .m" + mutation_id).style("display", "none");
         }
 
-        function highlight_mut(mutation_id, site_id, fill) {
-            /* other mutations at the same site on the tree */
-            d3.selectAll(div_selector + " .mutations .s" + site_id + " rect").style("stroke", fill);
-            /* highlight only this mutation in the bar */
-            d3.select(div_selector + " .sites .m" + mutation_id).style("display", "block");
-        }
-
-        function dehighlight_mut(mutation_id, site_id) {
-            d3.selectAll(div_selector + " .mutations .s" + site_id + " rect")
-                .each(function(d) {
-                    d3.select(this)
-                        .style("stroke", d.stroke)
-                        .style("fill", d.fill);
-                    });
-            d3.select(div_selector + " .sites .m" + mutation_id).style("display", "none");
-        }
-
         var mut_symbol = svg
             .append("g")
             .attr("class", "mutations")
@@ -581,31 +565,17 @@ function main_visualizer(
                 if (condense_mutations) {
                     return (
                         d.site_id.map(id => "s" + id).join(" ") + " " +
-                        d.mutation_id.map(id => "m" + id).join(" ")
+                        d.mutation_id.map(id => "m" + id).join(" ") + " " +
+                        "e" + d.edge
                     )
                 } else {
-                    return "s" + d.site_id + " " + "m" + d.mutation_id;
-                }}
-            )
-            .attr("class", d => {
-                if (condense_mutations) {
-                    return (
-                        d.site_id.map(id => "s" + id).join(" ") + " " +
-                        d.mutation_id.map(id => "m" + id).join(" ")
-                    )
-                } else {
-                    return "s" + d.site_id + " " + "m" + d.mutation_id;
+                    return "s" + d.site_id + " " + "m" + d.mutation_id + " " + "e" + d.edge;
                 }}
             )
             .on("mouseover", function(event, d) {
                 if (!d3.select(div_selector + ">svg").classed("no-hover")) {
                     d3.select(this).style("cursor", "pointer");
                     /* highlight all mutations at the same site (easy to spot reversions etc) */
-                    if (condense_mutations) {
-                        d.mutation_id.forEach((id, i) => highlight_mut(id, d.site_id[i], d.fill));
-                    } else {
-                        highlight_mut(d.mutation_id, d.site_id, d.fill)
-                    }
                     if (condense_mutations) {
                         d.mutation_id.forEach((id, i) => highlight_mut(id, d.site_id[i], d.fill));
                     } else {
@@ -1003,9 +973,8 @@ function main_visualizer(
                             var child_x = parseFloat(child.getAttribute("cx"));
                             var child_y = parseFloat(child.getAttribute("cy"));
                             var slope = (parent_y - child_y) / (parent_x - child_x);
-                            var intercept = parent_y - slope * parent_x;
                             var rect = this.children[0];
-                            return "rotate(" + String(-Math.atan((child_x-parent_x)/(child_y-parent_y))*180/Math.PI) + ", " + String(parseFloat(rect.getAttribute("x"))+parseFloat(rect.getAttribute("width"))/2) + ", " + String(parseFloat(rect.getAttribute("y"))+parseFloat(rect.getAttribute("height"))/2) + ")";
+                            return "rotate(" + String(-Math.atan((1/slope))*180/Math.PI) + ", " + String(parseFloat(rect.getAttribute("x"))+parseFloat(rect.getAttribute("width"))/2) + ", " + String(parseFloat(rect.getAttribute("y"))+parseFloat(rect.getAttribute("height"))/2) + ")";
                         } else {
                             return "rotate(0)";
                         }
@@ -1205,6 +1174,7 @@ function main_visualizer(
                 .text(d => String(d.stop));
 
             breakpoint_regions
+                /* when hovering over the genome bar */
                 .on('mouseover', function (event, d) {
                     if (!d3.select(div_selector + ">svg").classed("no-hover")) {
                         if (d.included) {
@@ -1220,9 +1190,44 @@ function main_visualizer(
                                     .filter(function(j) {
                                         return j.bounds.split(" ").some(function(region) {
                                             region = region.split("-");
-                                            return (parseFloat(region[1]) > d.start) & (parseFloat(region[0]) < d.stop)
+                                            return (parseFloat(region[1]) > d.start) && (parseFloat(region[0]) < d.stop)
                                         });
                                     });
+                            
+                            const edge_set = new Set(
+                                highlight_links.nodes().map(el => parseInt(el.getAttribute("edge_id"), 10))
+                            );
+                            const site_set = new Set(
+                                mutation_data
+                                    .filter(m => m.position > d.start && m.position < d.stop)
+                                    .map(m => m.site_id)
+                            );
+                            d3.selectAll(div_selector + " .mutations, " + div_selector + " .sites")
+                                .selectAll("g")
+                                .style("display", "none")
+                                .filter(function() {
+                                    // find an 'eN' token in classList
+                                    for (const cls of this.classList) {
+                                        if (cls[0] === 'e') {
+                                            const id = parseInt(cls.slice(1), 10);
+                                            if (!Number.isNaN(id) && edge_set.has(id)) return true;
+                                        }
+                                    }
+                                    return false;
+                                })
+                                .style("display", null)
+                                .filter(function() {
+                                    // exclude if any 'mN' token is in mut_set
+                                    for (const tok of this.classList) {
+                                        if (tok[0] === 's') {
+                                            const id = parseInt(tok.slice(1), 10);
+                                            if (!Number.isNaN(id) && site_set.has(id)) return false;
+                                        }
+                                    }
+                                    return true; // when no matching site found, make translucent
+                                })
+                                .style("opacity", 0.2); /* we could make 0.2 a parameter */
+
                             highlight_links.raise();
                             highlight_links
                                 .select(".link")
@@ -1242,6 +1247,14 @@ function main_visualizer(
                                 .style('display', 'block');
                             d3.selectAll(div_selector + " .link")
                                 .style("stroke", d => d.stroke);
+                            d3.select(div_selector + " .mutations")
+                                .selectAll("g")
+                                .style("display", null)
+                                .style("opacity", null);
+                            d3.select(div_selector + " .sites")
+                                .selectAll("g")
+                                .style("display", "none")
+                                .style("opacity", null);
                         }
                     }
                 });
@@ -1263,23 +1276,6 @@ function main_visualizer(
                     .text(graph.breakpoints[graph.breakpoints.length-1].stop)
                     .attr("x", width)
                     .attr("y", height-5);
-
-            var mutation_data = graph.mutations;
-            if (condense_mutations) { /* explode the graph.mutations df into one row per mut */
-                mutation_data = [];
-                graph.mutations.forEach(function(d) {
-                    d.mutation_id.forEach(function(x, i) {
-                        mutation_data.push({
-                            mutation_id: x,
-                            site_id: d.site_id[i],
-                            edge: d.edge,
-                            fill: d.fill,
-                            x_pos: d.x_pos[i], 
-                            position: d.position[i]
-                        });
-                    });
-                });
-            };
 
             var mutation_data = graph.mutations;
             if (condense_mutations) { /* explode the graph.mutations df into one row per mut */
