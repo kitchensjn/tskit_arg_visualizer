@@ -17,10 +17,10 @@ import pandas as pd
 import tskit
 from IPython.display import HTML, display
 
-try:
-    from ._version import version as __version__
-except ImportError:
-    __version__ = "unknown"
+__version__ = (
+    "Using __version__ is deprecated. Please use "
+    "`importlib.metadata.version('tskit_arg_visualizer')` instead"
+)
 
 
 default_mutation_styles = {
