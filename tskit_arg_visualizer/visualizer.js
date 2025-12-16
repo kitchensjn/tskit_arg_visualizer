@@ -600,14 +600,6 @@ function main_visualizer(
                             d.mutation_id.forEach((id, i) => dehighlight_mut(id, d.site_id[i]));
                         } else {
                             dehighlight_mut(d.mutation_id, d.site_id);
-                        }
-                    }
-                    if (!d.active) {
-                        d3.select(this).style("cursor", "default");
-                        if (condense_mutations) {
-                            d.mutation_id.forEach((id, i) => dehighlight_mut(id, d.site_id[i]));
-                        } else {
-                            dehighlight_mut(d.mutation_id, d.site_id);
                         } 
                         tip.style("display", "none");
                     }
@@ -1108,24 +1100,24 @@ function main_visualizer(
                 });
         }
 
+        function updateReferenceNodePositions(d, x) {
+            d3.selectAll(div_selector + " .node").classed("ref", function(j) {
+                if ((edge_styles.type == "ortho") & (j.id == d.x_pos_reference)) {
+                    j.fx = x;
+                }
+            });
+        }
+
         function dragstarted(event, d) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
-            d3.selectAll(div_selector + " .node").classed("ref", function(j) {
-                if ((edge_styles.type == "ortho") & (j.id == d.x_pos_reference)) {
-                    j.fx = d.x;
-                }
-            });
+            updateReferenceNodePositions(d, d.x);
             svg.attr("class", "no-hover");
         }
 
         function dragged(event, d) {
             d.fx = event.x;
-            d3.selectAll(div_selector + " .node").classed("ref", function(j) {
-                if ((edge_styles.type == "ortho") & (j.id == d.x_pos_reference)) {
-                    j.fx = event.x;
-                }
-            });
+            updateReferenceNodePositions(d, event.x);
         }
 
         function dragended(event, d) {
