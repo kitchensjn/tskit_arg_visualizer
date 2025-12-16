@@ -49,11 +49,13 @@ d3arg.draw(edge_type="line")
 d3arg.draw(edge_type="ortho")
 ```
 
-The `tree_highlighting` parameter of `draw()` and `draw_node()` (active by default) adds a genome bar to the bottom of your plot. Hovering over the chunks highlights the edges of the ARG that are found within that region. Alternatively, you can hover over an edge in the ARG and it will highlight the chunks in which that edge is present. This is helpful for seeing how the trees along the chromosome weave together to form the ARG. If mutations are drawn on the ARG, mutations that are within the selected region will also be highlighted on the ARG (other mutations will appear faded).
+The `tree_highlighting` parameter of `draw()` and `draw_node()` (active by default) adds a genome bar to the bottom of your plot. This enables two different sorts of interaction:
+* Hovering over a segment of the genome bar shows the left and right boundaries of the segment and highlights in the ARG the edges that are found within that region. The result is to emphasize the "local tree" for that region. If mutations are drawn on the ARG using `show_mutations=True`, mutations that are within the selected region will be shown, and other mutations dehighlighted (mutations that lie on the highlighted edges but at sites outside the region are faded, other mutations are completely hidden).
+* Hovering over an edge in the ARG will highlight the regions on the genome bar in which that edge is present. This is helpful for seeing how the trees along the chromosome weave together to form the ARG. If mutations are drawn on the ARG, the position of mutations that exist on the highlighed edge will be highlighted in the genome bar.
 
 A quick note about line_type="ortho" (more details can be found within [pathing.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/pathing.md)) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags and where nodes have a maximum of two parents or children. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" edge_type.
 
-`show_mutations=True` will only work when `edge_type="line"`, otherwise it will be ignored. This is because the mutation placement rules have not been wored out for `edge_type="ortho"` (feature coming in the future). Even still with `edge_type="line"`, mutation labels will be incorrectly placed when there is a "diamond".
+`show_mutations=True` will only work when `edge_type="line"`, otherwise it will be ignored. This is because the mutation placement rules have not been worked out for `edge_type="ortho"` (feature coming in the future). Even still with `edge_type="line"`, mutation labels will be incorrectly placed when there is a "diamond".
 
 Below are all of the available parameters for `draw()`:
 
