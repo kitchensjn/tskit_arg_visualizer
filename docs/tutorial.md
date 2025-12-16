@@ -167,7 +167,6 @@ def draw_node(
     ignore_mutation_times=True,
     label_mutations=False,
     condense_mutations=False,
-    return_included_nodes=False,
     force_notebook=False,
     rotate_tip_labels=False,
     styles=None,
@@ -209,8 +208,6 @@ label_mutations : bool
     Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
 condense_mutations : bool
     Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
-return_included_nodes : bool
-    Returns a list of nodes plotted in the subgraph. (default=False)
 force_notebook : bool
     Forces the the visualizer to display as a notebook. Possibly necessary for untested environments. (default=False)
 rotate_tip_labels : bool
