@@ -1521,6 +1521,13 @@ class D3ARG:
         save_filename : str
             Filename to use when selecting "Download as" in the visualization
             (default=None, treated as "tskit_arg_visualizer")
+
+        Returns
+        -------
+        info : DrawInfo
+            An object with information about the drawing, for example
+            the width and height and the objects (such as which nodes) which
+            were included in the drawing.
         """
         
         if condense_mutations:
@@ -1705,7 +1712,7 @@ class D3ARG:
             preamble=None,
             save_filename=None,
         ):
-        """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js
+        """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js.
 
         Parameters
         ----------
@@ -1745,8 +1752,6 @@ class D3ARG:
             Whether to add the full label (position_index:inherited:derived) for each mutation. (default=False)
         condense_mutations : bool
             Whether to merge all mutations along an edge into a single mutation symbol. (default=False)
-        return_included_nodes : bool
-            Returns a list of nodes plotted in the subgraph. (default=False)
         is_notebook : bool
             Should the visualizer assume a notebook environment or show the visualization
             in a standalone HTML page? By default, the function will attempt to autodetect
@@ -1772,6 +1777,13 @@ class D3ARG:
         save_filename : str
             Filename to use when selecting "Download as" in the visualization
             (default=None, treated as "tskit_arg_visualizer")
+
+        Returns
+        -------
+        info : DrawInfo
+            An object with information about the drawing, for example
+            the width and height and the objects (such as which nodes) which
+            were included in the drawing.
         """
 
         if condense_mutations:
