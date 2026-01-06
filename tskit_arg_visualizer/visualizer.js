@@ -248,7 +248,7 @@ function main_visualizer(
                 if (!event.active) simulation.alphaTarget(0.3).restart();       
                 var order = d3.selectAll(div_selector + " .sample").data().sort((a, b) => d3.ascending(a.x, b.x)).map(a => a.id);;
                 d3.selectAll(div_selector + " .node").classed("unfix", function(d) {
-                    if ((d.ts_flags & NODE_IS_SAMPLE) & (d.x_pos_reference == -1)) {
+                    if ((d.ts_flags & NODE_IS_SAMPLE) && (d.x_pos_reference == -1)) {
                         delete d.fx;
                     } else {
                         d.fx = evenly_distributed_positions[order.indexOf(d.id)];
@@ -390,7 +390,7 @@ function main_visualizer(
             .attr("edge_id", d => d.id) /* this is the ARGviz edge ID, not the tskit edge ID */
             .attr("bounds", d => d.bounds);
 
-        if ((edge_styles.type == "ortho") & edge_styles.include_underlink) {
+        if ((edge_styles.type == "ortho") && edge_styles.include_underlink) {
             var underlink = link_container
                 .append("path")
                 .attr("class", "underlink");
@@ -422,7 +422,7 @@ function main_visualizer(
                             .filter(function(j) {
                                 return d.bounds.split(" ").some(function(region) {
                                     region = region.split("-");
-                                    return (parseFloat(region[0]) <= j.start) & (parseFloat(region[1]) >= j.stop)
+                                    return (parseFloat(region[0]) <= j.start) && (parseFloat(region[1]) >= j.stop)
                                 });
                             })
                             .selectAll("rect").style('fill', '#1eebb1');
@@ -600,14 +600,6 @@ function main_visualizer(
                             d.mutation_id.forEach((id, i) => dehighlight_mut(id, d.site_id[i]));
                         } else {
                             dehighlight_mut(d.mutation_id, d.site_id);
-                        }
-                    }
-                    if (!d.active) {
-                        d3.select(this).style("cursor", "default");
-                        if (condense_mutations) {
-                            d.mutation_id.forEach((id, i) => dehighlight_mut(id, d.site_id[i]));
-                        } else {
-                            dehighlight_mut(d.mutation_id, d.site_id);
                         } 
                         tip.style("display", "none");
                     }
@@ -667,7 +659,7 @@ function main_visualizer(
             .lower();
 
         function rotate_tip(d) {
-            if ((d.parent_of.length == 0) & (rotate_tip_labels)) {
+            if ((d.parent_of.length == 0) && (rotate_tip_labels)) {
                 return "translate(-4, 0) rotate(90)"
             }
             return null
@@ -698,7 +690,7 @@ function main_visualizer(
             var stop_position_x = d.target.x;
             var stop_position_y = d.target.y;
             var vnub = Math.min((stop_position_y-start_position_y)/2, 20);
-            if ("y_axis.scale" == "time" | "y_axis.scale" == "log_time") {
+            if (y_axis.scale == "time" || y_axis.scale == "log_time") {
                 vnub = 0;
             }
             var alt_child = document.getElementById(String(divnum) + "_node" + d.alt_child);
@@ -897,7 +889,7 @@ function main_visualizer(
                     }
                 })
                 .attr("cx", function(d) {
-                    if ((edge_styles.type == "ortho") & (d.x_pos_reference != -1)) {
+                    if ((edge_styles.type == "ortho") && (d.x_pos_reference != -1)) {
                         var ref = document.getElementById(String(divnum) + "_node" + d.x_pos_reference);
                         if (ref != null) {
                             d.fx = ref.getAttribute("cx");
@@ -916,7 +908,7 @@ function main_visualizer(
                 var path = "";
                 if (edge_styles.type == "ortho") {
                     path = ortho_pathing(d, path_info);
-                    underlink_path = ortho_pathing(d, path_info, underlink=true);
+                    var underlink_path = ortho_pathing(d, path_info, underlink=true);
                 } else if (d.source.id == d.alt_parent) {
                     var leftOrRight = 20;
                     if (d.index % 2 == 0) {
@@ -926,7 +918,7 @@ function main_visualizer(
                 } else {
                     path = line([[d.source.x, d.source.y], [d.target.x, d.target.y]]);
                 }
-                if ((edge_styles.type == "ortho") & edge_styles.include_underlink) {
+                if ((edge_styles.type == "ortho") && edge_styles.include_underlink) {
                     var u = d3.select(this).select(".underlink");
                     u.attr("d", underlink_path);
                 }
@@ -1108,24 +1100,24 @@ function main_visualizer(
                 });
         }
 
+        function updateReferenceNodePositions(d, x) {
+            d3.selectAll(div_selector + " .node").classed("ref", function(j) {
+                if ((edge_styles.type == "ortho") && (j.id == d.x_pos_reference)) {
+                    j.fx = x;
+                }
+            });
+        }
+
         function dragstarted(event, d) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
-            d3.selectAll(div_selector + " .node").classed("ref", function(j) {
-                if ((edge_styles.type == "ortho") & (j.id == d.x_pos_reference)) {
-                    j.fx = d.x;
-                }
-            });
+            updateReferenceNodePositions(d, d.x);
             svg.attr("class", "no-hover");
         }
 
         function dragged(event, d) {
             d.fx = event.x;
-            d3.selectAll(div_selector + " .node").classed("ref", function(j) {
-                if ((edge_styles.type == "ortho") & (j.id == d.x_pos_reference)) {
-                    j.fx = event.x;
-                }
-            });
+            updateReferenceNodePositions(d, event.x);
         }
 
         function dragended(event, d) {
