@@ -1,3 +1,9 @@
+<h1>tskit_arg_visualizer 
+  <a href="https://doi.org/10.1093/bioadv/vbaf302">
+    <img alt="DOI:10.1093/bioadv/vbaf302" src="http://img.shields.io/badge/DOI-10.1093/bioadv/vbaf302-064358.svg">
+  </a>
+</h1>
+
 <p align="center">
   <img alt="ARG Visualizer Example" src="https://raw.githubusercontent.com/kitchensjn/tskit_arg_visualizer/master/images/tskit_arg_visualizer.png" width="500">
 </p>
