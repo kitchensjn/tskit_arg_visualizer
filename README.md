@@ -1,16 +1,14 @@
-<p align="center">
-  <img alt="ARG Visualizer Example" src="https://raw.githubusercontent.com/kitchensjn/tskit_arg_visualizer/master/images/tskit_arg_visualizer.png" width="500">
-</p>
-
-*Code for above image [here](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/readme_figure.ipynb).*
-
-
-
 <h1>tskit_arg_visualizer 
   <a href="https://doi.org/10.1093/bioadv/vbaf302">
     <img alt="DOI:10.1093/bioadv/vbaf302" src="http://img.shields.io/badge/DOI-10.1093/bioadv/vbaf302-064358.svg">
   </a>
 </h1>
+
+<p align="center">
+  <img alt="ARG Visualizer Example" src="https://raw.githubusercontent.com/kitchensjn/tskit_arg_visualizer/master/images/tskit_arg_visualizer.png" width="500">
+</p>
+
+*Code for above image [here](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/readme_figure.ipynb).*
 
 A method for drawing ancestral recombination graphs from tskit tree sequences in Python using D3.js. ARGs are plotted using a D3's [force layout](https://github.com/d3/d3-force). All nodes have a fixed position on the y-axis set by fy. Sample nodes have a fixed position on the x-axis set by fx; the ordering of the sample nodes comes from the first tree in the tskit tree sequence (this is not always the optimal ordering but is generally a good starting point for plotting). The x positions of other nodes are set by a force simulation where all nodes repel each other countered by a linkage force between connected nodes in the graph.
 
