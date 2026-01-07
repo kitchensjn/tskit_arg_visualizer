@@ -521,8 +521,10 @@ function main_visualizer(
             .attr("fill", d => d.fill)
             .attr("stroke", d => d.stroke)
             .attr("stroke-width", d => d.stroke_width)
-            .attr("id", d => String(divnum) + "_node" + d.id)
-            .attr("class", d => "node flag" + d.ts_flags + (d.ts_flags & NODE_IS_SAMPLE ? " sample" : ""))
+            /* unique identifier for each node, use svg.node().getElementById (not
+               document.getElementById) to avoid global ID clashes when finding the node again  */
+            .attr("id", d => "n" + d.id)
+            .attr("class", d => "node n" + d.id + " flag" + d.ts_flags + (d.ts_flags & NODE_IS_SAMPLE ? " sample" : ""))
             .attr("parents", d => d.child_of.toString().replace(",", " "))
             .attr("children", d => d.parent_of.toString().replace(",", " "))
             .call(
@@ -693,7 +695,7 @@ function main_visualizer(
             if (y_axis.scale == "time" || y_axis.scale == "log_time") {
                 vnub = 0;
             }
-            var alt_child = document.getElementById(String(divnum) + "_node" + d.alt_child);
+            var alt_child = svg.node().getElementById("n" + d.alt_child);
             if (alt_child != null) {
                 var alt_child_x = alt_child.getAttribute("cx");
                 var alt_child_y = alt_child.getAttribute("cy");
@@ -760,7 +762,7 @@ function main_visualizer(
                     }
                 }
             }
-            var alt_parent = document.getElementById(String(divnum) + "_node" + d.alt_parent);
+            var alt_parent = svg.node().getElementById("n" + d.alt_parent);
             if (alt_parent != null) {
                 var alt_parent_x = alt_parent.getAttribute("cx");
                 var alt_parent_y = alt_parent.getAttribute("cy");
@@ -889,8 +891,8 @@ function main_visualizer(
                     }
                 })
                 .attr("cx", function(d) {
-                    if ((edge_styles.type == "ortho") && (d.x_pos_reference != -1)) {
-                        var ref = document.getElementById(String(divnum) + "_node" + d.x_pos_reference);
+                    if ((edge_styles.type == "ortho") & (d.x_pos_reference != -1)) {
+                        var ref = svg.node().getElementById("n" + d.x_pos_reference);
                         if (ref != null) {
                             d.fx = ref.getAttribute("cx");
                         }
@@ -930,11 +932,11 @@ function main_visualizer(
 
             mut_symbol_rect
                 .attr("x", function(d) {
-                    var parent = document.getElementById(String(divnum) + "_node" + d.source);
+                    var parent = svg.node().getElementById("n" + d.source);
                     if (parent != null) {
                         var parent_x = parseFloat(parent.getAttribute("cx"));
                         var parent_y = parseFloat(parent.getAttribute("cy"));
-                        var child = document.getElementById(String(divnum) + "_node" + d.target);
+                        var child = svg.node().getElementById("n" + d.target);
                         if (child != null) {
                             var child_x = parseFloat(child.getAttribute("cx"));
                             var child_y = parseFloat(child.getAttribute("cy"));
@@ -956,11 +958,11 @@ function main_visualizer(
 
             mut_symbol
                 .attr("transform", function(d) {
-                    var parent = document.getElementById(String(divnum) + "_node" + d.source);
+                    var parent = svg.node().getElementById("n" + d.source);
                     if (parent != null) {
                         var parent_x = parseFloat(parent.getAttribute("cx"));
                         var parent_y = parseFloat(parent.getAttribute("cy"));
-                        var child = document.getElementById(String(divnum) + "_node" + d.target);
+                        var child = svg.node().getElementById("n" + d.target);
                         if (child != null) {
                             var child_x = parseFloat(child.getAttribute("cx"));
                             var child_y = parseFloat(child.getAttribute("cy"));
@@ -980,11 +982,11 @@ function main_visualizer(
                     .attr("transform", function(d) {
                         var y = d.y + 1;
                         var x = 0;
-                        var parent = document.getElementById(String(divnum) + "_node" + d.source);
+                        var parent = svg.node().getElementById("n" + d.source);
                         if (parent != null) {
                             var parent_x = parseFloat(parent.getAttribute("cx"));
                             var parent_y = parseFloat(parent.getAttribute("cy"));
-                            var child = document.getElementById(String(divnum) + "_node" + d.target);
+                            var child = svg.node().getElementById("n" + d.target);
                             if (child != null) {
                                 var child_x = parseFloat(child.getAttribute("cx"));
                                 var child_y = parseFloat(child.getAttribute("cy"));
@@ -1009,7 +1011,7 @@ function main_visualizer(
                 if (d.ts_flags & NODE_IS_RE_EVENT || d.parent_of.length == 0 || d.child_of.length == 0) {
                     return "c";
                 } else if (d.child_of.length == 1) {
-                    var parent = document.getElementById(String(divnum) + "_node" + d.child_of[0])
+                    var parent = svg.node().getElementById("n" + d.child_of[0])
                     if (parent != null) {
                         var parent_x = parent.getAttribute("cx");
                         if (parent_x > d.x+1) {
