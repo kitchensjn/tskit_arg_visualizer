@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 122.64 144.93">
+  <!-- Generator: Adobe Illustrator 30.1.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 136)  -->
+  <defs>
+    <style>
+      .st0, .st1, .st2 {
+        fill: none;
+      }
+
+      .st3 {
+        fill: pink;
+      }
+
+      .st3, .st4, .st2 {
+        stroke: #053e4e;
+        stroke-width: 4px;
+      }
+
+      .st1 {
+        stroke: #fff;
+        stroke-width: 12px;
+      }
+
+      .st4 {
+        fill: #1eebb1;
+      }
+    </style>
+  </defs>
+  <path class="st0" d=""/>
+  <g>
+    <g>
+      <g>
+        <path class="st1" d="M35.26,105.8h0M35.26,105.8h0M35.26,105.8h0"/>
+        <path class="st2" d="M35.26,89.13v16.67M35.26,105.8h0M35.26,105.8h0M35.26,105.8h0M35.26,105.8v16.67"/>
+      </g>
+      <g>
+        <path class="st1" d="M100.38,55.8h.88v46.67"/>
+        <path class="st2" d="M80.38,55.8h20M100.38,55.8h.88v46.67M101.26,102.47v20"/>
+      </g>
+      <g>
+        <path class="st1" d="M60.38,55.8h-2.56v33.33h-2.56"/>
+        <path class="st2" d="M80.38,55.8h-20M60.38,55.8h-2.56v33.33h-2.56M55.26,89.13h-20"/>
+      </g>
+      <g>
+        <path class="st1" d="M28.17,22.47h-12.91v66.67"/>
+        <path class="st2" d="M48.17,22.47h-20M28.17,22.47h-12.91v66.67M15.26,89.13h20"/>
+      </g>
+      <g>
+        <path class="st1" d="M68.17,22.47h12.21v16.67"/>
+        <path class="st2" d="M48.17,22.47h20M68.17,22.47h12.21v16.67M80.38,39.13v16.67"/>
+      </g>
+    </g>
+    <g>
+      <path id="n0" class="st4" d="M29.13,116.34h12.25v12.25h-12.25v-12.25Z"/>
+      <path id="n1" class="st4" d="M95.13,116.34h12.25v12.25h-12.25v-12.25Z"/>
+      <path id="n2" class="st3" d="M42.17,89.13c0,3.82-3.09,6.91-6.91,6.91s-6.91-3.09-6.91-6.91,3.09-6.91,6.91-6.91,6.91,3.09,6.91,6.91"/>
+      <path id="n4" class="st4" d="M87.29,55.8c0,3.82-3.09,6.91-6.91,6.91s-6.91-3.09-6.91-6.91,3.09-6.91,6.91-6.91,6.91,3.09,6.91,6.91"/>
+      <path id="n5" class="st4" d="M55.08,22.47c0,3.82-3.09,6.91-6.91,6.91s-6.91-3.09-6.91-6.91,3.09-6.91,6.91-6.91,6.91,3.09,6.91,6.91"/>
+    </g>
+  </g>
+  <path class="st0" d=""/>
+</svg>
