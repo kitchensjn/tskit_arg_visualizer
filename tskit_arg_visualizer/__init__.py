@@ -228,7 +228,9 @@ def draw_D3(arg_json, styles=None, is_notebook=None):
     )
 
 def extract_x_positions_from_json(arg_json):
-    """Extracts the x position of nodes from json loaded from a saved ARG
+    """
+    Extracts the x position of nodes from json loaded from a saved ARG. This
+    can be passed into D3ARG.set_node_x_positions to retain the same x positions.
 
     Parameters
     ----------
@@ -239,7 +241,18 @@ def extract_x_positions_from_json(arg_json):
     -------
     x_pos_01 : dict
         Nodes' x-axis positions scaled between 0 and 1
-    """
+
+    Examples
+    --------
+    >>> import json
+    >>> from pathlib import Path
+    >>> d3arg.set_node_x_positions(  # assume a D3ARG object named d3arg
+    ...     pos=extract_x_positions_from_json(
+    ...         json.loads(Path("tskit_arg_visualizer.json").read_text())
+    ...     )
+    ... )
+    >>> d3arg.draw()  # draw, with fixed nodes for loaded x positions
+    """        
 
     width = arg_json["width"]
     x_shift = 50
