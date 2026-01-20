@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1280 640">
+  <!-- Generator: Adobe Illustrator 30.1.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 136)  -->
+  <defs>
+    <style>
+      .st0, .st1, .st2, .st3 {
+        fill: none;
+      }
+
+      .st1 {
+        stroke: #053e4e;
+      }
+
+      .st1, .st4, .st5, .st3 {
+        stroke-width: 9.66px;
+      }
+
+      .st4 {
+        fill: pink;
+      }
+
+      .st4, .st6, .st5, .st3 {
+        stroke: #053e4e;
+      }
+
+      .st2 {
+        stroke: #fff;
+        stroke-width: 28.99px;
+      }
+
+      .st7 {
+        fill: #053e4e;
+        font-family: ArialMT, Arial;
+        font-size: 90.44px;
+      }
+
+      .st6 {
+        stroke-width: 16.62px;
+      }
+
+      .st6, .st5 {
+        fill: #1eebb1;
+      }
+    </style>
+  </defs>
+  <path class="st0" d="M0,52.84"/>
+  <path class="st6" d="M0,52.84"/>
+  <g>
+    <g>
+      <g>
+        <g>
+          <path class="st2" d="M166.51,401.48h0M166.51,401.48h0M166.51,401.48h0"/>
+          <path class="st3" d="M166.51,361.21v40.28M166.51,401.48h0M166.51,401.48h0M166.51,401.48h0M166.51,401.48v40.28"/>
+        </g>
+        <g>
+          <path class="st2" d="M323.85,280.68h2.13v112.76"/>
+          <path class="st3" d="M275.53,280.68h48.32M323.85,280.68h2.13v112.76M325.98,393.44v48.32"/>
+        </g>
+        <g>
+          <path class="st2" d="M227.21,280.68h-6.19v80.53h-6.19"/>
+          <path class="st3" d="M275.53,280.68h-48.32M227.21,280.68h-6.19v80.53h-6.19M214.83,361.21h-48.32"/>
+        </g>
+        <g>
+          <path class="st2" d="M149.38,200.15h-31.19v161.08"/>
+          <path class="st3" d="M197.7,200.15h-48.32M149.38,200.15h-31.19v161.08M118.19,361.21h48.32"/>
+        </g>
+        <g>
+          <path class="st2" d="M246.03,200.15h29.5v40.28"/>
+          <path class="st1" d="M197.7,200.15h48.32M246.03,200.15h29.5v40.28M275.53,240.4v40.28"/>
+        </g>
+      </g>
+      <g>
+        <path id="n0" class="st5" d="M151.7,426.95h29.6v29.6h-29.6s0-29.6,0-29.6Z"/>
+        <path id="n1" class="st5" d="M311.17,426.95h29.6v29.6h-29.6v-29.6Z"/>
+        <path id="n2" class="st4" d="M183.21,361.21c0,9.23-7.47,16.7-16.7,16.7s-16.7-7.47-16.7-16.7,7.47-16.7,16.7-16.7,16.7,7.47,16.7,16.7"/>
+        <path id="n4" class="st5" d="M292.22,280.68c0,9.23-7.47,16.7-16.7,16.7s-16.7-7.47-16.7-16.7,7.47-16.7,16.7-16.7,16.7,7.47,16.7,16.7"/>
+        <path id="n5" class="st5" d="M214.4,200.15c0,9.23-7.47,16.7-16.7,16.7s-16.7-7.47-16.7-16.7,7.47-16.7,16.7-16.7,16.7,7.47,16.7,16.7"/>
+      </g>
+    </g>
+    <text class="st7" transform="translate(404.41 344.51)"><tspan x="0" y="0">tskit_arg_visualizer</tspan></text>
+  </g>
+</svg>
