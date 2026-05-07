@@ -1366,10 +1366,10 @@ function main_visualizer(
     can be used to pass in the appropriate data
 */
 
-if (typeof d3 !== 'undefined') {
+if ($d3_url === null) {
     main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, $title, $rotate_tip_labels, $plot_type, $preamble, $source, $save_filename)
 } else {
-    loadScript('https://d3js.org/d3.v7.min.js')
+    loadScript($d3_url)
         .then(() => {
             if (typeof d3 === 'undefined') {
                 throw new Error('D3 loaded but global "d3" is unavailable.');
@@ -1378,4 +1378,3 @@ if (typeof d3 !== 'undefined') {
         })
         .catch(err => console.error('Failed to load d3 script:', err));
 }
-

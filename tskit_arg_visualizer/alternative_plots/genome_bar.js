@@ -9,10 +9,10 @@ function loadScript(src) {
     });
 }
 
-if (typeof d3 !== 'undefined') {
+if ($d3_url === null) {
     draw_genome_bar(d3);
 } else {
-    loadScript('https://d3js.org/d3.v7.min.js')
+    loadScript($d3_url)
         .then(() => {
             if (typeof d3 === 'undefined') {
                 throw new Error('D3 loaded but global "d3" is unavailable.');
@@ -136,5 +136,3 @@ function draw_genome_bar(d3) {
         })
         .text(function(d) { return d.site_id; });
 }
-
-draw_genome_bar()

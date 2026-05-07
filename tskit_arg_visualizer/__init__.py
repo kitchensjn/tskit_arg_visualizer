@@ -97,7 +97,30 @@ def running_in_notebook():
             return False  # Other type (?)
     except NameError:
         return False      # Probably standard Python interpreter
-    
+
+
+DEFAULT_D3JS_URL = "https://d3js.org/d3.v7.min"
+
+D3jsSource = collections.namedtuple("D3jsSource", ["url", "inline_script"])
+"""
+Result of resolve_d3js_source. Exactly one field is meaningful:
+- url is a string URL (and inline_script is ""), or
+- url is None and inline_script is a "<script>…</script>" HTML fragment.
+"""
+
+
+def resolve_d3js_source(d3js):
+    if d3js is None:
+        return D3jsSource(url=DEFAULT_D3JS_URL, inline_script="")
+    try:
+        d3_content = d3js.read()
+    except AttributeError:
+        return D3jsSource(url=str(d3js), inline_script="")
+    if isinstance(d3_content, bytes):
+        d3_content = d3_content.decode("utf-8")
+    return D3jsSource(url=None, inline_script=f"<script>{d3_content}</script>")
+
+
 def calculate_evenly_distributed_positions(num_elements, start=0, end=1, round_to=0):
     """Returns a list of `num_elements` evenly distributed positions on a given `length`
 
@@ -179,21 +202,23 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
     return (1-(t-min_time)/time_range) * (height-100) + y_shift
 
 
-def draw_D3(arg_json, styles=None, is_notebook=None):
+def draw_D3(arg_json, styles=None, is_notebook=None, d3js=None):
+    d3js_source = resolve_d3js_source(d3js)
     if is_notebook is None:
         is_notebook = running_in_notebook()
     arg_json["source"] = json.dumps(arg_json.copy())  # first escape the plain json data
+    arg_json["d3_url"] = d3js_source.url  # Could be None if an inline script is used
     arg_json = {k: json.dumps(v) for k, v in arg_json.items()}  # now escape all
     arg_json["divnum"] = str(random.randint(0,9999999999))
     arg_id = "arg_" + arg_json['divnum']
     JS_text = Template((
-        '<div id="{}" class="d3arg" style="min-width:{}px; min-height:{}px;"></div>'
+        '<div id="{}" class="d3arg" style="min-width:{}px; min-height:{}px;"></div>$d3_inline_script'
         '<script>$main_text</script>'
     ).format(arg_id, float(arg_json["width"]) + 40, float(arg_json["height"]) + 80))
     with open(os.path.dirname(__file__) + "/visualizer.js", "r") as visualizerjs:
         main_text_template = Template(visualizerjs.read())
     main_text = main_text_template.safe_substitute(arg_json)
-    html = JS_text.safe_substitute({'main_text': main_text})
+    html = JS_text.safe_substitute({'main_text': main_text, 'd3_inline_script': d3js_source.inline_script})
     with open(os.path.dirname(__file__) + "/visualizer.css", "r") as css:
         general_styles = css.read()
     specific_styles = ""
@@ -1459,6 +1484,7 @@ class D3ARG:
             styles=None,
             preamble=None,
             save_filename=None,
+            d3js=None,
         ):
         """Draws the D3ARG using D3.js by sending a custom JSON object to visualizer.js 
 
@@ -1533,6 +1559,12 @@ class D3ARG:
         save_filename : str
             Filename to use when selecting "Download as" in the visualization
             (default=None, treated as "tskit_arg_visualizer")
+        d3js : optional
+            Source for loading D3.js. If None, uses the default URL
+            https://d3js.org/d3.v7.min. Otherwise, this is first treated as a file-like
+            object by trying `.read()`: if successful, the returned JavaScript source is
+            embedded directly in the output HTML (bytes are decoded as UTF-8). If `.read()`
+            is unavailable, the value is converted to `str(...)` and used as a URL.
 
         Returns
         -------
@@ -1574,7 +1606,7 @@ class D3ARG:
             preamble=preamble,
             save_filename=save_filename,
         )
-        info = draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook)
+        info = draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook, d3js=d3js)
         info.included.nodes = included_nodes["id"].tolist()
         return info
 
@@ -1723,6 +1755,7 @@ class D3ARG:
             styles=None,
             preamble=None,
             save_filename=None,
+            d3js=None,
         ):
         """Draws a subgraph of the D3ARG using D3.js by sending a custom JSON object to visualizer.js.
 
@@ -1789,6 +1822,12 @@ class D3ARG:
         save_filename : str
             Filename to use when selecting "Download as" in the visualization
             (default=None, treated as "tskit_arg_visualizer")
+        d3js : optional
+            Source for loading D3.js. If None, uses the default URL
+            https://d3js.org/d3.v7.min. Otherwise, this is first treated as a file-like
+            object by trying `.read()`: if successful, the returned JavaScript source is
+            embedded directly in the output HTML (bytes are decoded as UTF-8). If `.read()`
+            is unavailable, the value is converted to `str(...)` and used as a URL.
 
         Returns
         -------
@@ -1825,7 +1864,7 @@ class D3ARG:
             preamble=preamble,
             save_filename=save_filename,
         )
-        info = draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook)
+        info = draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook, d3js=d3js)
         info.included.nodes = included.nodes["id"].tolist()
         return info
 
@@ -1839,6 +1878,7 @@ class D3ARG:
             windows=None,
             show_mutations=False,
             is_notebook=None,
+            d3js=None,
         ):
         """Draws a genome bar for the D3ARG using D3.js
 
@@ -1857,10 +1897,16 @@ class D3ARG:
             whether it is being called in a notebook environment. This may not work in
             some untested environments, in which case you may wish to set this explicitly
             to True (to force a notebook display) or False (to force a standalone HTML page).
+        d3js : optional
+            Source for loading D3.js. If None, uses the default URL
+            https://d3js.org/d3.v7.min. Otherwise, this is first treated as a file-like
+            object by trying `.read()`: if successful, the returned JavaScript source is
+            embedded directly in the output HTML (bytes are decoded as UTF-8). If `.read()`
+            is unavailable, the value is converted to `str(...)` and used as a URL.
         """
         if is_notebook is None:
             is_notebook = running_in_notebook()
-
+        d3js_source = resolve_d3js_source(d3js)
         transformed_bps = self.breakpoints.loc[:,:]
         transformed_bps["x_pos"] = transformed_bps["x_pos_01"] * width
         transformed_bps["width"] = transformed_bps["width_01"] * width
@@ -1897,13 +1943,15 @@ class D3ARG:
         }
         
         genome_bar_json["source"] = genome_bar_json.copy()
+        genome_bar_json["d3_url"] = d3js_source.url  # Could be None if an inline script is used. Will be escaped below
+        genome_bar_json = {k: json.dumps(v) for k, v in genome_bar_json.items()}
         genome_bar_json["divnum"] = str(random.randint(0,9999999999))
-        JS_text = Template("<div id='genome_bar_" + genome_bar_json['divnum'] + "'class='d3arg' style='min-width:" + str(genome_bar_json["width"]+40) + "px; min-height:180px;'></div><script>$main_text</script>")
+        JS_text = Template("<div id='genome_bar_" + genome_bar_json['divnum'] + "'class='d3arg' style='min-width:" + str(json.loads(genome_bar_json["width"])+40) + "px; min-height:180px;'></div>$d3_inline_script<script>$main_text</script>")
         breakpointsjs = open(os.path.dirname(__file__) + "/alternative_plots/genome_bar.js", "r")
         main_text_template = Template(breakpointsjs.read())
         breakpointsjs.close()
         main_text = main_text_template.safe_substitute(genome_bar_json)
-        html = JS_text.safe_substitute({'main_text': main_text})
+        html = JS_text.safe_substitute({'main_text': main_text, 'd3_inline_script': d3js_source.inline_script})
         css = open(os.path.dirname(__file__) + "/visualizer.css", "r")
         styles = css.read()
         css.close()
@@ -1912,7 +1960,7 @@ class D3ARG:
         else:
             with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
                 url = "file://" + f.name
-                f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script><script src='https://d3js.org/d3.v7.min.js'></script></head><body>" + html + "</body></html>")
+                f.write("<!DOCTYPE html><html><head><style>"+styles+"</style><script src='https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js'></script><script src='https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js'></script></head><body>" + html + "</body></html>")
             webbrowser.open(url, new=2)
 
     
