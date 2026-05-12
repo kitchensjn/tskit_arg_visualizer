@@ -15,6 +15,8 @@ import msprime
 import numpy as np
 import pandas as pd
 import tskit
+import anywidget
+import traitlets
 from IPython.display import HTML, display
 
 __version__ = (
@@ -71,6 +73,32 @@ class DrawInfo:
     Lists of objects included in the plot. At the moment this
     simply consists of included.nodes.
     """
+
+
+class _ARGAnyWidget(anywidget.AnyWidget):
+    _esm = """
+function renderWidget(model, el) {
+    const iframe = document.createElement("iframe");
+    iframe.style.width = `${model.get("frame_width")}px`;
+    iframe.style.height = `${model.get("frame_height")}px`;
+    iframe.style.border = "0";
+    iframe.srcdoc = model.get("srcdoc");
+    el.replaceChildren(iframe);
+}
+
+function render({ model, el }) {
+    const rerender = () => renderWidget(model, el);
+    rerender();
+    model.on("change:srcdoc", rerender);
+    model.on("change:frame_width", rerender);
+    model.on("change:frame_height", rerender);
+}
+
+export default { render };
+"""
+    srcdoc = traitlets.Unicode().tag(sync=True)
+    frame_width = traitlets.Int().tag(sync=True)
+    frame_height = traitlets.Int().tag(sync=True)
     
 def running_in_notebook():
     """Checks whether the code is being executed within a Jupyter Notebook.
@@ -1832,6 +1860,131 @@ class D3ARG:
     # Alias of draw_node that users may be more likely to use when
     # there are multiple focal nodes.
     draw_nodes = draw_node
+
+    def to_anywidget(
+        self,
+        width=500,
+        height=500,
+        tree_highlighting=True,
+        y_axis_labels=True,
+        y_axis_title=None,
+        y_axis_scale="rank",
+        show_mutations=False,
+        zoom=0,
+        styles=None,
+        preamble=None,
+        save_filename=None,
+    ):
+        """Returns an anywidget instance that renders this ARG in notebooks.
+
+        Parameters
+        ----------
+        width : int
+            Width of the force layout graph plot in pixels (default=500)
+        height : int
+            Height of the force layout graph plot in pixels (default=500)
+        tree_highlighting : bool
+            Include the interactive chromosome at the bottom of the figure (default=True)
+        y_axis_labels : bool, list, or dict
+            Whether to include the y-axis on the left of the figure (default=True)
+        y_axis_title : string
+            Title of the y-axis (default=None, uses `D3ARG.time_units`)
+        y_axis_scale : string
+            Scale used for the positioning nodes along the y-axis. Options:
+                "rank" (default), "time", "log_time"
+        show_mutations : bool
+            Whether to add mutations to the graph (default=False)
+        zoom : int
+            Larger numbers equate to less detail/more collapsing (default=0)
+        styles : list
+            A list of CSS strings, one per selector. Styles are scoped to this
+            widget instance. (default=None)
+        preamble : str
+            Extra HTML to be added to the visualization (default="")
+        save_filename : str
+            Filename to use when selecting "Download as" (default=None)
+
+        Returns
+        -------
+        anywidget.AnyWidget
+            The widget instance.
+        """
+
+        included_nodes, included_edges = self._collapse_graph(zoom=zoom)
+        arg = self._prepare_json(
+            plot_type="full",
+            nodes=included_nodes,
+            edges=included_edges,
+            mutations=self.mutations,
+            breakpoints=self.breakpoints,
+            width=width,
+            height=height,
+            tree_highlighting=tree_highlighting,
+            y_axis_labels=y_axis_labels,
+            y_axis_title=y_axis_title,
+            y_axis_scale=y_axis_scale,
+            edge_type="line",
+            variable_edge_width=False,
+            include_underlink=True,
+            sample_order=None,
+            title=None,
+            show_mutations=show_mutations,
+            ignore_mutation_times=True,
+            label_mutations=False,
+            condense_mutations=False,
+            rotate_tip_labels=False,
+            preamble=preamble,
+            save_filename=save_filename,
+        )
+
+        uid = "arg_" + str(random.randint(0, 9999999999))
+        specific_styles = ""
+        if styles is not None:
+            if isinstance(styles, str):
+                raise ValueError(
+                    "Styles should be a list of CSS strings, not a single string"
+                )
+            for s in styles:
+                specific_styles += f"#{uid} " + s
+            if "<" in specific_styles:
+                raise ValueError("Listed styles cannot contain the '<' sign.")
+
+        with open(os.path.dirname(__file__) + "/visualizer.js", "r") as visualizerjs:
+            main_text_template = Template(visualizerjs.read())
+        arg_with_source = arg.copy()
+        arg_with_source["source"] = json.dumps(arg.copy())
+        arg_for_template = {k: json.dumps(v) for k, v in arg_with_source.items()}
+        arg_for_template["divnum"] = uid.replace("arg_", "")
+        main_text = main_text_template.safe_substitute(arg_for_template)
+        main_text = f'document.getElementById("{uid}")?.replaceChildren();\n' + main_text
+        html = (
+            f'<div id="{uid}" class="d3arg" style="min-width:{float(arg["width"]) + 40}px; '
+            f'min-height:{float(arg["height"]) + 80}px;"></div>'
+            f"<script>{main_text}</script>"
+        )
+
+        with open(os.path.dirname(__file__) + "/visualizer.css", "r") as css:
+            general_styles = css.read()
+        base_iframe_styles = (
+            "<style>"
+            "html, body { margin: 0; padding: 0; overflow: hidden; }"
+            ".d3arg { box-sizing: border-box; }"
+            "</style>"
+        )
+        styles_html = base_iframe_styles + f"<style>{general_styles}</style>"
+        if specific_styles:
+            styles_html += f"<style>{specific_styles}</style>"
+        srcdoc = (
+            "<!DOCTYPE html><html>"
+            "<head><meta charset='utf-8'>" + styles_html + "</head>"
+            "<body>" + html + "</body></html>"
+        )
+
+        return _ARGAnyWidget(
+            srcdoc=srcdoc,
+            frame_width=int(float(arg["width"]) + 40),
+            frame_height=int(float(arg["height"]) + 80),
+        )
 
     def draw_genome_bar(
             self,

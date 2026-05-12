@@ -2,11 +2,12 @@ name: tsviz
 channels:
   - conda-forge
 dependencies:
-  - python=3.13.0
+  - python>=3.8
   - pip
   - jupyterlab
   - pandas
   - msprime
   - IPython
   - tqdm
+  - anywidget
   - tszip
