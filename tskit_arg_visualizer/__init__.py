@@ -1,4 +1,4 @@
-import collections
+from collections import namedtuple
 import itertools
 import json
 import math
@@ -23,7 +23,7 @@ __version__ = (
 )
 
 
-default_mutation_styles = {
+DEFAULT_MUTATION_STYLES = {
     "size": 5,
     "unknown_time": {
         "fill": "gold",
@@ -40,6 +40,11 @@ default_mutation_styles = {
         "stroke": "#053e4e",
     },
 }
+
+DEFAULT_D3JS_URL = "https://d3js.org/d3.v7.min"
+
+D3jsSource = namedtuple("D3jsSource", ["url", "inline_script"])
+IncludedInfo = namedtuple("IncludedInfo", ["nodes", "edges", "mutations", "breakpoints"])
 
 @dataclass
 class IncludedObjects:
@@ -99,17 +104,12 @@ def running_in_notebook():
         return False      # Probably standard Python interpreter
 
 
-DEFAULT_D3JS_URL = "https://d3js.org/d3.v7.min"
-
-D3jsSource = collections.namedtuple("D3jsSource", ["url", "inline_script"])
-"""
-Result of resolve_d3js_source. Exactly one field is meaningful:
-- url is a string URL (and inline_script is ""), or
-- url is None and inline_script is a "<script>…</script>" HTML fragment.
-"""
-
-
-def resolve_d3js_source(d3js):
+def resolve_d3js_source(d3js) -> D3jsSource:
+    """
+    Returns a tuple in which exactly one field is meaningful:
+    - url is a string URL (and inline_script is ""), or
+    - url is None and inline_script is a "<script>…</script>" HTML fragment.
+    """
     if d3js is None:
         return D3jsSource(url=DEFAULT_D3JS_URL, inline_script="")
     try:
@@ -691,12 +691,12 @@ class D3ARG:
                         # an edge. Essentially, giving them a false time just for plotting.
                         middle = (new_edge[3] + new_edge[4]) / 2
                         plot_time = middle + random.uniform(-(new_edge[3]-middle),(new_edge[3]-middle))
-                        fill = default_mutation_styles["unknown_time"]["fill"]
-                        stroke = default_mutation_styles["unknown_time"]["stroke"]
+                        fill = DEFAULT_MUTATION_STYLES["unknown_time"]["fill"]
+                        stroke = DEFAULT_MUTATION_STYLES["unknown_time"]["stroke"]
                     else:
                         plot_time = mut.time
-                        fill = default_mutation_styles["known_time"]["fill"]
-                        stroke = default_mutation_styles["known_time"]["stroke"]
+                        fill = DEFAULT_MUTATION_STYLES["known_time"]["fill"]
+                        stroke = DEFAULT_MUTATION_STYLES["known_time"]["stroke"]
                     inherited_state = site.ancestral_state if mut.parent == tskit.NULL else ts.mutation(mut.parent).derived_state
                     mutations.append({
                         "edge": new_edge[0],
@@ -712,7 +712,7 @@ class D3ARG:
                         "derived": mut.derived_state,
                         "fill": fill,
                         "stroke": stroke,
-                        "size": default_mutation_styles["size"],
+                        "size": DEFAULT_MUTATION_STYLES["size"],
                     })
         mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","inherited","derived","fill","stroke","size"])
         return edges_output, mutations_output
@@ -865,11 +865,11 @@ class D3ARG:
         """Resets mutation styles to default
         """
         is_unknown = tskit.is_unknown_time(self.mutations.time)
-        self.mutations["size"] = default_mutation_styles["size"]
-        self.mutations["fill"] = default_mutation_styles["known_time"]["fill"]
-        self.mutations["stroke"] = default_mutation_styles["known_time"]["stroke"]
-        self.mutations.loc[is_unknown, "fill"] = default_mutation_styles["unknown_time"]["fill"]
-        self.mutations.loc[is_unknown, "stroke"] = default_mutation_styles["unknown_time"]["stroke"]
+        self.mutations["size"] = DEFAULT_MUTATION_STYLES["size"]
+        self.mutations["fill"] = DEFAULT_MUTATION_STYLES["known_time"]["fill"]
+        self.mutations["stroke"] = DEFAULT_MUTATION_STYLES["known_time"]["stroke"]
+        self.mutations.loc[is_unknown, "fill"] = DEFAULT_MUTATION_STYLES["unknown_time"]["fill"]
+        self.mutations.loc[is_unknown, "stroke"] = DEFAULT_MUTATION_STYLES["unknown_time"]["stroke"]
 
     def set_mutation_styles(self, styles):
         """Individually control the styling of each mutation.
@@ -1235,8 +1235,8 @@ class D3ARG:
                                 "site_id": list(muts["site_id"]),
                                 "mutation_id": list(muts.index),
                                 "x_pos": list(x_pos),
-                                "fill": default_mutation_styles["condensed"]["fill"],
-                                "stroke": default_mutation_styles["condensed"]["stroke"],
+                                "fill": DEFAULT_MUTATION_STYLES["condensed"]["fill"],
+                                "stroke": DEFAULT_MUTATION_STYLES["condensed"]["stroke"],
                                 "active": False,
                                 "label": "⨉"+str(muts.shape[0]),
                                 "content": "<br>".join(muts.content),
@@ -1731,7 +1731,7 @@ class D3ARG:
         included_breakpoints.append(current_region) # make sure to append the last region
         included_breakpoints = pd.DataFrame(included_breakpoints)
 
-        return collections.namedtuple('IncludedInfo', ['nodes', 'edges', 'mutations', 'breakpoints'])(
+        return IncludedInfo(
             included_nodes, included_edges, included_mutations, included_breakpoints
         )
 
