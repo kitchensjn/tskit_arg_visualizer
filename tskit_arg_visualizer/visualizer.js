@@ -10,21 +10,16 @@ function parseRgbString(rgbString) {
   return null; // Or throw an error for invalid format
 }
 
-function ensureRequire() {
-    // Needed e.g. in Jupyter notebooks: if require is already available, return resolved promise
-    if (typeof require !== 'undefined') {
-        return Promise.resolve(require);
-    }
-
-    // Otherwise, dynamically load require.js
+function loadScript(src) {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js';
-        script.onload = () => resolve(require);
+        script.src = src;
+        script.async = true;
+        script.onload = () => resolve();
         script.onerror = reject;
         document.head.appendChild(script);
     });
-};
+}
 
 function main_visualizer(
     d3,
@@ -1371,12 +1366,16 @@ function main_visualizer(
     can be used to pass in the appropriate data
 */
 
-ensureRequire()
-    .then(require => {
-        require.config({ paths: {d3: 'https://d3js.org/d3.v7.min'}});
-        require(["d3"], function(d3) {
+if (typeof d3 !== 'undefined') {
+    main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, $title, $rotate_tip_labels, $plot_type, $preamble, $source, $save_filename)
+} else {
+    loadScript('https://d3js.org/d3.v7.min.js')
+        .then(() => {
+            if (typeof d3 === 'undefined') {
+                throw new Error('D3 loaded but global "d3" is unavailable.');
+            }
             main_visualizer(d3, $divnum, $data, $width, $height, $y_axis, $edges, $condense_mutations, $label_mutations, $tree_highlighting, $title, $rotate_tip_labels, $plot_type, $preamble, $source, $save_filename)
-        });
-    })
-    .catch(err => console.error('Failed to load require.js:', err));
+        })
+        .catch(err => console.error('Failed to load d3 script:', err));
+}
 
