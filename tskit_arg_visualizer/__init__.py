@@ -1,4 +1,5 @@
 import collections
+import inspect
 import itertools
 import json
 import math
@@ -179,9 +180,8 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
     return (1-(t-min_time)/time_range) * (height-100) + y_shift
 
 
-def draw_D3(arg_json, styles=None, is_notebook=None):
-    if is_notebook is None:
-        is_notebook = running_in_notebook()
+def _build_html(arg_json, styles=None):
+    """Returns (styles, html, arg_id, width, height) for a drawing, without displaying it."""
     arg_json["source"] = json.dumps(arg_json.copy())  # first escape the plain json data
     arg_json = {k: json.dumps(v) for k, v in arg_json.items()}  # now escape all
     arg_json["divnum"] = str(random.randint(0,9999999999))
@@ -210,18 +210,30 @@ def draw_D3(arg_json, styles=None, is_notebook=None):
     if specific_styles:
         styles += f"<style>{specific_styles}</style>"
 
+    return styles, html, arg_id, arg_json["width"], arg_json["height"]
+
+
+def _standalone_document(styles, html):
+    return (
+        "<!DOCTYPE html><html><head><meta charset='utf-8'>" + styles + "</head>"
+        "<body>" + html + "</body></html>"
+    )
+
+
+def draw_D3(arg_json, styles=None, is_notebook=None):
+    if is_notebook is None:
+        is_notebook = running_in_notebook()
+    styles, html, arg_id, width, height = _build_html(arg_json, styles)
     if is_notebook:
         display(HTML(styles + html))
     else:
         with tempfile.NamedTemporaryFile("w", delete=False, suffix=".html") as f:
             url = "file://" + f.name
-            f.write("<!DOCTYPE html><html>")
-            f.write("<head><meta charset='utf-8'>" + styles + "</head>")
-            f.write("<body>" + html + "</body></html>")
+            f.write(_standalone_document(styles, html))
         webbrowser.open(url, new=2)
     return DrawInfo(
-        width=arg_json["width"],
-        height=arg_json["height"],
+        width=width,
+        height=height,
         uid=arg_id,
         is_notebook=is_notebook,
         included=IncludedObjects(),
@@ -1436,6 +1448,47 @@ class D3ARG:
             return nodes, edges
         return self.nodes, self.edges
 
+    def _prepare_draw(self, p):
+        """Builds the JSON for draw() from a dict of draw() parameters.
+
+        Returns the JSON and the included nodes table.
+        """
+        condense_mutations = p["condense_mutations"]
+        ignore_mutation_times = p["ignore_mutation_times"]
+        if condense_mutations:
+            if not ignore_mutation_times:
+                print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
+                ignore_mutation_times = True
+
+        included_nodes, included_edges = self._collapse_graph(zoom=p["zoom"])
+
+        arg = self._prepare_json(
+            plot_type="full",
+            nodes=included_nodes,
+            edges=included_edges,
+            mutations=self.mutations,
+            breakpoints=self.breakpoints,
+            width=p["width"],
+            height=p["height"],
+            tree_highlighting=p["tree_highlighting"],
+            y_axis_labels=p["y_axis_labels"],
+            y_axis_title=p["y_axis_title"],
+            y_axis_scale=p["y_axis_scale"],
+            edge_type=p["edge_type"],
+            variable_edge_width=p["variable_edge_width"],
+            include_underlink=p["include_underlink"],
+            sample_order=p["sample_order"],
+            title=p["title"],
+            show_mutations=p["show_mutations"],
+            ignore_mutation_times=ignore_mutation_times,
+            label_mutations=p["label_mutations"],
+            condense_mutations=condense_mutations,
+            rotate_tip_labels=p["rotate_tip_labels"],
+            preamble=p["preamble"],
+            save_filename=p["save_filename"],
+        )
+        return arg, included_nodes
+
     def draw(
             self,
             width=500,
@@ -1542,41 +1595,34 @@ class D3ARG:
             were included in the drawing.
         """
         
-        if condense_mutations:
-            if not ignore_mutation_times:
-                print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
-                ignore_mutation_times = True
-
-        included_nodes, included_edges = self._collapse_graph(zoom=zoom)
-
-        arg = self._prepare_json(
-            plot_type="full",
-            nodes=included_nodes,
-            edges=included_edges,
-            mutations=self.mutations,
-            breakpoints=self.breakpoints,
-            width=width,
-            height=height,
-            tree_highlighting=tree_highlighting,
-            y_axis_labels=y_axis_labels,
-            y_axis_title=y_axis_title,
-            y_axis_scale=y_axis_scale,
-            edge_type=edge_type,
-            variable_edge_width=variable_edge_width,
-            include_underlink=include_underlink,
-            sample_order=sample_order,
-            title=title,
-            show_mutations=show_mutations,
-            ignore_mutation_times=ignore_mutation_times,
-            label_mutations=label_mutations,
-            condense_mutations=condense_mutations,
-            rotate_tip_labels=rotate_tip_labels,
-            preamble=preamble,
-            save_filename=save_filename,
-        )
+        params = dict(locals())
+        del params["self"]
+        arg, included_nodes = self._prepare_draw(params)
         info = draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook)
         info.included.nodes = included_nodes["id"].tolist()
         return info
+
+    def to_html(self, **kwargs):
+        """Returns the drawing as a standalone HTML document string.
+
+        Accepts the same keyword arguments as :meth:`draw`, apart from
+        `is_notebook`, which is ignored, e.g.
+        `d3arg.to_html(width=800, rotate_tip_labels=True)`.
+        """
+        bound = inspect.signature(self.draw).bind(**kwargs)
+        bound.apply_defaults()
+        params = dict(bound.arguments)
+        arg, _ = self._prepare_draw(params)
+        styles, html, *_ = _build_html(arg, styles=params["styles"])
+        return _standalone_document(styles, html)
+
+    def write_html(self, filename, **kwargs):
+        """Writes the drawing to a standalone HTML file.
+
+        Accepts the same keyword arguments as :meth:`draw`.
+        """
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(self.to_html(**kwargs))
 
     def subset_graph(self, seed_nodes, depth):
         """Subsets the graph to focus around a specific node
