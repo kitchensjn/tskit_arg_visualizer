@@ -278,14 +278,16 @@ function main_visualizer(
             evenly_distribute.append("span").attr("class", "tip desc").text("Space Samples");
         }
 
-        var labelling = dashboard.append("button").attr("class", "dashbutton");
-        labelling.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+        var nodes_menu = dashboard.append("button").attr("class", "dashbutton");
+        nodes_menu.append("svg") //<!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
             .attr("xmlns", "http://www.w3.org/2000/svg")
             .attr("viewBox", "0 0 512 512")
             .append("path")
             .attr("d", "M0 80L0 229.5c0 17 6.7 33.3 18.7 45.3l176 176c25 25 65.5 25 90.5 0L418.7 317.3c25-25 25-65.5 0-90.5l-176-176c-12-12-28.3-18.7-45.3-18.7L48 32C21.5 32 0 53.5 0 80zm112 32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z");
-        var labelling_methods = labelling.append("span").attr("class", "tip desc");
-        var methods = labelling_methods.append("div").text("Node Labels:").append("div").attr("class", "labelmethods")
+        var nodes_methods = nodes_menu.append("span").attr("class", "tip desc");
+        var methods = nodes_methods.append("div").text("Nodes:").append("div")
+            // "labelmethods" and "node-labels-*" classes are deprecated: kept only for backwards compatibility
+            .attr("class", "nodemethods labelmethods")
         
         function switch_node_label(selected) {
             label_text.each(function(d) {
@@ -300,25 +302,25 @@ function main_visualizer(
             })
         }
         
-        methods.append("button").attr("class", "node-labels-default").text("DEFAULT")
+        methods.append("button").attr("class", "nodes-label-default node-labels-default").text("DEFAULT")
             .on("click", function() {
                 switch_node_label("default");
                 // Underline the current selection (could use different highlighting method here)
-                d3.selectAll(div_selector + " .labelmethods button").style("text-decoration", "none");
+                d3.selectAll(div_selector + " .nodemethods button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
-        methods.append("button").attr("class", "node-labels-id").text("#ID")
+        methods.append("button").attr("class", "nodes-label-id node-labels-id").text("#ID")
             .on('click', function(){
                 switch_node_label("id");
                 // Underline the current selection (could use different highlighting method here)
-                d3.selectAll(div_selector + " .labelmethods button").style("text-decoration", "none");
+                d3.selectAll(div_selector + " .nodemethods button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
-        methods.append("button").attr("class", "node-labels-none").text("NONE")
+        methods.append("button").attr("class", "nodes-label-none node-labels-none").text("NONE")
             .on('click', function(){
                 switch_node_label("none");
                 // Underline the current selection (could use different highlighting method here)
-                d3.selectAll(div_selector + " .labelmethods button").style("text-decoration", "none");
+                d3.selectAll(div_selector + " .nodemethods button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
 

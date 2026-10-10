@@ -57,7 +57,7 @@
     fill: #1eebb1;
 }
 
-.d3arg .savemethods, .d3arg .labelmethods {
+.d3arg .savemethods, .d3arg .nodemethods, .d3arg .labelmethods {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -65,7 +65,7 @@
     flex-wrap: wrap;
 }
 
-.d3arg .savemethods button, .d3arg .labelmethods button {
+.d3arg .savemethods button, .d3arg .nodemethods button, .d3arg .labelmethods button {
     background-color: lightgrey;
     color: #053e4e;
     font-size: 12px;
@@ -73,11 +73,11 @@
     border: none;
 }
 
-.d3arg .savemethods button:hover, .d3arg .labelmethods button:hover {
+.d3arg .savemethods button:hover, .d3arg .nodemethods button:hover, .d3arg .labelmethods button:hover {
     color: #1eebb1;
 }
 
-.d3arg .labelmethods button.node-labels-default {
+.d3arg .nodemethods button.nodes-label-default {
     text-decoration: underline;
 }
 
