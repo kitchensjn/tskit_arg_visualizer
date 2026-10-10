@@ -667,14 +667,8 @@ function main_visualizer(
             return null
         }
 
-        var label = svg
-            .append("g")
-            .attr("class", "node-labels")
-            .selectAll("text")
-            .data(graph.nodes)
-            .enter()
-            //.filter(d => d.include_label)
-            .append("g");
+        // labels live in the same group as their node symbol, so they move together if the SVG is edited
+        var label = node_group.append("g");
 
         var label_text = label
             .attr("class", d => "label n" + d.id)
