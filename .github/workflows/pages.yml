@@ -1,0 +1,78 @@
+name: Publish examples
+
+# Publishes live examples to the gh-pages branch, which GitHub Pages serves:
+#   latest/   rebuilt on every push to main
+#   X.Y.Z/    built when a release is published
+#   stable/   a copy of the most recent (non-pre-)release
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Build examples
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [ "$EVENT" = "release" ]; then LABEL="$TAG"; else LABEL="latest"; fi
+          echo "LABEL=$LABEL" >> "$GITHUB_ENV"
+          python docs/pages/build_examples.py "$RUNNER_TEMP/built" "$LABEL"
+
+      - name: Update gh-pages branch
+        env:
+          EVENT: ${{ github.event_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null; then
+            git fetch origin gh-pages
+            git worktree add "$RUNNER_TEMP/site" origin/gh-pages
+          else
+            git worktree add --detach "$RUNNER_TEMP/site"
+            git -C "$RUNNER_TEMP/site" checkout --orphan gh-pages
+            git -C "$RUNNER_TEMP/site" rm -rfq .
+          fi
+          SITE="$RUNNER_TEMP/site"
+          touch "$SITE/.nojekyll"
+          rm -rf "$SITE/$LABEL"
+          cp -R "$RUNNER_TEMP/built" "$SITE/$LABEL"
+          if [ "$EVENT" = "release" ] && [ "$PRERELEASE" != "true" ]; then
+            rm -rf "$SITE/stable"
+            cp -R "$RUNNER_TEMP/built" "$SITE/stable"
+          fi
+          python docs/pages/build_index.py "$SITE"
+          cd "$SITE"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to publish"
+          else
+            git commit -m "Publish examples for $LABEL"
+            git push origin HEAD:gh-pages
+          fi

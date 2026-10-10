@@ -443,6 +443,7 @@ class D3ARG:
         D3ARG : a corresponding D3ARG object ready to be plotted
         """
 
+        nodes = pd.DataFrame(json["data"]["nodes"])
         x_pos_01 = extract_x_positions_from_json(json)
         nodes["x_pos_01"] = nodes["id"].map(x_pos_01)
         if json["plot_type"] == "full":
