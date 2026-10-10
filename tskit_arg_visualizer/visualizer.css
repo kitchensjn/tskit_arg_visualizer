@@ -169,3 +169,6 @@
 .d3arg .sites text {
     text-anchor: middle;
 }
+.d3arg .nodemethods-title {
+    margin-top: 4px;
+}

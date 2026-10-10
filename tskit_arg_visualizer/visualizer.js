@@ -285,7 +285,8 @@ function main_visualizer(
             .append("path")
             .attr("d", "M0 80L0 229.5c0 17 6.7 33.3 18.7 45.3l176 176c25 25 65.5 25 90.5 0L418.7 317.3c25-25 25-65.5 0-90.5l-176-176c-12-12-28.3-18.7-45.3-18.7L48 32C21.5 32 0 53.5 0 80zm112 32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z");
         var nodes_methods = nodes_menu.append("span").attr("class", "tip desc");
-        var methods = nodes_methods.append("div").text("Nodes:").append("div")
+        var nodes_panel = nodes_methods.append("div").text("Nodes:");
+        var methods = nodes_panel.append("div")
             // "labelmethods" and "node-labels-*" classes are deprecated: kept only for backwards compatibility
             .attr("class", "nodemethods labelmethods")
         
@@ -306,24 +307,36 @@ function main_visualizer(
             .on("click", function() {
                 switch_node_label("default");
                 // Underline the current selection (could use different highlighting method here)
-                d3.selectAll(div_selector + " .nodemethods button").style("text-decoration", "none");
+                d3.select(this.parentNode).selectAll("button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
         methods.append("button").attr("class", "nodes-label-id node-labels-id").text("#ID")
             .on('click', function(){
                 switch_node_label("id");
                 // Underline the current selection (could use different highlighting method here)
-                d3.selectAll(div_selector + " .nodemethods button").style("text-decoration", "none");
+                d3.select(this.parentNode).selectAll("button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
         methods.append("button").attr("class", "nodes-label-none node-labels-none").text("NONE")
             .on('click', function(){
                 switch_node_label("none");
                 // Underline the current selection (could use different highlighting method here)
-                d3.selectAll(div_selector + " .nodemethods button").style("text-decoration", "none");
+                d3.select(this.parentNode).selectAll("button").style("text-decoration", "none");
                 d3.select(this).style("text-decoration", "underline");
             });
 
+        nodes_panel.append("div").attr("class", "nodemethods-title").text("Tip labels:");
+        var tip_methods = nodes_panel.append("div").attr("class", "nodemethods");
+        [["horizontal", "HORIZONTAL", false], ["rotated", "ROTATED", true]].forEach(function(opt) {
+            tip_methods.append("button").attr("class", "nodes-tip-" + opt[0]).text(opt[1])
+                .style("text-decoration", (!!rotate_tip_labels === opt[2]) ? "underline" : "none")
+                .on("click", function() {
+                    rotate_tip_labels = opt[2];
+                    label_text.attr("transform", rotate_tip);
+                    d3.select(this.parentNode).selectAll("button").style("text-decoration", "none");
+                    d3.select(this).style("text-decoration", "underline");
+                });
+        });
 
         var svg = d3.select(div_selector).append("svg")
             .attr("width", width)
