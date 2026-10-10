@@ -9,6 +9,8 @@
     "test:e2e:install": "playwright install --with-deps chromium"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.1"
+    "@playwright/test": "^1.54.1",
+    "d3": "^7.9.0",
+    "requirejs": "^2.3.8"
   }
 }
