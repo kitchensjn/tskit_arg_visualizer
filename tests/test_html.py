@@ -43,3 +43,19 @@ def test_write_html(d3arg, tmp_path):
     text = path.read_text(encoding="utf-8")
     assert text.startswith("<!DOCTYPE html>")
     assert "min-width:740.0px" in text
+
+
+def test_to_html_nodes(d3arg):
+    seed = int(d3arg.nodes["id"].iloc[0])
+    html = d3arg.to_html_nodes(seed, depth=2, width=800)
+    assert html.startswith("<!DOCTYPE html>")
+    assert "min-width:940.0px" in html
+    with pytest.raises(TypeError):
+        d3arg.to_html_nodes(seed, not_a_parameter=1)
+
+
+def test_write_html_nodes(d3arg, tmp_path):
+    path = tmp_path / "node.html"
+    seed = int(d3arg.nodes["id"].iloc[0])
+    d3arg.write_html_nodes(path, seed)
+    assert path.read_text(encoding="utf-8").startswith("<!DOCTYPE html>")

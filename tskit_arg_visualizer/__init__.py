@@ -1749,6 +1749,42 @@ class D3ARG:
             included_nodes, included_edges, included_mutations, included_breakpoints
         )
 
+    def _prepare_draw_node(self, p):
+        """Builds the JSON for draw_node() from a dict of draw_node() parameters.
+
+        Returns the JSON and the included objects.
+        """
+        condense_mutations = p["condense_mutations"]
+        ignore_mutation_times = p["ignore_mutation_times"]
+        if condense_mutations:
+            if not ignore_mutation_times:
+                print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
+                ignore_mutation_times = True
+
+        included = self.subset_graph(seed_nodes=p["seed_nodes"], depth=p["depth"])
+        arg = self._prepare_json(
+            plot_type="node",
+            nodes=included.nodes,
+            edges=included.edges,
+            mutations=included.mutations,
+            breakpoints=included.breakpoints,
+            width=p["width"],
+            height=p["height"],
+            tree_highlighting=p["tree_highlighting"],
+            y_axis_labels=p["y_axis_labels"],
+            y_axis_title=p["y_axis_title"],
+            y_axis_scale=p["y_axis_scale"],
+            title=p["title"],
+            show_mutations=p["show_mutations"],
+            ignore_mutation_times=ignore_mutation_times,
+            label_mutations=p["label_mutations"],
+            condense_mutations=condense_mutations,
+            rotate_tip_labels=p["rotate_tip_labels"],
+            preamble=p["preamble"],
+            save_filename=p["save_filename"],
+        )
+        return arg, included
+
     def draw_node(
             self,
             seed_nodes,
@@ -1844,36 +1880,33 @@ class D3ARG:
             were included in the drawing.
         """
 
-        if condense_mutations:
-            if not ignore_mutation_times:
-                print("WARNING: `condense_mutations=True` forces `ignore_mutation_times=True`.")
-                ignore_mutation_times = True
-
-        included = self.subset_graph(seed_nodes=seed_nodes, depth=depth)
-        arg = self._prepare_json(
-            plot_type="node",
-            nodes=included.nodes,
-            edges=included.edges,
-            mutations=included.mutations,
-            breakpoints=included.breakpoints,
-            width=width,
-            height=height,
-            tree_highlighting=tree_highlighting,
-            y_axis_labels=y_axis_labels,
-            y_axis_title=y_axis_title,
-            y_axis_scale=y_axis_scale,
-            title=title,
-            show_mutations=show_mutations,
-            ignore_mutation_times=ignore_mutation_times,
-            label_mutations=label_mutations,
-            condense_mutations=condense_mutations,
-            rotate_tip_labels=rotate_tip_labels,
-            preamble=preamble,
-            save_filename=save_filename,
-        )
+        params = dict(locals())
+        del params["self"]
+        arg, included = self._prepare_draw_node(params)
         info = draw_D3(arg_json=arg, styles=styles, is_notebook=is_notebook)
         info.included.nodes = included.nodes["id"].tolist()
         return info
+
+    def to_html_nodes(self, seed_nodes, **kwargs):
+        """Returns the :meth:`draw_nodes` drawing as a standalone HTML document string.
+
+        Accepts the same arguments as :meth:`draw_nodes`, apart from
+        `is_notebook`, which is ignored.
+        """
+        bound = inspect.signature(self.draw_nodes).bind(seed_nodes, **kwargs)
+        bound.apply_defaults()
+        params = dict(bound.arguments)
+        arg, _ = self._prepare_draw_node(params)
+        styles, html, *_ = _build_html(arg, styles=params["styles"])
+        return _standalone_document(styles, html)
+
+    def write_html_nodes(self, filename, seed_nodes, **kwargs):
+        """Writes the :meth:`draw_nodes` drawing to a standalone HTML file.
+
+        Accepts the same arguments as :meth:`draw_nodes`.
+        """
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(self.to_html_nodes(seed_nodes, **kwargs))
 
     # Alias of draw_node that users may be more likely to use when
     # there are multiple focal nodes.
