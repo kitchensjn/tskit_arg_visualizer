@@ -436,13 +436,9 @@ class D3ARG:
         D3ARG : a corresponding D3ARG object ready to be plotted
         """
 
-        width = json["width"]
-        x_shift = 50
-        if json["y_axis"]["include_labels"]:
-            x_shift = 100
-            width -= 50
         nodes = pd.DataFrame(json["data"]["nodes"])
-        nodes["x_pos_01"] = (nodes["x"] - x_shift) / (width-100)
+        x_pos_01 = extract_x_positions_from_json(json)
+        nodes["x_pos_01"] = nodes["id"].map(x_pos_01)
         if json["plot_type"] == "full":
             samples = nodes.loc[(nodes["ts_flags"] & tskit.NODE_IS_SAMPLE) != 0,["id", "fx"]]
             num_samples = samples.shape[0]
