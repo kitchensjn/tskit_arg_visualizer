@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "description": "Minimal Playwright setup for browser smoke tests",
   "scripts": {
+    "test:routing": "node --test tests/js/*.test.js",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:install": "playwright install --with-deps chromium"
