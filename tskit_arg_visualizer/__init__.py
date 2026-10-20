@@ -179,6 +179,9 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
     return (1-(t-min_time)/time_range) * (height-100) + y_shift
 
 
+MUTATION_COLUMNS = ["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","inherited","derived","fill","stroke","size"]
+
+
 def draw_D3(arg_json, styles=None, is_notebook=None):
     if is_notebook is None:
         is_notebook = running_in_notebook()
@@ -433,13 +436,9 @@ class D3ARG:
         D3ARG : a corresponding D3ARG object ready to be plotted
         """
 
-        width = json["width"]
-        x_shift = 50
-        if json["y_axis"]["include_labels"]:
-            x_shift = 100
-            width -= 50
         nodes = pd.DataFrame(json["data"]["nodes"])
-        nodes["x_pos_01"] = (nodes["x"] - x_shift) / (width-100)
+        x_pos_01 = extract_x_positions_from_json(json)
+        nodes["x_pos_01"] = nodes["id"].map(x_pos_01)
         if json["plot_type"] == "full":
             samples = nodes.loc[(nodes["ts_flags"] & tskit.NODE_IS_SAMPLE) != 0,["id", "fx"]]
             num_samples = samples.shape[0]
@@ -447,7 +446,8 @@ class D3ARG:
         else:
             num_samples = -1
             sample_order = []
-        mutations = pd.DataFrame(json["data"]["mutations"])
+        # columns are needed explicitly, as an empty list of mutations has none
+        mutations = pd.DataFrame(json["data"]["mutations"], columns=MUTATION_COLUMNS)
         # ensure the time column is float (in case it is full of None values)
         mutations["time"] = mutations["time"].astype(np.float64)
         # ensure that NaNs are set to the special unknown time value. This requires
@@ -689,7 +689,7 @@ class D3ARG:
                         "stroke": stroke,
                         "size": default_mutation_styles["size"],
                     })
-        mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","inherited","derived","fill","stroke","size"])
+        mutations_output = pd.DataFrame(mutations, columns=MUTATION_COLUMNS)
         return edges_output, mutations_output
    
     def _identify_breakpoints(ts):
