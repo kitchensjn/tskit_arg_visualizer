@@ -23,6 +23,7 @@ __version__ = (
     "`importlib.metadata.version('tskit_arg_visualizer')` instead"
 )
 
+MUTATION_COLUMNS = ["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","inherited","derived","fill","stroke","size"]
 
 default_mutation_styles = {
     "size": 5,
@@ -179,7 +180,6 @@ def convert_time_to_position(t, min_time, max_time, scale, unique_times, h_spaci
     time_range = (max_time - min_time) or 1  # avoid division by zero if e.g. all nodes at t=0
     return (1-(t-min_time)/time_range) * (height-100) + y_shift
 
-
 def _build_html(arg_json, styles=None):
     """Returns (styles, html, arg_id, width, height) for a drawing, without displaying it."""
     arg_json["source"] = json.dumps(arg_json.copy())  # first escape the plain json data
@@ -212,13 +212,11 @@ def _build_html(arg_json, styles=None):
 
     return styles, html, arg_id, arg_json["width"], arg_json["height"]
 
-
 def _standalone_document(styles, html):
     return (
         "<!DOCTYPE html><html><head><meta charset='utf-8'>" + styles + "</head>"
         "<body>" + html + "</body></html>"
     )
-
 
 def draw_D3(arg_json, styles=None, is_notebook=None):
     if is_notebook is None:
@@ -445,13 +443,8 @@ class D3ARG:
         D3ARG : a corresponding D3ARG object ready to be plotted
         """
 
-        width = json["width"]
-        x_shift = 50
-        if json["y_axis"]["include_labels"]:
-            x_shift = 100
-            width -= 50
-        nodes = pd.DataFrame(json["data"]["nodes"])
-        nodes["x_pos_01"] = (nodes["x"] - x_shift) / (width-100)
+        x_pos_01 = extract_x_positions_from_json(json)
+        nodes["x_pos_01"] = nodes["id"].map(x_pos_01)
         if json["plot_type"] == "full":
             samples = nodes.loc[(nodes["ts_flags"] & tskit.NODE_IS_SAMPLE) != 0,["id", "fx"]]
             num_samples = samples.shape[0]
@@ -459,7 +452,7 @@ class D3ARG:
         else:
             num_samples = -1
             sample_order = []
-        mutations = pd.DataFrame(json["data"]["mutations"])
+        mutations = pd.DataFrame(json["data"]["mutations"], columns=MUTATION_COLUMNS)
         # ensure the time column is float (in case it is full of None values)
         mutations["time"] = mutations["time"].astype(np.float64)
         # ensure that NaNs are set to the special unknown time value. This requires
@@ -701,7 +694,7 @@ class D3ARG:
                         "stroke": stroke,
                         "size": default_mutation_styles["size"],
                     })
-        mutations_output = pd.DataFrame(mutations, columns=["edge","source","target","time","plot_time","site_id","position","position_01","ancestral","inherited","derived","fill","stroke","size"])
+        mutations_output = pd.DataFrame(mutations, columns=MUTATION_COLUMNS)
         return edges_output, mutations_output
    
     def _identify_breakpoints(ts):
