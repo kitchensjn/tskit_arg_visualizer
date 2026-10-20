@@ -1180,7 +1180,7 @@ class D3ARG:
         node_y_pos = {}
         for index, node in nodes.iterrows():
             if "x_pos_01" in node:
-                if node["x_pos_01"] != -1 and node["x_pos_01"] != np.nan:
+                if node["x_pos_01"] != -1 and not pd.isna(node["x_pos_01"]):
                     node["fx"] = node["x_pos_01"] * (width-100) + default_left_spacing + y_axis_left_spacing
             elif (node["ts_flags"] & tskit.NODE_IS_SAMPLE) and (plot_type == "full"):
                 node["fx"] = sample_positions[sample_order.index(node["id"])]

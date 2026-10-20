@@ -56,3 +56,15 @@ def test_from_json_without_mutations(monkeypatch):
     reloaded = argviz.D3ARG.from_json(arg)
     assert len(reloaded.mutations) == 0
     assert list(reloaded.mutations.columns) == list(d3arg.mutations.columns)
+
+
+def test_nan_x_position_is_not_passed_to_force_layout(monkeypatch):
+    d3arg = argviz.D3ARG.from_ts(_balanced_ts_with_mutation())
+    d3arg.nodes["x_pos_01"] = 0.5
+    nan_node_id = d3arg.nodes["id"].iloc[0]
+    d3arg.nodes.loc[d3arg.nodes["id"] == nan_node_id, "x_pos_01"] = float("nan")
+
+    arg = _draw_json(d3arg, monkeypatch)
+    nan_node = next(node for node in arg["data"]["nodes"] if node["id"] == nan_node_id)
+
+    assert "fx" not in nan_node
