@@ -1,4 +1,19 @@
 --------------------
+[0.1.3] - 2026-10-21
+--------------------
+
+Added Copilot tests
+
+`to_html()` and `write_html()` (#249)
+
+Rudimentary live demo (#240, #250)
+
+Better position extraction when loading from json (#242)
+
+Better CSS selection (#237)
+
+
+--------------------
 [0.1.2] - 2026-01-06
 --------------------
 
