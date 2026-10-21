@@ -2,6 +2,7 @@
   <a href="https://doi.org/10.1093/bioadv/vbaf302">
     <img alt="DOI:10.1093/bioadv/vbaf302" src="http://img.shields.io/badge/DOI-10.1093/bioadv/vbaf302-064358.svg">
   </a>
+  <a href="https://james-kitchens.com/tskit_arg_visualizer/latest/">Live Demo</a>
 </h1>
 
 <p align="center">
