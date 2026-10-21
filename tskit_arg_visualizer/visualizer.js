@@ -10,6 +10,52 @@ function parseRgbString(rgbString) {
   return null; // Or throw an error for invalid format
 }
 
+function orthogonalMutationX(edge, y) {
+    const [pathType, startX, startY, stopX, stopY] = edge.path_info;
+    const simplePathType = pathType[0] + pathType[2];
+    const segments = [];
+
+    if (pathType.startsWith("r0")) {
+        segments.push([edge.source.x, edge.source.y, startY]);
+    }
+
+    if (["rf", "tb", "tf"].includes(simplePathType)) {
+        segments.push([stopX, startY, stopY]);
+    } else if (["rt", "fb", "ft"].includes(simplePathType)) {
+        segments.push([startX, startY, stopY]);
+    } else if (simplePathType === "tt") {
+        // A step path has one vertical segment at the midpoint between its x endpoints.
+        segments.push([(startX + stopX) / 2, startY, stopY]);
+    } else if (simplePathType === "rb" || simplePathType === "ff") {
+        // Split paths have two verticals, so select by the mutation's y position.
+        const midY = (startY + stopY) / 2;
+        segments.push([startX, startY, midY], [stopX, midY, stopY]);
+    } else {
+        throw new Error(`Unknown orthogonal path type: ${pathType}`);
+    }
+
+    if (pathType.endsWith("b0")) {
+        segments.push([edge.target.x, stopY, edge.target.y]);
+    }
+
+    const containingSegment = segments.find(([, y1, y2]) =>
+        y >= Math.min(y1, y2) && y <= Math.max(y1, y2)
+    );
+    if (containingSegment !== undefined) {
+        return containingSegment[0];
+    }
+
+    const nearestSegment = segments.reduce((nearest, segment) => {
+        const distance = Math.max(
+            Math.min(segment[1], segment[2]) - y,
+            0,
+            y - Math.max(segment[1], segment[2])
+        );
+        return distance < nearest.distance ? { segment, distance } : nearest;
+    }, { segment: segments[0], distance: Infinity });
+    return nearestSegment.segment[0];
+}
+
 function ensureRequire() {
     // Needed e.g. in Jupyter notebooks: if require is already available, return resolved promise
     if (typeof require !== 'undefined') {
@@ -907,6 +953,7 @@ function main_visualizer(
             
             link_container.each(function(d) {
                 var path_info = determine_path_type(d);
+                d.path_info = path_info;
                 var path = "";
                 if (edge_styles.type == "ortho") {
                     path = ortho_pathing(d, path_info);
@@ -932,6 +979,10 @@ function main_visualizer(
 
             mut_symbol_rect
                 .attr("x", function(d) {
+                    if (edge_styles.type == "ortho") {
+                        const edge = graph.links.find(link => link.id === d.edge);
+                        return orthogonalMutationX(edge, d.y) - d.computedWidth/2;
+                    }
                     var parent = svg.node().getElementById("n" + d.source);
                     if (parent != null) {
                         var parent_x = parseFloat(parent.getAttribute("cx"));
@@ -958,6 +1009,9 @@ function main_visualizer(
 
             mut_symbol
                 .attr("transform", function(d) {
+                    if (edge_styles.type == "ortho") {
+                        return "rotate(0)";
+                    }
                     var parent = svg.node().getElementById("n" + d.source);
                     if (parent != null) {
                         var parent_x = parseFloat(parent.getAttribute("cx"));
@@ -981,6 +1035,10 @@ function main_visualizer(
                 mut_symbol_label
                     .attr("transform", function(d) {
                         var y = d.y + 1;
+                        if (edge_styles.type == "ortho") {
+                            const edge = graph.links.find(link => link.id === d.edge);
+                            return "translate(" + orthogonalMutationX(edge, d.y) + "," + y + ")";
+                        }
                         var x = 0;
                         var parent = svg.node().getElementById("n" + d.source);
                         if (parent != null) {
@@ -1379,4 +1437,3 @@ ensureRequire()
         });
     })
     .catch(err => console.error('Failed to load require.js:', err));
-

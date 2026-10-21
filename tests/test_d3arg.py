@@ -56,3 +56,19 @@ def test_from_json_without_mutations(monkeypatch):
     reloaded = argviz.D3ARG.from_json(arg)
     assert len(reloaded.mutations) == 0
     assert list(reloaded.mutations.columns) == list(d3arg.mutations.columns)
+
+
+def test_show_mutations_with_ortho_edges(monkeypatch):
+    d3arg = argviz.D3ARG.from_ts(_balanced_ts_with_mutation())
+
+    arg = _draw_json(d3arg, monkeypatch, edge_type="ortho", show_mutations=True)
+
+    assert arg["edges"]["type"] == "ortho"
+    assert len(arg["data"]["mutations"]) > 0
+
+
+def test_rejects_unsupported_edge_type(monkeypatch):
+    d3arg = argviz.D3ARG.from_ts(_balanced_ts_with_mutation())
+
+    with pytest.raises(ValueError, match="edge_type must be either 'line' or 'ortho'"):
+        d3arg.draw(edge_type="curve")

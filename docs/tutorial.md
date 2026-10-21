@@ -55,7 +55,7 @@ The `tree_highlighting` parameter of `draw()` and `draw_node()` (active by defau
 
 A quick note about line_type="ortho" (more details can be found within [pathing.md](https://github.com/kitchensjn/tskit_arg_visualizer/blob/main/docs/pathing.md)) - this parameter identifies node types based on msprime flags and applies pathing rules following those types. Because of this, "ortho" should only be used for full ARGs with proper msprime flags and where nodes have a maximum of two parents or children. Other tree sequences, including simplified tree sequences (those without marked recombination nodes marked) should use the "line" edge_type.
 
-`show_mutations=True` will only work when `edge_type="line"`, otherwise it will be ignored. This is because the mutation placement rules have not been worked out for `edge_type="ortho"` (feature coming in the future). Even still with `edge_type="line"`, mutation labels will be incorrectly placed when there is a "diamond".
+`show_mutations=True` works with both `edge_type="line"` and `edge_type="ortho"`. For orthogonal edges, mutation markers are placed on the vertical segment at the mutation's y-position. With `edge_type="line"`, mutation labels can still be incorrectly placed when there is a "diamond".
 
 Below are all of the available parameters for `draw()`:
 
