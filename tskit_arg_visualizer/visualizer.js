@@ -1123,6 +1123,7 @@ function main_visualizer(
         }
 
         function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
             svg.attr("class", null);
         }
 
@@ -1379,4 +1380,3 @@ ensureRequire()
         });
     })
     .catch(err => console.error('Failed to load require.js:', err));
-
