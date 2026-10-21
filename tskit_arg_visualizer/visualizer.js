@@ -10,6 +10,21 @@ function parseRgbString(rgbString) {
   return null; // Or throw an error for invalid format
 }
 
+function diamondEdgeRoute(edge, links) {
+    const alternativeEdge = links.find(link =>
+        link.id !== edge.id &&
+        link.source.id === edge.source.id &&
+        link.target.id === edge.alt_child
+    );
+    const goesLeft = alternativeEdge === undefined
+        ? edge.index % 2 === 0
+        : edge.id < alternativeEdge.id;
+    return {
+        pathType: goesLeft ? "fL" : "fR",
+        sourceXOffset: goesLeft ? -20 : 20,
+    };
+}
+
 function ensureRequire() {
     // Needed e.g. in Jupyter notebooks: if require is already available, return resolved promise
     if (typeof require !== 'undefined') {
@@ -752,13 +767,11 @@ function main_visualizer(
                         }
                         start_position_x = d.source.x + 20;
                     } else {
-                        if (d.index % 2 == 0) {
-                            path_type += "fL";
-                            start_position_x = d.source.x - 20;
-                        } else {
-                            path_type += "fR";
-                            start_position_x = d.source.x + 20;
-                        }
+                        // Generated IDs retain left-coordinate order within a shared parent,
+                        // helping assign left/right edges consistently in diamonds (#179).
+                        const route = diamondEdgeRoute(d, graph.links);
+                        path_type += route.pathType;
+                        start_position_x = d.source.x + route.sourceXOffset;
                     }
                 }
             }
@@ -1379,4 +1392,3 @@ ensureRequire()
         });
     })
     .catch(err => console.error('Failed to load require.js:', err));
-
