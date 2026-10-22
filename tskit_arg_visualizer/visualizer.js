@@ -589,8 +589,8 @@ function main_visualizer(
                         .style("display", "block")
                         .html("<p style='margin: 0px;'>" + d.content + "</p>")
                         .style("border", d.fill + " solid 2px")
-                        .style("left", (event.pageX - rect.x) + "px")
-                        .style("top", (event.pageY - rect.y + 25) + "px")
+                        .style("left", (event.clientX - rect.x) + "px")
+                        .style("top", (event.clientY - rect.y + 25) + "px")
                         .style("transform", "translateX(-50%)");
                 }
             })
